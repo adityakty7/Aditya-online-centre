@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Bricolage Grotesque', 'Plus Jakarta Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', 'DM Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Plus Jakarta Sans', ui-monospace, SFMono-Regular, monospace;
+
+    /* Neon Ember Design System Tokens */
+    --ember-charcoal: #101014;
+    --ember-charcoal-elevated: #18181f;
+    --ember-charcoal-border: #272732;
+    --ember-orange: #ff5c35;
+    --ember-orange-hover: #e84b25;
+    --ember-amber: #ffb547;
+    --ember-cream: #f7f3ea;
+    --ember-surface: #fffdf9;
+    --ember-border: #e6dfd3;
+    --ember-muted: #5c5852;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background-color: #f7f3ea;
+    color: #101014;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: #101014;
+    background-color: #f7f3ea;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
+  .font-mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

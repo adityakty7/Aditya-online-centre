@@ -1,0 +1,6 @@
+{
+  "name": "Aditya Online Center",
+  "description": "Mobile-first digital services cyber cafe platform in Kateya, Bihar for resumes, biodata, PDF tools, form-filling assistance, and secure document delivery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

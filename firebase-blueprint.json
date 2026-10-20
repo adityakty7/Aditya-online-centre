@@ -1,0 +1,696 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private customer profile information isolated per user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 150
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "villageOrTown": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "enum": ["en", "hi"],
+          "maxLength": 10
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "email",
+        "phone",
+        "villageOrTown",
+        "preferredLanguage",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Trusted admin role assignment document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 150
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "grantedAt"]
+    },
+    "DigitalService": {
+      "title": "DigitalService",
+      "description": "Configurable digital service item in the Aditya Online Center catalog.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "resume_biodata",
+            "letters_formatting",
+            "pdf_tools",
+            "govt_job_assistance",
+            "scholarship_admission",
+            "other_online_forms"
+          ],
+          "maxLength": 64
+        },
+        "titleEn": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "titleHi": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "descEn": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "descHi": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "priceInr": {
+          "type": "number"
+        },
+        "minPriceInr": {
+          "type": "number"
+        },
+        "maxPriceInr": {
+          "type": "number"
+        },
+        "instructionsEn": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "instructionsHi": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "estimatedTimeEn": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "estimatedTimeHi": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "requiredDocs": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "documentRequirementsJson": {
+          "type": "string",
+          "maxLength": 8000
+        },
+        "customFieldsJson": {
+          "type": "string",
+          "maxLength": 1500
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "featured": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "category",
+        "titleEn",
+        "titleHi",
+        "descEn",
+        "descHi",
+        "priceInr",
+        "estimatedTimeEn",
+        "estimatedTimeHi",
+        "requiredDocs",
+        "customFieldsJson",
+        "isActive",
+        "featured",
+        "updatedAt"
+      ]
+    },
+    "DocumentLibraryItem": {
+      "title": "DocumentLibraryItem",
+      "description": "Reusable document definition managed by administrators in the Document Library.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "labelEn": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "labelHi": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "defaultFormats": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "defaultMaxSizeKb": {
+          "type": "number"
+        },
+        "defaultInstructionsEn": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "defaultInstructionsHi": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "allowMultiple": {
+          "type": "boolean"
+        },
+        "isBuiltIn": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "labelEn",
+        "labelHi",
+        "category",
+        "defaultFormats",
+        "defaultMaxSizeKb",
+        "defaultInstructionsEn",
+        "defaultInstructionsHi",
+        "allowMultiple",
+        "isBuiltIn"
+      ]
+    },
+    "CenterSettings": {
+      "title": "CenterSettings",
+      "description": "Owner-configured business UPI QR/ID and center contact configuration.",
+      "type": "object",
+      "properties": {
+        "upiId": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "payeeName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "qrCodeDataUrl": {
+          "type": "string",
+          "maxLength": 350000
+        },
+        "paymentInstructionsEn": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "paymentInstructionsHi": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "isUpiConfigured": {
+          "type": "boolean"
+        },
+        "shopPhone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "shopAddressEn": {
+          "type": "string",
+          "maxLength": 250
+        },
+        "shopAddressHi": {
+          "type": "string",
+          "maxLength": 250
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "upiId",
+        "payeeName",
+        "qrCodeDataUrl",
+        "paymentInstructionsEn",
+        "paymentInstructionsHi",
+        "isUpiConfigured",
+        "shopPhone",
+        "shopAddressEn",
+        "shopAddressHi",
+        "updatedAt"
+      ]
+    },
+    "ServiceOrder": {
+      "title": "ServiceOrder",
+      "description": "Customer digital service order with status tracking and manual UPI payment verification.",
+      "type": "object",
+      "properties": {
+        "orderNumber": {
+          "type": "string",
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "customerPhone": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 20
+        },
+        "customerEmail": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "customerLocation": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "serviceId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "serviceTitleEn": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "serviceTitleHi": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "serviceCategory": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "priceInr": {
+          "type": "number"
+        },
+        "estimatedCompletion": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "formResponsesSummary": {
+          "type": "string",
+          "maxLength": 2500
+        },
+        "customerNotes": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Submitted",
+            "Under Review",
+            "Awaiting Payment",
+            "Payment Verification",
+            "In Progress",
+            "Needs Customer Information",
+            "Completed",
+            "Delivered",
+            "Cancelled"
+          ],
+          "maxLength": 40
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["Unpaid", "Pending Verification", "Verified", "Rejected"],
+          "maxLength": 40
+        },
+        "paymentUtr": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "adminNote": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "missingInfoRequest": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "customerInfoReply": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "uploadedFileCount": {
+          "type": "number"
+        },
+        "hasDeliverable": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "orderNumber",
+        "customerId",
+        "customerName",
+        "customerPhone",
+        "customerEmail",
+        "customerLocation",
+        "serviceId",
+        "serviceTitleEn",
+        "serviceTitleHi",
+        "serviceCategory",
+        "priceInr",
+        "estimatedCompletion",
+        "formResponsesSummary",
+        "customerNotes",
+        "status",
+        "paymentStatus",
+        "paymentUtr",
+        "adminNote",
+        "missingInfoRequest",
+        "customerInfoReply",
+        "uploadedFileCount",
+        "hasDeliverable",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "OrderFile": {
+      "title": "OrderFile",
+      "description": "Private customer-uploaded supporting document, payment receipt, or admin final deliverable.",
+      "type": "object",
+      "properties": {
+        "fileId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "orderId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "uploadedByRole": {
+          "type": "string",
+          "enum": ["customer", "admin"],
+          "maxLength": 20
+        },
+        "fileCategory": {
+          "type": "string",
+          "enum": ["customer_document", "payment_receipt", "final_deliverable"],
+          "maxLength": 40
+        },
+        "documentTypeId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "documentLabelEn": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "documentLabelHi": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 150
+        },
+        "mimeType": {
+          "type": "string",
+          "enum": [
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          ],
+          "maxLength": 100
+        },
+        "sizeBytes": {
+          "type": "number"
+        },
+        "dataUrl": {
+          "type": "string",
+          "maxLength": 700000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "fileId",
+        "orderId",
+        "customerId",
+        "uploadedByRole",
+        "fileCategory",
+        "fileName",
+        "mimeType",
+        "sizeBytes",
+        "dataUrl",
+        "createdAt"
+      ]
+    },
+    "OrderStatusEvent": {
+      "title": "OrderStatusEvent",
+      "description": "Immutable audit log entry recording status transitions and the actor who performed them.",
+      "type": "object",
+      "properties": {
+        "historyId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "orderId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "customerId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "status": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "actorUid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "actorRole": {
+          "type": "string",
+          "enum": ["customer", "admin"],
+          "maxLength": 20
+        },
+        "actorName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "historyId",
+        "orderId",
+        "customerId",
+        "status",
+        "note",
+        "actorUid",
+        "actorRole",
+        "actorName",
+        "createdAt"
+      ]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Customer contact inquiry submitted via the Contact Us page, readable only by authorized admins.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 20
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 150
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 150
+        },
+        "message": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 1500
+        },
+        "orderId": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "enum": ["en", "hi"],
+          "maxLength": 10
+        },
+        "status": {
+          "type": "string",
+          "enum": ["New", "Replied"],
+          "maxLength": 20
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "phone",
+        "email",
+        "subject",
+        "message",
+        "orderId",
+        "preferredLanguage",
+        "status",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private customer profile documents restricted to owner and admin."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Trusted admin role registry."
+    },
+    "/services/{serviceId}": {
+      "schema": { "$ref": "#/entities/DigitalService" },
+      "description": "Digital services catalog readable by visitors, editable only by verified admins."
+    },
+    "/document_library/{docId}": {
+      "schema": { "$ref": "#/entities/DocumentLibraryItem" },
+      "description": "Reusable document checklist library readable by all, editable only by verified admins."
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/CenterSettings" },
+      "description": "Business UPI payment configuration and center details editable only by verified admins."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/ServiceOrder" },
+      "description": "Customer service orders isolated to order owner and verified admins."
+    },
+    "/orders/{orderId}/files/{fileId}": {
+      "schema": { "$ref": "#/entities/OrderFile" },
+      "description": "Private uploaded customer documents, receipts, and admin deliverables."
+    },
+    "/orders/{orderId}/history/{historyId}": {
+      "schema": { "$ref": "#/entities/OrderStatusEvent" },
+      "description": "Immutable status change history entries for each order."
+    },
+    "/contact_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ContactMessage" },
+      "description": "Customer contact inquiries readable and manageable strictly by authorized admins."
+    }
+  }
+}
