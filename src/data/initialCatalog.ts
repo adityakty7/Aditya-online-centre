@@ -1021,6 +1021,88 @@ export const INITIAL_SERVICES: DigitalService[] = [
     featured: false,
     updatedAt: '2026-10-19T08:00:00.000Z',
   },
+  {
+    id: 'srv-aadhaar-pan-update',
+    category: 'other_online_forms',
+    titleEn: 'Aadhaar Demographic & PAN Correction Form Assistance',
+    titleHi: 'आधार पता एवं पैन कार्ड सुधार फॉर्म सहायता',
+    descEn:
+      'Online document preparation and form-filling assistance for myAadhaar address update, PAN card name/DOB correction (CSF form), and Aadhaar-PAN linking status check with exact PDF/JPEG size formatting.',
+    descHi:
+      'आधार कार्ड में पता सुधार, पैन कार्ड में नाम/जन्मतिथि सुधार फॉर्म और दस्तावेज़ PDF साइज सेट करने में ऑनलाइन सहायता।',
+    priceInr: 70,
+    minPriceInr: 50,
+    maxPriceInr: 100,
+    instructionsEn:
+      'Upload clear scans of your existing Aadhaar card, PAN card, and valid proof of address/DOB (10th Marksheet, Voter ID, or Residence Certificate). We never ask for banking PINs.',
+    instructionsHi:
+      'अपना वर्तमान आधार कार्ड, पैन कार्ड और वैध निवास/जन्मतिथि प्रमाणपत्र अपलोड करें। हम कभी भी बैंक पिन नहीं मांगते।',
+    estimatedTimeEn: '2 to 4 Hours',
+    estimatedTimeHi: '2 से 4 घंटे',
+    requiredDocs:
+      'Aadhaar Card, PAN Card (Optional), Residence Certificate / Address Proof, 10th Marksheet (Optional)',
+    documentRequirementsJson: JSON.stringify([
+      {
+        docId: 'doc-aadhaar-card',
+        labelEn: 'Aadhaar Card (Front & Back)',
+        labelHi: 'आधार कार्ड (आगे और पीछे)',
+        required: true,
+        acceptedFormats: ['pdf', 'jpg', 'png'],
+        maxSizeKb: 500,
+        instructionsEn: 'Clear front and back scan of existing Aadhaar Card.',
+        instructionsHi: 'वर्तमान आधार कार्ड के दोनों तरफ की साफ फोटो या PDF।',
+        order: 0,
+      },
+      {
+        docId: 'doc-address-proof',
+        labelEn: 'Valid Address / DOB Proof (Residence Cert / Marksheet)',
+        labelHi: 'वैध पता या जन्मतिथि प्रमाण (निवास प्रमाणपत्र / मार्कशीट)',
+        required: true,
+        acceptedFormats: ['pdf', 'jpg', 'png'],
+        maxSizeKb: 500,
+        instructionsEn: 'Supporting gazetted/RTPS residence certificate or 10th marksheet for correction.',
+        instructionsHi: 'सुधार के समर्थन में वैध निवास प्रमाणपत्र या 10वीं की मार्कशीट अपलोड करें।',
+        order: 1,
+      },
+      {
+        docId: 'doc-pan-card',
+        labelEn: 'Existing PAN Card Copy',
+        labelHi: 'मौजूदा पैन कार्ड की प्रति',
+        required: false,
+        acceptedFormats: ['pdf', 'jpg', 'png'],
+        maxSizeKb: 500,
+        instructionsEn: 'Optional: Upload if requesting PAN card demographic correction.',
+        instructionsHi: 'वैकल्पिक: पैन कार्ड सुधार के लिए मौजूदा पैन अपलोड करें।',
+        order: 2,
+      },
+    ] satisfies ServiceDocumentRequirement[]),
+    customFieldsJson: JSON.stringify([
+      {
+        id: 'updateTypeRequested',
+        labelEn: 'Type of Correction / Form Assistance',
+        labelHi: 'किस सुधार या फॉर्म में सहायता चाहिए?',
+        type: 'select',
+        required: true,
+        options: [
+          'Aadhaar Address Update Form Prep (आधार पता सुधार)',
+          'PAN Card Name / DOB Correction Form (पैन कार्ड सुधार)',
+          'Aadhaar–PAN Document Formatting Pack (दस्तावेज़ रीसाइज पैक)',
+        ],
+      },
+      {
+        id: 'correctedDetailsNote',
+        labelEn: 'Exact Corrected Name / Address / DOB to Enter',
+        labelHi: 'सुधार के बाद लिखा जाने वाला सही नाम / पता / जन्मतिथि',
+        type: 'textarea',
+        required: true,
+        placeholderEn: 'Write the exact spelling or address as shown on your supporting proof',
+        placeholderHi: 'प्रमाणपत्र के अनुसार सही नाम या पता स्पष्ट रूप से लिखें',
+      },
+    ]),
+    isActive: true,
+    featured: false,
+    updatedAt: '2026-10-19T08:00:00.000Z',
+  },
 ];
 
 export const DEFAULT_CENTER_SETTINGS: CenterSettings = {

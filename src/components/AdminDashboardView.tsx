@@ -25,12 +25,14 @@ import {
   calculateOrderMetrics,
   calculateServiceMetrics,
   canAddDocumentLibraryItem,
+  cleanDocumentLabel,
   createDuplicateService,
   deriveCustomerSummaries,
   filterAndSortServices,
   generateCategoryKey,
   generateDocumentTypeId,
   generateServiceId,
+  getServiceDocumentRequirements,
   isSafeDataUrl,
   parseServiceDocumentRequirements,
   reorderDocumentRequirements,
@@ -81,6 +83,8 @@ import {
   SlidersHorizontal,
   CheckSquare,
   Square,
+  FolderArchive,
+  CloudUpload,
 } from 'lucide-react';
 
 interface AdminDashboardViewProps {
@@ -90,6 +94,7 @@ interface AdminDashboardViewProps {
   userEmail: string | null;
   onEnableSandboxAdmin: () => void;
   onOpenAuthModal: () => void;
+  onOpenBackupModal?: () => void;
   orders: ServiceOrder[];
   orderFiles: Record<string, OrderFile[]>;
   orderHistory?: Record<string, OrderStatusEvent[]>;
@@ -138,6 +143,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   userEmail,
   onEnableSandboxAdmin,
   onOpenAuthModal,
+  onOpenBackupModal,
   orders,
   orderFiles,
   orderHistory = {},
@@ -474,11 +480,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
     setFormEtaEn(srv.estimatedTimeEn);
     setFormEtaHi(srv.estimatedTimeHi || srv.estimatedTimeEn);
     setFormRequiredDocs(srv.requiredDocs);
-    const parsedReqs = parseServiceDocumentRequirements(
-      srv.documentRequirementsJson,
-      srv.requiredDocsEn || (srv.requiredDocs ? srv.requiredDocs.split(',') : []),
-      srv.requiredDocsHi || []
-    );
+    const parsedReqs = getServiceDocumentRequirements(srv, documentLibrary);
     setFormDocRequirements(parsedReqs);
     setDocBuilderSearch('');
     setFormInstructionsEn(srv.instructionsEn || '');
@@ -632,7 +634,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       defaultRequired: customDocDefaultReq,
       acceptedFormats:
         customDocFormats.length > 0 ? customDocFormats : ['pdf', 'jpg'],
-      maxSizeKb: Math.max(100, Math.min(10240, Number(customDocMaxSizeKb) || 500)),
+      maxSizeKb: Math.max(50, Math.min(500, Number(customDocMaxSizeKb) || 500)),
       defaultInstructionsEn: sanitizeString(customDocInstructionsEn, 300),
       defaultInstructionsHi: sanitizeString(
         customDocInstructionsHi || customDocInstructionsEn,
@@ -1126,62 +1128,54 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   // ============================================================================
   if (!isAuthorizedAdmin) {
     return (
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-8 sm:p-10 text-center space-y-5 shadow-xs">
-          <div className="w-14 h-14 rounded-2xl bg-[#FFF2ED] border border-[#FF5C35]/30 text-[#FF5C35] flex items-center justify-center mx-auto">
-            <Lock className="w-6 h-6" />
-          </div>
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#F7F3EA] border border-[#E6DFD3] text-[11px] font-bold uppercase tracking-wider text-[#101014]">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#FF5C35]" />
-              <span>
+      <div className="bg-[#F7F3EA] min-h-screen">
+        <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732] py-14 sm:py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <div className="glass-obsidian-panel p-6 sm:p-10 space-y-6">
+              <div className="inline-flex items-center gap-2 font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
+                <Lock className="w-4 h-4 text-[#FFB547]" />
+                <span>
+                  {lang === 'en'
+                    ? '04. ROLE-BASED SECURITY ENFORCEMENT'
+                    : '04. सुरक्षित एडमिन नियंत्रण'}
+                </span>
+              </div>
+
+              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#F7F3EA] tracking-tight leading-[1.06]">
                 {lang === 'en'
-                  ? 'Role-Based Security Enforcement'
-                  : 'सुरक्षित एडमिन नियंत्रण'}
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#101014] tracking-tight font-display">
-              {lang === 'en'
-                ? 'Protected Admin Panel — Authorized Access Only'
-                : 'सुरक्षित एडमिन पैनल — केवल अधिकृत प्रवेश'}
-            </h1>
-          </div>
-          <p className="text-sm text-[#4A463E] max-w-xl mx-auto leading-relaxed">
-            {lang === 'en'
-              ? 'Admin access is strictly restricted to the verified Aditya Online Center administrator account enforced by Firestore Security Rules.'
-              : 'एडमिन पैनल केवल आदित्य ऑनलाइन सेंटर के अधिकृत व्यवस्थापक (Admin) खाते के लिए सुरक्षित है।'}
-          </p>
+                  ? 'Protected Admin Panel — Authorized Access Only.'
+                  : 'सुरक्षित एडमिन पैनल — केवल अधिकृत प्रवेश।'}
+              </h1>
 
-          {userEmail && (
-            <div className="max-w-md mx-auto p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 font-medium">
-              {lang === 'en'
-                ? `Currently signed in as ${userEmail} (Customer account). Please sign in with the authorized administrator Google account.`
-                : `वर्तमान में ${userEmail} (ग्राहक खाता) से लॉगिन है। कृपया अधिकृत एडमिन गूगल खाते से लॉगिन करें।`}
-            </div>
-          )}
+              <p className="text-sm sm:text-base text-[#D8D3C8] max-w-2xl leading-relaxed">
+                {lang === 'en'
+                  ? 'Admin access is strictly restricted to the verified Aditya Online Center administrator account enforced by Firestore Security Rules.'
+                  : 'एडमिन पैनल केवल आदित्य ऑनलाइन सेंटर के अधिकृत व्यवस्थापक (Admin) खाते के लिए सुरक्षित है।'}
+              </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onOpenAuthModal}
-              className="min-h-[48px] px-6 py-3 bg-[#FF5C35] hover:bg-[#E04823] text-white text-sm font-bold rounded-xl transition-colors shadow-xs"
-            >
-              {lang === 'en'
-                ? 'Sign In with Admin Google Account'
-                : 'एडमिन गूगल खाते से लॉगिन करें'}
-            </button>
-            <button
-              type="button"
-              onClick={onEnableSandboxAdmin}
-              className="min-h-[48px] px-5 py-3 bg-[#101014] hover:bg-[#272732] text-[#F7F3EA] text-sm font-semibold rounded-xl transition-colors border border-[#272732]"
-            >
-              {lang === 'en'
-                ? 'Enter Sandbox Admin Preview Mode'
-                : 'सैंडबॉक्स एडमिन मोड में प्रवेश करें'}
-            </button>
+              {userEmail && (
+                <div className="max-w-xl p-4 bg-[#18181F] border-l-4 border-[#FFB547] text-xs text-[#FFB547] font-mono-tabular">
+                  {lang === 'en'
+                    ? `SIGNED IN AS: ${userEmail} (Customer Role). Please sign in with the authorized administrator Google account.`
+                    : `वर्तमान में ${userEmail} (ग्राहक खाता) से लॉगिन है। कृपया अधिकृत एडमिन गूगल खाते से लॉगिन करें।`}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 pt-2">
+                <button
+                  type="button"
+                  onClick={onOpenAuthModal}
+                  className="min-h-[48px] px-6 py-3.5 bg-[#FF5C35] hover:bg-[#E54922] text-white text-sm font-bold transition-colors shadow-lg shadow-[#FF5C35]/25"
+                >
+                  {lang === 'en'
+                    ? 'Sign In with Authorized Admin Account (adityakty77@gmail.com)'
+                    : 'अधिकृत एडमिन खाते (adityakty77@gmail.com) से लॉगिन करें'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     );
   }
 
@@ -1321,40 +1315,40 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {/* =================================================================== */}
         <aside
           aria-label="Admin Workspace Navigation"
-          className="w-full lg:w-64 shrink-0 bg-[#101014] border border-white/10 text-[#F7F3EA] rounded-2xl p-4 lg:sticky lg:top-20 space-y-4 shadow-lg"
+          className="w-full lg:w-64 shrink-0 glass-obsidian-panel text-[#F7F3EA] p-4 lg:sticky lg:top-20 space-y-4"
         >
           <div className="pb-3.5 border-b border-white/10 flex items-center justify-between lg:block">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#18181F] border border-[#FFB547]/30 text-[11px] font-bold uppercase tracking-wider text-[#FFB547]">
+              <div className="inline-flex items-center gap-1.5 font-mono-tabular text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFB547]">
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-[#FF5C35]" />
                 <span>
-                  {isLiveAdmin ? 'Live Firestore Admin' : 'Sandbox Admin Mode'}
+                  {isLiveAdmin ? 'LIVE FIRESTORE ADMIN' : 'SANDBOX ADMIN'}
                 </span>
               </div>
-              <h1 className="text-base font-extrabold text-[#F7F3EA] mt-2 tracking-tight font-display">
+              <h1 className="text-base font-extrabold text-[#F7F3EA] mt-1.5 tracking-tight font-display">
                 {lang === 'en' ? 'Admin Control Center' : 'एडमिन कंट्रोल पैनल'}
               </h1>
-              <p className="text-[11px] text-[#9E988E] mt-0.5">
-                {lang === 'en' ? 'Kateya Digital Operations' : 'कटेया डिजिटल संचालन'}
+              <p className="font-mono-tabular text-[11px] text-[#D8D3C8] mt-0.5">
+                {lang === 'en' ? 'KATEYA · OPERATIONS' : 'कटेया डिजिटल संचालन'}
               </p>
             </div>
 
             <button
               type="button"
               onClick={openCreateServiceModal}
-              className="lg:hidden min-h-[40px] px-3 py-1.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors"
+              className="lg:hidden min-h-[40px] px-3 py-1.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>{lang === 'en' ? 'Add Service' : 'नई सेवा'}</span>
             </button>
           </div>
 
-          {/* Navigation Links */}
+          {/* Navigation Links — Responsive wrap on mobile, vertical stack on desktop */}
           <nav
             aria-label="Admin Sections"
-            className="flex lg:flex-col gap-1.5 overflow-x-auto pb-1 lg:pb-0"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-col gap-1"
           >
-            {sidebarItems.map((item) => {
+            {sidebarItems.map((item, idx) => {
               const isActive = activeSection === item.id;
               return (
                 <button
@@ -1362,22 +1356,26 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   type="button"
                   onClick={() => setActiveSection(item.id)}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`min-h-[42px] px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-between gap-2.5 whitespace-nowrap shrink-0 ${
+                  className={`min-h-[42px] px-3 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center justify-between gap-2 whitespace-nowrap border-l-2 ${
                     isActive
-                      ? 'bg-[#FF5C35] text-white shadow-sm'
-                      : 'text-[#D6D1C7] hover:bg-white/10 hover:text-white'
+                      ? 'bg-[#FF5C35] text-white border-l-[#FFB547]'
+                      : 'text-[#D6D1C7] border-l-transparent bg-[#18181F]/60 lg:bg-transparent hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  <span className="flex items-center gap-2.5">
-                    {item.icon}
-                    <span>{lang === 'en' ? item.labelEn : item.labelHi}</span>
+                  <span className="flex items-center gap-2 truncate">
+                    <span className="font-mono-tabular text-[10px] opacity-75">
+                      0{idx + 1}
+                    </span>
+                    <span className="truncate">
+                      {lang === 'en' ? item.labelEn : item.labelHi}
+                    </span>
                   </span>
                   {item.count !== undefined && (
                     <span
-                      className={`font-mono-tabular text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                      className={`font-mono-tabular text-[11px] font-bold px-1.5 py-0.5 shrink-0 ${
                         isActive
                           ? 'bg-black/25 text-white'
-                          : 'bg-[#18181F] text-[#D6D1C7]'
+                          : 'bg-[#18181F] text-[#FFB547]'
                       }`}
                     >
                       {item.count}
@@ -1388,11 +1386,11 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             })}
           </nav>
 
-          <div className="hidden lg:block pt-3.5 border-t border-white/10">
+          <div className="hidden lg:block pt-3.5 border-t border-[#272732]">
             <button
               type="button"
               onClick={openCreateServiceModal}
-              className="w-full min-h-[44px] px-4 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 whitespace-nowrap shadow-sm"
+              className="w-full min-h-[44px] px-4 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>
@@ -1411,10 +1409,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
             <div
               role="status"
               aria-live="polite"
-              className={`p-4 rounded-xl border text-sm flex items-center justify-between gap-4 ${
+              className={`p-4 border-l-4 text-sm flex items-center justify-between gap-4 ${
                 statusMessage.type === 'error'
-                  ? 'bg-red-50 border-red-200 text-red-900'
-                  : 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                  ? 'bg-red-50 border-red-600 text-red-900'
+                  : 'bg-emerald-50 border-emerald-700 text-emerald-950'
               }`}
             >
               <div className="flex items-center gap-2.5">
@@ -1440,32 +1438,42 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* ================================================================= */}
           {activeSection === 'dashboard' && (
             <div className="space-y-6">
-              {/* Top Context Bar */}
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+              {/* Top Executive Glassmorphic Context Bar */}
+              <div className="glass-bento-flagship text-[#F7F3EA] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-[#C83713]">
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#FF5C35]">
                     {lang === 'en'
-                      ? 'Admin Workspace / Executive Overview'
-                      : 'एडमिन कार्यक्षेत्र / अवलोकन'}
+                      ? '01. ADMIN WORKSPACE · EXECUTIVE OVERVIEW'
+                      : '01. एडमिन कार्यक्षेत्र · अवलोकन'}
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#101014] mt-1 tracking-tight font-display">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#F7F3EA] mt-1 tracking-tight font-display">
                     {lang === 'en'
                       ? 'Aditya Online Center — Operations Hub'
                       : 'आदित्य ऑनलाइन सेंटर — मुख्य डैशबोर्ड'}
                   </h2>
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
+                  {onOpenBackupModal && (
+                    <button
+                      type="button"
+                      onClick={onOpenBackupModal}
+                      className="min-h-[42px] px-3.5 py-2 bg-gradient-to-r from-emerald-600/30 to-blue-600/30 hover:from-emerald-600/50 hover:to-blue-600/50 border border-emerald-400/40 text-[#F7F3EA] text-xs font-mono-tabular font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm"
+                    >
+                      <CloudUpload className="w-4 h-4 text-emerald-400" />
+                      <span>{lang === 'en' ? 'Project ZIP & Drive' : 'प्रोजेक्ट ZIP व ड्राइव'}</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setActiveSection('services')}
-                    className="min-h-[42px] px-4 py-2 bg-[#F7F3EA] hover:bg-[#EFE9DC] border border-[#E6DFD3] text-[#101014] text-xs font-semibold rounded-xl transition-colors whitespace-nowrap"
+                    className="min-h-[42px] px-4 py-2 bg-white/[0.08] hover:bg-white/[0.14] border border-white/20 text-[#F7F3EA] text-xs font-mono-tabular font-semibold uppercase tracking-wider transition-colors whitespace-nowrap"
                   >
                     {lang === 'en' ? 'Manage Services' : 'सेवा प्रबंधन'}
                   </button>
                   <button
                     type="button"
                     onClick={openCreateServiceModal}
-                    className="min-h-[42px] px-4 py-2 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 whitespace-nowrap shadow-xs"
+                    className="min-h-[42px] px-4 py-2 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold transition-colors flex items-center gap-1.5 whitespace-nowrap"
                   >
                     <Plus className="w-4 h-4" />
                     <span>
@@ -1475,10 +1483,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 </div>
               </div>
 
-              {/* 7 Overview Metric Cards (Services + Orders + Verified Revenue) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-3.5">
-                <div className="bg-[#FFFDF9] border border-[#E6DFD3] border-t-2 border-t-[#101014] rounded-2xl p-4 shadow-xs">
-                  <div className="text-xs font-semibold text-[#787166]">
+              {/* 7 Overview Metric Ledger (Glassmorphic Cream Grid) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 border-t border-l border-[#101014] glass-cream-panel">
+                <div className="border-r border-b border-[#101014] p-4">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#787166]">
                     {lang === 'en' ? 'Total Services' : 'कुल सेवाएं'}
                   </div>
                   <div
@@ -1492,8 +1500,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-[#FFFDF9] border border-[#E6DFD3] border-t-2 border-t-emerald-600 rounded-2xl p-4 shadow-xs">
-                  <div className="text-xs font-semibold text-[#787166]">
+                <div className="border-r border-b border-[#101014] p-4">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#787166]">
                     {lang === 'en' ? 'Active Services' : 'सक्रिय सेवाएं'}
                   </div>
                   <div
@@ -1507,8 +1515,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-[#FFFDF9] border border-[#E6DFD3] border-t-2 border-t-[#787166] rounded-2xl p-4 shadow-xs">
-                  <div className="text-xs font-semibold text-[#787166]">
+                <div className="border-r border-b border-[#101014] p-4">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#787166]">
                     {lang === 'en' ? 'Inactive Services' : 'निष्क्रिय सेवाएं'}
                   </div>
                   <div
@@ -1522,8 +1530,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-[#FFFDF9] border border-[#E6DFD3] border-t-2 border-t-[#FF5C35] rounded-2xl p-4 shadow-xs">
-                  <div className="text-xs font-semibold text-[#787166]">
+                <div className="border-r border-b border-[#101014] p-4">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#787166]">
                     {lang === 'en' ? 'Total Orders' : 'कुल ऑर्डर'}
                   </div>
                   <div
@@ -1537,8 +1545,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-[#FFFDF9] border border-[#E6DFD3] border-t-2 border-t-[#FFB547] rounded-2xl p-4 shadow-xs">
-                  <div className="text-xs font-semibold text-[#787166]">
+                <div className="border-r border-b border-[#101014] p-4">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#787166]">
                     {lang === 'en' ? 'Pending Orders' : 'लंबित ऑर्डर'}
                   </div>
                   <div
@@ -1552,8 +1560,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-[#FFFDF9] border border-[#E6DFD3] border-t-2 border-t-[#C83713] rounded-2xl p-4 shadow-xs">
-                  <div className="text-xs font-semibold text-[#787166]">
+                <div className="border-r border-b border-[#101014] p-4">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#787166]">
                     {lang === 'en' ? 'Completed Orders' : 'पूर्ण ऑर्डर'}
                   </div>
                   <div
@@ -1567,8 +1575,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-[#FFFDF9] border border-[#E6DFD3] border-t-2 border-t-emerald-600 rounded-2xl p-4 col-span-2 sm:col-span-1 shadow-xs">
-                  <div className="text-xs font-semibold text-[#787166]">
+                <div className="border-r border-b border-[#101014] p-4 col-span-2 sm:col-span-2 xl:col-span-1">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#787166]">
                     {lang === 'en' ? 'Verified Revenue' : 'सत्यापित आय'}
                   </div>
                   <div
@@ -1586,10 +1594,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               {/* Recent Orders & Recent Activity Split */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 {/* Recent Orders Table */}
-                <div className="lg:col-span-7 bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 space-y-4">
-                  <div className="flex items-center justify-between gap-2">
+                <div className="lg:col-span-7 bg-[#FFFDF9] border border-[#101014] p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#DCD4C6]">
                     <div>
-                      <h3 className="text-base font-bold text-[#101014] font-display">
+                      <div className="text-[10px] font-mono-tabular uppercase tracking-[0.2em] text-[#C83713] font-bold">
+                        01.A — INCOMING DOSSIERS
+                      </div>
+                      <h3 className="text-base font-extrabold text-[#101014] font-display mt-0.5">
                         {lang === 'en' ? 'Recent Customer Orders' : 'हाल के ग्राहक ऑर्डर'}
                       </h3>
                       <p className="text-xs text-[#787166]">
@@ -1601,16 +1612,16 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setActiveSection('orders')}
-                      className="text-xs font-semibold text-[#C83713] hover:underline whitespace-nowrap"
+                      className="text-xs font-mono-tabular font-bold uppercase tracking-[0.14em] text-[#C83713] hover:text-[#101014] whitespace-nowrap"
                     >
                       {lang === 'en' ? 'View All Orders →' : 'सभी ऑर्डर देखें →'}
                     </button>
                   </div>
 
-                  <div className="overflow-x-auto border border-[#E6DFD3] rounded-xl">
+                  <div className="overflow-x-auto border border-[#DCD4C6]">
                     <table className="w-full text-left border-collapse text-xs">
                       <thead>
-                        <tr className="bg-[#F7F3EA] border-b border-[#E6DFD3] text-[#787166]">
+                        <tr className="bg-[#101014] text-[#F7F3EA] font-mono-tabular text-[10px] uppercase tracking-[0.14em]">
                           <th className="py-2.5 px-3 font-semibold">Order ID</th>
                           <th className="py-2.5 px-3 font-semibold">Customer & Service</th>
                           <th className="py-2.5 px-3 font-semibold text-right">Fee</th>
@@ -1618,55 +1629,68 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           <th className="py-2.5 px-3 font-semibold text-right">Action</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#E6DFD3]">
-                        {orders.slice(0, 5).map((ord) => (
-                          <tr key={ord.id} className="hover:bg-[#F7F3EA]/70">
-                            <td className="py-3 px-3 font-mono-tabular font-bold text-[#C83713] whitespace-nowrap">
-                              {ord.orderNumber}
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="font-semibold text-[#101014]">
-                                {ord.customerName}
-                              </div>
-                              <div className="text-[#4A463E] truncate max-w-[180px]">
-                                {ord.serviceTitleEn}
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-right font-mono-tabular font-semibold text-[#101014] whitespace-nowrap">
-                              ₹{ord.priceInr}
-                            </td>
-                            <td className="py-3 px-3">
-                              <div className="font-semibold text-[#101014]">
-                                {ord.status}
-                              </div>
-                              <div className="text-[#787166]">
-                                {ord.paymentStatus}
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 text-right whitespace-nowrap">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedOrderId(ord.id);
-                                  setActiveSection('orders');
-                                }}
-                                className="px-2.5 py-1 bg-[#F0EAE0] hover:bg-[#E6DFD3] text-[#101014] font-semibold rounded-lg"
-                              >
-                                {lang === 'en' ? 'Inspect' : 'जांचें'}
-                              </button>
+                      <tbody className="divide-y divide-[#DCD4C6]">
+                        {orders.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-8 px-4 text-center text-xs text-[#787166]">
+                              {lang === 'en'
+                                ? 'No orders in current queue. Submit an order or open Orders tab.'
+                                : 'वर्तमान कतार में कोई ऑर्डर नहीं है।'}
                             </td>
                           </tr>
-                        ))}
+                        ) : (
+                          orders.slice(0, 5).map((ord) => (
+                            <tr key={ord.id} className="hover:bg-[#F7F3EA]/70">
+                              <td className="py-3 px-3 font-mono-tabular font-bold text-[#C83713] whitespace-nowrap">
+                                {ord.orderNumber}
+                              </td>
+                              <td className="py-3 px-3">
+                                <div className="font-semibold text-[#101014]">
+                                  {ord.customerName}
+                                </div>
+                                <div className="text-[#4A463E] truncate max-w-[180px]">
+                                  {ord.serviceTitleEn}
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-right font-mono-tabular font-semibold text-[#101014] whitespace-nowrap">
+                                ₹{ord.priceInr}
+                              </td>
+                              <td className="py-3 px-3">
+                                <div className="font-semibold text-[#101014]">
+                                  {ord.status}
+                                </div>
+                                <div className="text-[#787166]">
+                                  {ord.paymentStatus}
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 text-right whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedOrderId(ord.id);
+                                    setActiveSection('orders');
+                                  }}
+                                  className="px-2.5 py-1 bg-[#101014] hover:bg-[#FF5C35] text-[#F7F3EA] hover:text-[#101014] font-mono-tabular text-[10px] font-bold uppercase tracking-[0.12em] transition-colors"
+                                >
+                                  {lang === 'en' ? 'Inspect' : 'जांचें'}
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
 
                 {/* Recent Activity Log */}
-                <div className="lg:col-span-5 bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 space-y-4">
-                  <div className="flex items-center justify-between gap-2">
+                <div className="lg:col-span-5 bg-[#FFFDF9] border border-[#101014] p-5 space-y-4">
+                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-[#DCD4C6]">
                     <div>
-                      <h3 className="text-base font-bold text-[#101014] font-display">
+                      <div className="text-[10px] font-mono-tabular uppercase tracking-[0.2em] text-[#C83713] font-bold">
+                        01.B — AUDIT TELEMETRY
+                      </div>
+                      <h3 className="text-base font-extrabold text-[#101014] font-display mt-0.5">
                         {lang === 'en' ? 'Recent Activity' : 'हाल की गतिविधि'}
                       </h3>
                       <p className="text-xs text-[#787166]">
@@ -1677,7 +1701,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     </div>
                   </div>
 
-                  <ul className="divide-y divide-[#E6DFD3] text-xs">
+                  <ul className="divide-y divide-[#DCD4C6] text-xs">
                     {recentActivityFeed.map((act) => (
                       <li key={act.id} className="py-3 first:pt-0 last:pb-0">
                         <div className="flex items-center justify-between gap-2">
@@ -1705,16 +1729,16 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {activeSection === 'services' && (
             <div className="space-y-6">
               {/* Section Header */}
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-[#101014] text-[#F7F3EA] border border-[#272732] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="text-xs font-medium text-[#787166]">
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#FF5C35]">
                     {lang === 'en'
-                      ? `Admin Workspace / Services (${serviceMetrics.activeServices} Active · ${serviceMetrics.inactiveServices} Inactive)`
-                      : `सेवा प्रबंधन (${serviceMetrics.activeServices} सक्रिय · ${serviceMetrics.inactiveServices} निष्क्रिय)`}
+                      ? `02. SERVICE CATALOG (${serviceMetrics.activeServices} ACTIVE · ${serviceMetrics.inactiveServices} INACTIVE)`
+                      : `02. सेवा प्रबंधन (${serviceMetrics.activeServices} सक्रिय · ${serviceMetrics.inactiveServices} निष्क्रिय)`}
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#101014] mt-0.5 font-display">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#F7F3EA] mt-1 font-display">
                     {lang === 'en'
-                      ? 'Service Catalog Management'
+                      ? 'Service Catalog & Pricing Management'
                       : 'डिजिटल सेवा और मूल्य प्रबंधन'}
                   </h2>
                 </div>
@@ -1722,7 +1746,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 <button
                   type="button"
                   onClick={openCreateServiceModal}
-                  className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
+                  className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>
@@ -1732,7 +1756,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               </div>
 
               {/* Search, Category Filter, Status Filter & Sorting Bar */}
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 space-y-4">
+              <div className="bg-[#FFFDF9] border border-[#101014] p-5 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                   {/* Search Input */}
                   <div className="md:col-span-5 relative">
@@ -1916,10 +1940,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     </div>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto border border-[#E6DFD3] rounded-xl">
+                  <div className="overflow-x-auto border border-[#101014]">
                     <table className="w-full text-left border-collapse text-xs sm:text-sm">
                       <thead>
-                        <tr className="bg-[#F7F3EA] border-b border-[#E6DFD3] text-xs text-[#787166]">
+                        <tr className="bg-[#101014] text-[#F7F3EA] font-mono-tabular text-[11px] uppercase tracking-wider">
                           <th className="py-3 px-4 font-semibold">
                             {lang === 'en' ? 'Service & ID' : 'सेवा और आईडी'}
                           </th>
@@ -1940,7 +1964,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#E6DFD3]">
+                      <tbody className="divide-y divide-[#DCD4C6]">
                         {paginatedServices.map((srv) => {
                           let customCount = 0;
                           try {
@@ -2146,19 +2170,19 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {activeSection === 'categories' && (
             <div className="space-y-6">
               {/* Header Banner */}
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-[#101014] text-[#F7F3EA] border border-[#272732] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="text-xs font-semibold text-[#FF5C35] uppercase tracking-wider">
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#FF5C35]">
                     {lang === 'en'
-                      ? 'Aditya Online Center · Category Architecture'
-                      : 'सेवा श्रेणी प्रबंधन'}
+                      ? '03. CATEGORY ARCHITECTURE'
+                      : '03. सेवा श्रेणी प्रबंधन'}
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#101014] mt-0.5 font-display">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#F7F3EA] mt-1 font-display">
                     {lang === 'en'
                       ? `Service Categories (${categoriesList.filter((c) => c.key !== 'all').length})`
                       : `सेवा श्रेणियाँ (${categoriesList.filter((c) => c.key !== 'all').length})`}
                   </h2>
-                  <p className="text-xs sm:text-sm text-[#5C5852] mt-1 max-w-2xl leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#D8D3C8] mt-1 max-w-2xl leading-relaxed">
                     {lang === 'en'
                       ? 'Add, edit, and organize digital service categories. Newly added categories immediately appear in customer catalog filters, home page highlights, and the service editor.'
                       : 'कस्टम सेवा श्रेणियां बनाएं और प्रबंधित करें। नयी श्रेणी जोड़ते ही ग्राहक पोर्टल, मुख्य पृष्ठ और सेवा फॉर्म में दिखने लगेगी।'}
@@ -2168,7 +2192,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 <button
                   type="button"
                   onClick={() => openCreateCategoryModal()}
-                  className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0 shadow-xs"
+                  className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>
@@ -2178,7 +2202,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               </div>
 
               {/* Search & Metrics Summary */}
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="bg-[#FFFDF9] border border-[#101014] p-4 sm:p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="relative flex-1 max-w-md">
                     <Search className="w-4 h-4 text-[#787166] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2361,19 +2385,19 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {activeSection === 'documents' && (
             <div className="space-y-6">
               {/* Header Banner */}
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-[#101014] text-[#F7F3EA] border border-[#272732] p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <div className="text-xs font-semibold text-[#FF5C35] uppercase tracking-wider">
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#FF5C35]">
                     {lang === 'en'
-                      ? 'Aditya Online Center · Centralized Asset Library'
-                      : 'केंद्रीय दस्तावेज़ रिपॉजिटरी'}
+                      ? '04. DOCUMENT CHECKLIST REPOSITORY'
+                      : '04. केंद्रीय दस्तावेज़ रिपॉजिटरी'}
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#101014] mt-0.5 font-display">
+                  <h2 className="text-xl sm:text-2xl font-extrabold text-[#F7F3EA] mt-1 font-display">
                     {lang === 'en'
                       ? `Reusable Document Library (${documentLibrary.length})`
                       : `पुनः प्रयोज्य दस्तावेज़ लाइब्रेरी (${documentLibrary.length})`}
                   </h2>
-                  <p className="text-xs sm:text-sm text-[#5C5852] mt-1 max-w-2xl leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#D8D3C8] mt-1 max-w-2xl leading-relaxed">
                     {lang === 'en'
                       ? 'Manage standard document requirements (Aadhaar, PAN, marksheets, certificates, photos) with stable IDs. Select these when configuring services instead of manually typing document names.'
                       : 'आधार, पैन, मार्कशीट, जाति/आय प्रमाण पत्र और फोटो की लाइब्रेरी। नई सेवा बनाते समय इन्हें सीधे चेकलिस्ट में चुनें।'}
@@ -2383,7 +2407,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 <button
                   type="button"
                   onClick={openCreateCustomDocModal}
-                  className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0 shadow-xs"
+                  className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs sm:text-sm font-bold transition-colors flex items-center justify-center gap-2 whitespace-nowrap self-start sm:self-auto shrink-0"
                 >
                   <Plus className="w-4 h-4" />
                   <span>
@@ -2395,7 +2419,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               </div>
 
               {/* Search, Filter Bar & Stats */}
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="bg-[#FFFDF9] border border-[#101014] p-4 sm:p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="relative flex-1 max-w-md">
                     <Search className="w-4 h-4 text-[#787166] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -2627,10 +2651,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* ================================================================= */}
           {activeSection === 'orders' && (
             <div className="space-y-6">
-              <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 space-y-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="bg-[#FFFDF9] border border-[#101014] p-5 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#DCD4C6]">
                   <div>
-                    <h2 className="text-xl font-bold text-[#101014] font-display">
+                    <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#C83713]">
+                      {lang === 'en'
+                        ? '05. ORDER DOSSIERS & DELIVERABLES'
+                        : '05. ग्राहक ऑर्डर और डिलीवरी'}
+                    </div>
+                    <h2 className="text-xl font-extrabold text-[#101014] font-display mt-0.5">
                       {lang === 'en'
                         ? 'Customer Orders & Document Delivery'
                         : 'ग्राहक ऑर्डर और दस्तावेज़ डिलीवरी'}
@@ -2657,7 +2686,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           ? 'Search Order ID, Customer Name, Phone, or UTR...'
                           : 'ऑर्डर आईडी, ग्राहक नाम, फोन या UTR खोजें...'
                       }
-                      className="w-full min-h-[42px] pl-10 pr-4 py-2 bg-[#F7F3EA] border border-[#D4CCBE] rounded-xl text-xs sm:text-sm text-[#101014]"
+                      className="w-full min-h-[42px] pl-10 pr-4 py-2 bg-[#F7F3EA] border border-[#101014] text-xs sm:text-sm text-[#101014]"
                     />
                   </div>
                 </div>
@@ -2692,10 +2721,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                 {/* Master-Detail Split */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
-                  <div className="lg:col-span-7 overflow-x-auto border border-[#E6DFD3] rounded-xl">
+                  <div className="lg:col-span-7 overflow-x-auto border border-[#101014]">
                     <table className="w-full text-left border-collapse text-xs sm:text-sm">
                       <thead>
-                        <tr className="bg-[#F7F3EA] border-b border-[#E6DFD3] text-xs text-[#787166]">
+                        <tr className="bg-[#101014] text-[#F7F3EA] font-mono-tabular text-[11px] uppercase tracking-wider">
                           <th className="py-3 px-3.5 font-semibold">Order ID</th>
                           <th className="py-3 px-3.5 font-semibold">
                             Customer & Service
@@ -2708,7 +2737,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#E6DFD3]">
+                      <tbody className="divide-y divide-[#DCD4C6]">
                         {filteredOrders.map((ord) => {
                           const isSelected = selectedOrder?.id === ord.id;
                           return (
@@ -3079,10 +3108,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* SECTION 4: CUSTOMERS DIRECTORY                                    */}
           {/* ================================================================= */}
           {activeSection === 'customers' && (
-            <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 sm:p-6 space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-[#FFFDF9] border border-[#101014] p-5 sm:p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DCD4C6]">
                 <div>
-                  <h2 className="text-xl font-bold text-[#101014] font-display">
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#C83713]">
+                    {lang === 'en'
+                      ? '06. CITIZEN DIRECTORY'
+                      : '06. ग्राहक सूची'}
+                  </div>
+                  <h2 className="text-xl font-extrabold text-[#101014] font-display mt-0.5">
                     {lang === 'en'
                       ? `Registered Customers & Order Directory (${customerSummaries.length})`
                       : `ग्राहक सूची और ऑर्डर विवरण (${customerSummaries.length})`}
@@ -3109,15 +3143,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         ? 'Search name, mobile, village...'
                         : 'नाम, मोबाइल या गाँव खोजें...'
                     }
-                    className="w-full min-h-[42px] pl-10 pr-4 py-2 bg-[#F7F3EA] border border-[#D4CCBE] rounded-xl text-xs sm:text-sm text-[#101014]"
+                    className="w-full min-h-[42px] pl-10 pr-4 py-2 bg-[#F7F3EA] border border-[#101014] text-xs sm:text-sm text-[#101014]"
                   />
                 </div>
               </div>
 
-              <div className="overflow-x-auto border border-[#E6DFD3] rounded-xl">
+              <div className="overflow-x-auto border border-[#101014]">
                 <table className="w-full text-left border-collapse text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-[#F7F3EA] border-b border-[#E6DFD3] text-xs text-[#787166]">
+                    <tr className="bg-[#101014] text-[#F7F3EA] font-mono-tabular text-[11px] uppercase tracking-wider">
                       <th className="py-3 px-4 font-semibold">Customer Name</th>
                       <th className="py-3 px-3.5 font-semibold">
                         Mobile & Email
@@ -3136,7 +3170,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E6DFD3]">
+                  <tbody className="divide-y divide-[#DCD4C6]">
                     {filteredCustomers.map((cust) => (
                       <tr
                         key={`${cust.customerId}-${cust.phone}`}
@@ -3192,10 +3226,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* SECTION 5: PAYMENTS & MANUAL UPI VERIFICATION LEDGER              */}
           {/* ================================================================= */}
           {activeSection === 'payments' && (
-            <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 sm:p-6 space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-[#FFFDF9] border border-[#101014] p-5 sm:p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DCD4C6]">
                 <div>
-                  <h2 className="text-xl font-bold text-[#101014] font-display">
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#C83713]">
+                    {lang === 'en'
+                      ? '07. UPI VERIFICATION LEDGER'
+                      : '07. मैनुअल UPI भुगतान सत्यापन'}
+                  </div>
+                  <h2 className="text-xl font-extrabold text-[#101014] font-display mt-0.5">
                     {lang === 'en'
                       ? 'Manual UPI Payment Verification & Ledger'
                       : 'मैनुअल UPI भुगतान सत्यापन और खाता'}
@@ -3231,10 +3270,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     key={pst}
                     type="button"
                     onClick={() => setPaymentStatusFilter(pst)}
-                    className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                    className={`min-h-[38px] px-3.5 py-1.5 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 border ${
                       paymentStatusFilter === pst
-                        ? 'bg-[#101014] text-white'
-                        : 'bg-[#F7F3EA] text-[#4A463E] hover:bg-[#EFE9DC]'
+                        ? 'bg-[#101014] text-white border-[#101014]'
+                        : 'bg-[#F7F3EA] text-[#4A463E] border-[#DCD4C6] hover:bg-[#EFE9DC]'
                     }`}
                   >
                     {pst}
@@ -3242,10 +3281,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 ))}
               </div>
 
-              <div className="overflow-x-auto border border-[#E6DFD3] rounded-xl">
+              <div className="overflow-x-auto border border-[#101014]">
                 <table className="w-full text-left border-collapse text-xs sm:text-sm">
                   <thead>
-                    <tr className="bg-[#F7F3EA] border-b border-[#E6DFD3] text-xs text-[#787166]">
+                    <tr className="bg-[#101014] text-[#F7F3EA] font-mono-tabular text-[11px] uppercase tracking-wider">
                       <th className="py-3 px-4 font-semibold">Order ID</th>
                       <th className="py-3 px-3.5 font-semibold">Customer</th>
                       <th className="py-3 px-3.5 font-semibold text-right">
@@ -3262,7 +3301,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E6DFD3]">
+                  <tbody className="divide-y divide-[#DCD4C6]">
                     {filteredPayments.map((ord) => (
                       <tr key={ord.id} className="hover:bg-[#F7F3EA]/70">
                         <td className="py-3.5 px-4 font-mono-tabular font-bold text-[#C83E1B] whitespace-nowrap">
@@ -3365,10 +3404,15 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* SECTION 6: CONTACT MESSAGES                                       */}
           {/* ================================================================= */}
           {activeSection === 'messages' && (
-            <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-5 sm:p-6 space-y-5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="bg-[#FFFDF9] border border-[#101014] p-5 sm:p-6 space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DCD4C6]">
                 <div>
-                  <h2 className="text-xl font-bold text-[#101014] font-display">
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#C83713]">
+                    {lang === 'en'
+                      ? '08. CITIZEN INQUIRIES'
+                      : '08. ग्राहक संपर्क संदेश'}
+                  </div>
+                  <h2 className="text-xl font-extrabold text-[#101014] font-display mt-0.5">
                     {lang === 'en'
                       ? `Customer Contact Form Inquiries (${contactMessages.length})`
                       : `ग्राहक संपर्क फॉर्म संदेश (${contactMessages.length})`}
@@ -3386,10 +3430,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       key={st}
                       type="button"
                       onClick={() => setMessageFilter(st)}
-                      className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                      className={`min-h-[38px] px-3.5 py-1.5 text-xs font-semibold border ${
                         messageFilter === st
-                          ? 'bg-[#101014] text-white'
-                          : 'bg-[#F7F3EA] text-[#4A463E] hover:bg-[#EFE9DC]'
+                          ? 'bg-[#101014] text-white border-[#101014]'
+                          : 'bg-[#F7F3EA] text-[#4A463E] border-[#DCD4C6] hover:bg-[#EFE9DC]'
                       }`}
                     >
                       {st}
@@ -3399,7 +3443,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               </div>
 
               {filteredMessages.length === 0 ? (
-                <div className="p-8 bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl text-center text-sm text-[#4A463E]">
+                <div className="p-8 bg-[#F7F3EA] border border-[#DCD4C6] text-center text-sm text-[#4A463E]">
                   {lang === 'en'
                     ? 'No contact messages match the selected filter.'
                     : 'कोई संपर्क संदेश उपलब्ध नहीं है।'}
@@ -3409,9 +3453,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   {filteredMessages.map((msg) => (
                     <article
                       key={msg.id}
-                      className="p-5 bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl space-y-3"
+                      className="p-5 bg-[#F7F3EA] border border-[#101014] space-y-3"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#E6DFD3]">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-[#DCD4C6]">
                         <div>
                           <div className="flex items-center gap-2">
                             <h3 className="text-base font-bold text-[#101014]">
@@ -3448,7 +3492,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 text: `Updated message ${msg.id} status to ${next}.`,
                               });
                             }}
-                            className="min-h-[38px] px-3 py-1.5 bg-[#FFFDF9] border border-[#D4CCBE] hover:bg-[#EFE9DC] rounded-lg text-xs font-semibold text-[#101014]"
+                            className="min-h-[38px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] hover:bg-[#EFE9DC] text-xs font-semibold text-[#101014]"
                           >
                             {msg.status === 'New'
                               ? lang === 'en'
@@ -3468,7 +3512,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 text: `Deleted message ${msg.id}.`,
                               });
                             }}
-                            className="min-h-[38px] px-3 py-1.5 bg-red-50 border border-red-200 hover:bg-red-100 rounded-lg text-xs font-semibold text-red-800 flex items-center gap-1"
+                            className="min-h-[38px] px-3 py-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-xs font-semibold text-red-800 flex items-center gap-1"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                             <span>{lang === 'en' ? 'Delete' : 'हटाएं'}</span>
@@ -3510,7 +3554,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                         </div>
                       </div>
 
-                      <p className="text-sm text-[#101014] bg-[#FFFDF9] border border-[#E6DFD3] rounded-lg p-3 leading-relaxed">
+                      <p className="text-sm text-[#101014] bg-[#FFFDF9] border border-[#DCD4C6] p-3 leading-relaxed">
                         {msg.message}
                       </p>
                     </article>
@@ -3524,9 +3568,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           {/* SECTION 7: UPI & CENTER SETTINGS                                  */}
           {/* ================================================================= */}
           {activeSection === 'settings' && (
-            <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-6 sm:p-8 space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-[#101014] font-display">
+            <div className="bg-[#FFFDF9] border border-[#101014] p-6 sm:p-8 space-y-6">
+              <div className="pb-4 border-b border-[#DCD4C6]">
+                <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#C83713]">
+                  {lang === 'en'
+                    ? '09. CENTER CONFIGURATION & UPI'
+                    : '09. केंद्र सेटिंग्स और आधिकारिक UPI'}
+                </div>
+                <h2 className="text-xl font-extrabold text-[#101014] font-display mt-0.5">
                   {lang === 'en'
                     ? 'Configure Official Business UPI & Center Settings'
                     : 'आधिकारिक व्यावसायिक UPI और केंद्र सेटिंग्स'}
@@ -3690,6 +3739,62 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   Save UPI & Center Configuration
                 </button>
               </form>
+
+              {/* Project Source & Google Drive Cloud Backup Card */}
+              <div className="mt-8 pt-6 border-t border-[#DCD4C6]">
+                <div className="p-5 bg-[#181822] text-[#F7F3EA] border border-white/10 rounded-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                    <div className="flex items-center gap-2.5">
+                      <FolderArchive className="w-5 h-5 text-[#FFB547]" />
+                      <div>
+                        <h3 className="font-bold text-sm text-[#F7F3EA]">
+                          {lang === 'en'
+                            ? 'Complete Project Backup & Google Drive Export'
+                            : 'प्रोजेक्ट बैकअप एवं गूगल ड्राइव एक्सपोर्ट'}
+                        </h3>
+                        <p className="text-xs text-[#A39E93]">
+                          {lang === 'en'
+                            ? 'Source archive: aditya-online-center.zip (~8.5 MB)'
+                            : 'सोर्स कोड आर्काइव: aditya-online-center.zip (~8.5 MB)'}
+                        </p>
+                      </div>
+                    </div>
+                    {onOpenBackupModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenBackupModal}
+                        className="px-4 py-2 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm rounded-lg"
+                      >
+                        <CloudUpload className="w-4 h-4" />
+                        <span>
+                          {lang === 'en' ? 'Open Backup Hub' : 'बैकअप हब खोलें'}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <a
+                      href="/downloads/aditya-online-center.zip"
+                      download="aditya-online-center.zip"
+                      className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg flex items-center justify-between text-[#F7F3EA] transition-colors"
+                    >
+                      <span className="flex items-center gap-2 font-medium">
+                        <Download className="w-4 h-4 text-[#38BDF8]" />
+                        <span>{lang === 'en' ? 'Direct ZIP Download' : 'डायरेक्ट ZIP डाउनलोड'}</span>
+                      </span>
+                      <span className="font-mono-tabular text-[11px] text-[#A39E93]">8.5 MB</span>
+                    </a>
+                    <div className="p-3 bg-white/5 border border-white/10 rounded-lg flex items-center gap-2 text-[#A39E93]">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="text-[11px]">
+                        {lang === 'en'
+                          ? 'Clean archive excluding node_modules'
+                          : 'बिना node_modules के सुरक्षित आर्काइव'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -3778,12 +3883,32 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
               </div>
 
               <div>
-                <div className="font-bold text-[#101014]">
-                  Required Documents:
+                <div className="font-bold text-[#101014] mb-2">
+                  Configured Document Checklist:
                 </div>
-                <p className="text-[#4A463E] mt-1">
-                  {inspectedService.requiredDocs}
-                </p>
+                <div className="flex flex-wrap gap-2">
+                  {getServiceDocumentRequirements(inspectedService, documentLibrary).map(
+                    (req) => (
+                      <span
+                        key={req.docId}
+                        className="inline-flex items-center gap-1.5 text-xs bg-[#F7F3EA] border border-[#E6DFD3] px-3 py-1.5 rounded-lg text-[#101014]"
+                      >
+                        <span className="font-semibold">
+                          {cleanDocumentLabel(req.labelEn)}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                            req.required
+                              ? 'bg-[#FFECE8] text-[#C83713]'
+                              : 'bg-[#E6DFD3] text-[#4A463E]'
+                          }`}
+                        >
+                          {req.required ? 'Required' : 'Optional'}
+                        </span>
+                      </span>
+                    )
+                  )}
+                </div>
               </div>
 
               {(inspectedService.instructionsEn ||
@@ -4192,229 +4317,42 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </button>
                 </div>
 
-                {/* Selected Requirements List */}
-                {formDocRequirements.length === 0 ? (
-                  <div className="p-6 bg-[#FFFDF9] border border-dashed border-[#DCD4C6] rounded-xl text-center space-y-2">
-                    <p className="text-xs font-semibold text-[#101014]">
-                      {lang === 'en'
-                        ? 'No documents configured yet for this service.'
-                        : 'इस सेवा के लिए अभी कोई दस्तावेज़ नहीं चुना गया है।'}
-                    </p>
-                    <p className="text-[11px] text-[#787166]">
-                      {lang === 'en'
-                        ? 'Search the Document Library below and click "+ Add to Service" to attach requirements.'
-                        : 'नीचे दस्तावेज़ लाइब्रेरी से खोजें और आवश्यकताएं जोड़ने के लिए "+ जोड़ें" पर क्लिक करें।'}
-                    </p>
-                  </div>
-                ) : (
-                  <ul className="space-y-3">
-                    {formDocRequirements.map((req, idx) => (
-                      <li
-                        key={req.docId}
-                        className="p-3.5 bg-[#FFFDF9] border border-[#E6DFD3] rounded-xl space-y-3 shadow-2xs"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            {/* Reorder Buttons */}
-                            <div className="flex items-center gap-0.5 shrink-0 bg-[#F7F3EA] border border-[#DCD4C6] rounded-lg p-0.5">
-                              <button
-                                type="button"
-                                aria-label={`Move ${req.labelEn} up`}
-                                disabled={idx === 0}
-                                onClick={() =>
-                                  handleReorderDocRequirement(idx, 'up')
-                                }
-                                className="p-1 text-[#5C5852] hover:text-[#101014] disabled:opacity-30 disabled:hover:text-[#5C5852]"
-                              >
-                                <ArrowUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label={`Move ${req.labelEn} down`}
-                                disabled={idx === formDocRequirements.length - 1}
-                                onClick={() =>
-                                  handleReorderDocRequirement(idx, 'down')
-                                }
-                                className="p-1 text-[#5C5852] hover:text-[#101014] disabled:opacity-30 disabled:hover:text-[#5C5852]"
-                              >
-                                <ArrowDown className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-
-                            <span className="font-mono-tabular text-xs font-bold text-[#787166]">
-                              #{String(idx + 1).padStart(2, '0')}
-                            </span>
-
-                            <div className="min-w-0">
-                              <div className="font-bold text-xs sm:text-sm text-[#101014] truncate">
-                                {req.labelEn}{' '}
-                                <span className="text-[#787166] font-normal">
-                                  ({req.labelHi})
-                                </span>
-                              </div>
-                              <div className="text-[11px] font-mono-tabular text-[#A09D96]">
-                                ID: {req.docId}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            {/* Required / Optional Toggle Button */}
-                            <button
-                              type="button"
-                              onClick={() => handleToggleDocRequired(req.docId)}
-                              className={`min-h-[32px] px-3 py-1 rounded-lg text-xs font-bold transition-colors ${
-                                req.required
-                                  ? 'bg-[#FFECE8] text-[#C83713] border border-[#FF5C35]/30'
-                                  : 'bg-[#F7F3EA] text-[#5C5852] border border-[#DCD4C6]'
-                              }`}
-                            >
-                              {req.required
-                                ? lang === 'en'
-                                  ? 'Required Document'
-                                  : 'अनिवार्य'
-                                : lang === 'en'
-                                ? 'Optional Document'
-                                : 'वैकल्पिक'}
-                            </button>
-
-                            {/* Remove from Service Button */}
-                            <button
-                              type="button"
-                              aria-label={`Remove ${req.labelEn} from service`}
-                              onClick={() =>
-                                handleRemoveDocRequirement(req.docId)
-                              }
-                              className="min-h-[32px] min-w-[32px] flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Format, Max Size & Instructions Controls */}
-                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2.5 border-t border-[#F0EAE0] text-xs">
-                          {/* Allowed Formats */}
-                          <div className="sm:col-span-5 space-y-1">
-                            <span className="block text-[11px] font-semibold text-[#5C5852]">
-                              {lang === 'en'
-                                ? 'Allowed Formats:'
-                                : 'अनुमत प्रारूप:'}
-                            </span>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {(['pdf', 'jpg', 'png', 'docx'] as AllowedDocFormat[]).map(
-                                (fmt) => {
-                                  const checked = req.allowedFormats.includes(fmt);
-                                  return (
-                                    <button
-                                      key={fmt}
-                                      type="button"
-                                      onClick={() =>
-                                        handleToggleFormatForRequirement(
-                                          req.docId,
-                                          fmt
-                                        )
-                                      }
-                                      className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase transition-colors ${
-                                        checked
-                                          ? 'bg-[#101014] text-[#F7F3EA]'
-                                          : 'bg-[#F7F3EA] text-[#A09D96] border border-[#E6DFD3]'
-                                      }`}
-                                    >
-                                      {fmt}
-                                    </button>
-                                  );
-                                }
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Max Size Selector */}
-                          <div className="sm:col-span-3 space-y-1">
-                            <label
-                              htmlFor={`size-select-${req.docId}`}
-                              className="block text-[11px] font-semibold text-[#5C5852]"
-                            >
-                              {lang === 'en' ? 'Max Size:' : 'अधिकतम साइज:'}
-                            </label>
-                            <select
-                              id={`size-select-${req.docId}`}
-                              value={req.maxSizeKb}
-                              onChange={(e) =>
-                                handleUpdateDocMaxSize(
-                                  req.docId,
-                                  Number(e.target.value)
-                                )
-                              }
-                              className="w-full min-h-[32px] px-2 py-1 bg-white border border-[#DCD4C6] rounded-lg text-xs font-mono-tabular text-[#101014]"
-                            >
-                              <option value={200}>200 KB</option>
-                              <option value={300}>300 KB</option>
-                              <option value={500}>500 KB</option>
-                              <option value={1024}>1 MB (1024 KB)</option>
-                              <option value={2048}>2 MB (2048 KB)</option>
-                              <option value={5120}>5 MB (5120 KB)</option>
-                            </select>
-                          </div>
-
-                          {/* Per-Document Instruction Note (EN) */}
-                          <div className="sm:col-span-4 space-y-1">
-                            <label
-                              htmlFor={`instr-en-${req.docId}`}
-                              className="block text-[11px] font-semibold text-[#5C5852]"
-                            >
-                              {lang === 'en'
-                                ? 'Upload Note for Customer:'
-                                : 'अपलोड निर्देश:'}
-                            </label>
-                            <input
-                              id={`instr-en-${req.docId}`}
-                              type="text"
-                              value={req.instructionsEn || ''}
-                              onChange={(e) =>
-                                handleUpdateDocInstructions(
-                                  req.docId,
-                                  'instructionsEn',
-                                  e.target.value
-                                )
-                              }
-                              placeholder={
-                                lang === 'en'
-                                  ? 'e.g. Front & Back in single file'
-                                  : 'जैसे: दोनों तरफ एक ही फाइल में'
-                              }
-                              className="w-full min-h-[32px] px-2 py-1 bg-white border border-[#DCD4C6] rounded-lg text-xs text-[#101014]"
-                            />
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {/* Searchable Document Library Quick-Picker to Add Requirements */}
-                <div className="pt-3 border-t border-[#DCD4C6] space-y-3">
+                {/* Searchable Predefined Document Library with Selectable Checkbox Cards */}
+                <div className="p-3.5 bg-[#FFFDF9] border border-[#E6DFD3] rounded-xl space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-[#101014]">
-                      {lang === 'en'
-                        ? '+ Add From Reusable Document Library:'
-                        : '+ दस्तावेज़ लाइब्रेरी से जोड़ें:'}
-                    </span>
-                    <input
-                      type="search"
-                      aria-label="Filter reusable document library"
-                      value={docBuilderSearch}
-                      onChange={(e) => setDocBuilderSearch(e.target.value)}
-                      placeholder={
-                        lang === 'en'
-                          ? 'Search library (Aadhaar, PAN, Photo, Marksheet)...'
-                          : 'लाइब्रेरी खोजें (आधार, पैन, फोटो, मार्कशीट)...'
-                      }
-                      className="w-full sm:w-64 min-h-[32px] px-2.5 py-1 bg-white border border-[#DCD4C6] rounded-lg text-xs text-[#101014]"
-                    />
+                    <div>
+                      <span className="text-xs font-bold text-[#101014] block">
+                        {lang === 'en'
+                          ? '1. Select Documents from Predefined Library (Check to Include):'
+                          : '1. पूर्व-निर्धारित लाइब्रेरी से दस्तावेज़ चुनें (चेकबॉक्स चुनें):'}
+                      </span>
+                      <span className="text-[11px] text-[#787166]">
+                        {lang === 'en'
+                          ? 'Check or uncheck any document card below to add or remove it from this service.'
+                          : 'इस सेवा में दस्तावेज़ जोड़ने या हटाने के लिए नीचे किसी भी कार्ड को चेक/अनचेक करें।'}
+                      </span>
+                    </div>
+                    <div className="relative w-full sm:w-64">
+                      <Search className="w-3.5 h-3.5 text-[#787166] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="search"
+                        aria-label="Filter reusable document library"
+                        value={docBuilderSearch}
+                        onChange={(e) => setDocBuilderSearch(e.target.value)}
+                        placeholder={
+                          lang === 'en'
+                            ? 'Search library (Aadhaar, PAN, Photo)...'
+                            : 'लाइब्रेरी खोजें (आधार, पैन, फोटो)...'
+                        }
+                        className="w-full min-h-[36px] pl-8 pr-2.5 py-1 bg-[#F7F3EA] border border-[#DCD4C6] rounded-lg text-xs text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                      />
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-52 overflow-y-auto p-1 bg-white rounded-xl border border-[#E6DFD3]">
+                  <div
+                    data-testid="admin-doc-library-picker"
+                    className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-56 overflow-y-auto p-1"
+                  >
                     {documentLibrary
                       .filter((lib) => {
                         if (!docBuilderSearch.trim()) return true;
@@ -4431,41 +4369,271 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           (r) => r.docId === lib.id
                         );
                         return (
-                          <div
+                          <label
                             key={lib.id}
-                            className={`p-2.5 rounded-lg border text-xs flex items-center justify-between gap-2 transition-colors ${
+                            data-testid={`lib-checkbox-card-${lib.id}`}
+                            className={`p-2.5 rounded-xl border text-xs flex items-start gap-2.5 cursor-pointer transition-all select-none ${
                               isAdded
-                                ? 'bg-emerald-50/60 border-emerald-200'
-                                : 'bg-[#FFFDF9] border-[#E6DFD3] hover:border-[#FF5C35]'
+                                ? 'bg-[#FFF3EE] border-[#FF5C35] shadow-2xs'
+                                : 'bg-[#F7F3EA]/70 border-[#E6DFD3] hover:border-[#101014]/40'
                             }`}
                           >
-                            <div className="min-w-0">
-                              <div className="font-semibold text-[#101014] truncate">
-                                {lib.labelEn}
+                            <input
+                              type="checkbox"
+                              checked={isAdded}
+                              onChange={() => {
+                                if (isAdded) {
+                                  handleRemoveDocRequirement(lib.id);
+                                } else {
+                                  handleAddLibraryItemToService(lib);
+                                }
+                              }}
+                              className="mt-0.5 w-4 h-4 rounded border-[#D4CCBE] accent-[#FF5C35] shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="font-bold text-[#101014] truncate">
+                                {cleanDocumentLabel(lib.labelEn)}
                               </div>
-                              <div className="text-[11px] text-[#787166] truncate">
-                                {lib.labelHi}
+                              <div className="text-[11px] text-[#5C5852] truncate">
+                                {cleanDocumentLabel(lib.labelHi)}
+                              </div>
+                              <div className="text-[10px] font-mono-tabular text-[#787166] mt-0.5">
+                                {lib.acceptedFormats.map((f) => f.toUpperCase()).join('/')} · {Math.min(500, lib.maxSizeKb)}KB
                               </div>
                             </div>
-
-                            {isAdded ? (
-                              <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded flex items-center gap-1 shrink-0">
-                                <Check className="w-3 h-3" />
-                                <span>{lang === 'en' ? 'Added' : 'शामिल'}</span>
-                              </span>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => handleAddLibraryItemToService(lib)}
-                                className="min-h-[28px] px-2.5 py-1 bg-[#101014] hover:bg-[#FF5C35] text-white text-[11px] font-bold rounded-lg transition-colors whitespace-nowrap shrink-0"
-                              >
-                                + {lang === 'en' ? 'Add' : 'जोड़ें'}
-                              </button>
-                            )}
-                          </div>
+                          </label>
                         );
                       })}
                   </div>
+                </div>
+
+                {/* Selected Requirements Configuration List */}
+                <div className="space-y-2.5">
+                  <div className="text-xs font-bold text-[#101014]">
+                    {lang === 'en'
+                      ? `2. Configure Selected Service Documents (${formDocRequirements.length}):`
+                      : `2. चयनित दस्तावेज़ों की सेटिंग्स (${formDocRequirements.length}):`}
+                  </div>
+
+                  {formDocRequirements.length === 0 ? (
+                    <div className="p-6 bg-[#FFFDF9] border border-dashed border-[#DCD4C6] rounded-xl text-center space-y-2">
+                      <p className="text-xs font-semibold text-[#101014]">
+                        {lang === 'en'
+                          ? 'No documents selected yet for this service.'
+                          : 'इस सेवा के लिए अभी कोई दस्तावेज़ नहीं चुना गया है।'}
+                      </p>
+                      <p className="text-[11px] text-[#787166]">
+                        {lang === 'en'
+                          ? 'Check any document from the library above or click "Create Custom Document".'
+                          : 'ऊपर लाइब्रेरी से किसी भी दस्तावेज़ को चेक करें या नया दस्तावेज़ बनाएं।'}
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-3" data-testid="admin-selected-docs-list">
+                      {formDocRequirements.map((req, idx) => {
+                        const cleanEn = cleanDocumentLabel(req.labelEn);
+                        const cleanHi = cleanDocumentLabel(req.labelHi || req.labelEn);
+                        return (
+                          <li
+                            key={req.docId}
+                            data-testid={`selected-doc-row-${req.docId}`}
+                            className="p-3.5 bg-[#FFFDF9] border border-[#E6DFD3] rounded-xl space-y-3 shadow-2xs"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                {/* Reorder Buttons */}
+                                <div className="flex items-center gap-0.5 shrink-0 bg-[#F7F3EA] border border-[#DCD4C6] rounded-lg p-0.5">
+                                  <button
+                                    type="button"
+                                    aria-label={`Move ${cleanEn} up`}
+                                    disabled={idx === 0}
+                                    onClick={() =>
+                                      handleReorderDocRequirement(idx, 'up')
+                                    }
+                                    className="p-1 text-[#5C5852] hover:text-[#101014] disabled:opacity-30 disabled:hover:text-[#5C5852]"
+                                  >
+                                    <ArrowUp className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label={`Move ${cleanEn} down`}
+                                    disabled={idx === formDocRequirements.length - 1}
+                                    onClick={() =>
+                                      handleReorderDocRequirement(idx, 'down')
+                                    }
+                                    className="p-1 text-[#5C5852] hover:text-[#101014] disabled:opacity-30 disabled:hover:text-[#5C5852]"
+                                  >
+                                    <ArrowDown className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+
+                                <span className="font-mono-tabular text-xs font-bold text-[#787166]">
+                                  #{String(idx + 1).padStart(2, '0')}
+                                </span>
+
+                                <div className="min-w-0">
+                                  <div className="font-bold text-xs sm:text-sm text-[#101014] truncate">
+                                    {cleanEn}
+                                    {cleanHi && cleanHi !== cleanEn && (
+                                      <span className="text-[#787166] font-normal">
+                                        {' '}({cleanHi})
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] font-mono-tabular text-[#A09D96]">
+                                    ID: {req.docId}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 shrink-0">
+                                {/* Segmented Required / Optional Switch */}
+                                <div
+                                  role="group"
+                                  aria-label={`Status for ${cleanEn}`}
+                                  className="inline-flex rounded-lg bg-[#F7F3EA] p-0.5 border border-[#DCD4C6]"
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (!req.required) handleToggleDocRequired(req.docId);
+                                    }}
+                                    className={`min-h-[30px] px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
+                                      req.required
+                                        ? 'bg-[#FF5C35] text-white shadow-2xs'
+                                        : 'text-[#5C5852] hover:text-[#101014]'
+                                    }`}
+                                  >
+                                    {lang === 'en' ? 'Required' : 'अनिवार्य'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (req.required) handleToggleDocRequired(req.docId);
+                                    }}
+                                    className={`min-h-[30px] px-2.5 py-1 rounded-md text-xs font-bold transition-colors ${
+                                      !req.required
+                                        ? 'bg-[#101014] text-[#F7F3EA] shadow-2xs'
+                                        : 'text-[#5C5852] hover:text-[#101014]'
+                                    }`}
+                                  >
+                                    {lang === 'en' ? 'Optional' : 'वैकल्पिक'}
+                                  </button>
+                                </div>
+
+                                {/* Remove from Service Button */}
+                                <button
+                                  type="button"
+                                  aria-label={`Remove ${cleanEn} from service`}
+                                  onClick={() =>
+                                    handleRemoveDocRequirement(req.docId)
+                                  }
+                                  className="min-h-[32px] min-w-[32px] flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Format, Max Size & Instructions Controls */}
+                            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-2.5 border-t border-[#F0EAE0] text-xs">
+                              {/* Allowed Formats */}
+                              <div className="sm:col-span-5 space-y-1">
+                                <span className="block text-[11px] font-semibold text-[#5C5852]">
+                                  {lang === 'en'
+                                    ? 'Allowed Formats:'
+                                    : 'अनुमत प्रारूप:'}
+                                </span>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {(['pdf', 'jpg', 'png', 'docx'] as AllowedDocFormat[]).map(
+                                    (fmt) => {
+                                      const checked = req.allowedFormats.includes(fmt);
+                                      return (
+                                        <button
+                                          key={fmt}
+                                          type="button"
+                                          onClick={() =>
+                                            handleToggleFormatForRequirement(
+                                              req.docId,
+                                              fmt
+                                            )
+                                          }
+                                          className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase transition-colors ${
+                                            checked
+                                              ? 'bg-[#101014] text-[#F7F3EA]'
+                                              : 'bg-[#F7F3EA] text-[#A09D96] border border-[#E6DFD3]'
+                                          }`}
+                                        >
+                                          {fmt}
+                                        </button>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Max Size Selector (capped at 500 KB per Firestore security rules) */}
+                              <div className="sm:col-span-3 space-y-1">
+                                <label
+                                  htmlFor={`size-select-${req.docId}`}
+                                  className="block text-[11px] font-semibold text-[#5C5852]"
+                                >
+                                  {lang === 'en' ? 'Max Size:' : 'अधिकतम साइज:'}
+                                </label>
+                                <select
+                                  id={`size-select-${req.docId}`}
+                                  value={Math.min(500, req.maxSizeKb)}
+                                  onChange={(e) =>
+                                    handleUpdateDocMaxSize(
+                                      req.docId,
+                                      Number(e.target.value)
+                                    )
+                                  }
+                                  className="w-full min-h-[32px] px-2 py-1 bg-white border border-[#DCD4C6] rounded-lg text-xs font-mono-tabular text-[#101014]"
+                                >
+                                  <option value={100}>100 KB</option>
+                                  <option value={200}>200 KB</option>
+                                  <option value={300}>300 KB</option>
+                                  <option value={400}>400 KB</option>
+                                  <option value={500}>500 KB (Max)</option>
+                                </select>
+                              </div>
+
+                              {/* Per-Document Instruction Note (EN) */}
+                              <div className="sm:col-span-4 space-y-1">
+                                <label
+                                  htmlFor={`instr-en-${req.docId}`}
+                                  className="block text-[11px] font-semibold text-[#5C5852]"
+                                >
+                                  {lang === 'en'
+                                    ? 'Upload Note for Customer:'
+                                    : 'अपलोड निर्देश:'}
+                                </label>
+                                <input
+                                  id={`instr-en-${req.docId}`}
+                                  type="text"
+                                  value={req.instructionsEn || ''}
+                                  onChange={(e) =>
+                                    handleUpdateDocInstructions(
+                                      req.docId,
+                                      'instructionsEn',
+                                      e.target.value
+                                    )
+                                  }
+                                  placeholder={
+                                    lang === 'en'
+                                      ? 'e.g. Front & Back in single file'
+                                      : 'जैसे: दोनों तरफ एक ही फाइल में'
+                                  }
+                                  className="w-full min-h-[32px] px-2 py-1 bg-white border border-[#DCD4C6] rounded-lg text-xs text-[#101014]"
+                                />
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
                 </div>
               </div>
 
@@ -4840,18 +5008,17 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                   </label>
                   <select
                     id="custom-doc-max-size"
-                    value={customDocMaxSizeKb}
+                    value={Math.min(500, customDocMaxSizeKb)}
                     onChange={(e) =>
                       setCustomDocMaxSizeKb(Number(e.target.value))
                     }
                     className="w-full min-h-[42px] px-3 py-2 bg-[#F7F3EA] border border-[#D4CCBE] rounded-xl text-xs sm:text-sm text-[#101014] font-mono-tabular"
                   >
+                    <option value={100}>100 KB</option>
                     <option value={200}>200 KB</option>
                     <option value={300}>300 KB</option>
-                    <option value={500}>500 KB (Recommended)</option>
-                    <option value={1024}>1 MB (1024 KB)</option>
-                    <option value={2048}>2 MB (2048 KB)</option>
-                    <option value={5120}>5 MB (5120 KB)</option>
+                    <option value={400}>400 KB</option>
+                    <option value={500}>500 KB (Recommended Max)</option>
                   </select>
                 </div>
               </div>

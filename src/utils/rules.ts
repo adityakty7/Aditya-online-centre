@@ -961,6 +961,20 @@ export function canAddDocumentLibraryItem(
   return { valid: true, slugId };
 }
 
+export function cleanDocumentLabel(rawLabel: string): string {
+  let str = String(rawLabel ?? '').trim();
+  if (!str) return '';
+  if (str.includes('||')) {
+    str = str.split('||')[0].trim();
+  }
+  const suffixPattern =
+    /\s*\((?:optional|required|mandatory|opt|req|वैकल्पिक|अनिवार्य|आवश्यक)\)\s*$/i;
+  while (suffixPattern.test(str)) {
+    str = str.replace(suffixPattern, '').trim();
+  }
+  return sanitizeString(str, 120);
+}
+
 export function parseServiceDocumentRequirements(
   documentRequirementsJson?: string,
   requiredDocsEn: string[] = [],
@@ -986,7 +1000,14 @@ export function parseServiceDocumentRequirements(
         const seen = new Set<string>();
         for (const item of parsed) {
           if (!item || typeof item !== 'object') continue;
-          const docId = sanitizeString(item.docId || generateDocumentTypeId(item.labelEn || 'doc'), 128);
+          const cleanedEn = cleanDocumentLabel(item.labelEn || item.docId || 'Document');
+          const cleanedHi = cleanDocumentLabel(
+            item.labelHi || item.labelEn || item.docId || 'दस्तावेज़'
+          );
+          const docId = sanitizeString(
+            item.docId || generateDocumentTypeId(cleanedEn || 'doc'),
+            128
+          );
           if (!docId || seen.has(docId)) continue;
           seen.add(docId);
           const rawFormats = Array.isArray(item.allowedFormats)
@@ -998,13 +1019,17 @@ export function parseServiceDocumentRequirements(
             (f: string): f is AllowedDocFormat =>
               f === 'pdf' || f === 'jpg' || f === 'png' || f === 'docx'
           );
-          const maxSizeKb = Math.min(500, Math.max(50, Number(item.maxSizeKb) || 500));
+          const maxSizeKb = Math.min(
+            500,
+            Math.max(50, Number(item.maxSizeKb) || 500)
+          );
           result.push({
             docId,
-            labelEn: sanitizeString(item.labelEn || docId, 120),
-            labelHi: sanitizeString(item.labelHi || item.labelEn || docId, 120),
+            labelEn: cleanedEn || docId,
+            labelHi: cleanedHi || cleanedEn || docId,
             required: item.required !== false,
-            allowedFormats: allowedFormats.length > 0 ? allowedFormats : ['pdf', 'jpg', 'png'],
+            allowedFormats:
+              allowedFormats.length > 0 ? allowedFormats : ['pdf', 'jpg', 'png'],
             maxSizeKb,
             instructionsEn: sanitizeString(item.instructionsEn || '', 300),
             instructionsHi: sanitizeString(item.instructionsHi || '', 300),
@@ -1020,15 +1045,39 @@ export function parseServiceDocumentRequirements(
     }
   }
 
+  // Normalize legacy requiredDocs arrays if a pipe separator '||' was embedded
+  let normalizedEnList = [...requiredDocsEn];
+  let normalizedHiList = [...requiredDocsHi];
+  const joinedEn = normalizedEnList.join(', ');
+  if (joinedEn.includes('||')) {
+    const [enPart, hiPart] = joinedEn.split('||');
+    normalizedEnList = (enPart || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (normalizedHiList.length === 0 && hiPart) {
+      normalizedHiList = hiPart
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+  }
+
   // Fallback for legacy services without documentRequirementsJson
   const fallbackResult: StructuredDocRequirement[] = [];
   const seenIds = new Set<string>();
-  for (let i = 0; i < requiredDocsEn.length; i++) {
-    const rawEn = sanitizeString(requiredDocsEn[i] || '', 120);
+  for (let i = 0; i < normalizedEnList.length; i++) {
+    const rawEn = sanitizeString(normalizedEnList[i] || '', 120);
     if (!rawEn) continue;
-    const rawHi = sanitizeString(requiredDocsHi[i] || rawEn, 120);
-    const isOptionalHint = /\boptional\b/i.test(rawEn) || /वैकल्पिक/.test(rawHi);
-    const cleanForMatch = rawEn
+    const rawHi = sanitizeString(normalizedHiList[i] || rawEn, 120);
+    const hasLegacyOptionalSuffix =
+      /\(\s*(?:optional|opt|वैकल्पिक)\s*\)\s*$/i.test(rawEn) ||
+      /\(\s*(?:optional|opt|वैकल्पिक)\s*\)\s*$/i.test(rawHi);
+    const cleanedEn = cleanDocumentLabel(rawEn);
+    const cleanedHi = cleanDocumentLabel(rawHi);
+    if (!cleanedEn) continue;
+
+    const cleanForMatch = cleanedEn
       .replace(/\(.*?\)/g, '')
       .trim()
       .toLowerCase();
@@ -1042,28 +1091,33 @@ export function parseServiceDocumentRequirements(
       );
     });
 
-    const docId = matchedLib ? matchedLib.id : generateDocumentTypeId(rawEn);
+    const docId = matchedLib ? matchedLib.id : generateDocumentTypeId(cleanedEn);
     const uniqueDocId = seenIds.has(docId) ? `${docId}-${i + 1}` : docId;
     seenIds.add(uniqueDocId);
 
     const libFormats = Array.isArray(matchedLib?.defaultFormats)
       ? matchedLib.defaultFormats
-      : Array.isArray((matchedLib as unknown as { acceptedFormats?: AllowedDocFormat[] })?.acceptedFormats)
-      ? (matchedLib as unknown as { acceptedFormats?: AllowedDocFormat[] }).acceptedFormats!
+      : Array.isArray(
+          (matchedLib as unknown as { acceptedFormats?: AllowedDocFormat[] })
+            ?.acceptedFormats
+        )
+      ? (matchedLib as unknown as { acceptedFormats?: AllowedDocFormat[] })
+          .acceptedFormats!
       : (['pdf', 'jpg', 'png'] as AllowedDocFormat[]);
 
     const libMaxSize =
       typeof matchedLib?.defaultMaxSizeKb === 'number'
         ? matchedLib.defaultMaxSizeKb
-        : typeof (matchedLib as unknown as { maxSizeKb?: number })?.maxSizeKb === 'number'
+        : typeof (matchedLib as unknown as { maxSizeKb?: number })?.maxSizeKb ===
+          'number'
         ? (matchedLib as unknown as { maxSizeKb?: number }).maxSizeKb!
         : 500;
 
     fallbackResult.push({
       docId: uniqueDocId,
-      labelEn: matchedLib ? matchedLib.labelEn : rawEn,
-      labelHi: matchedLib ? matchedLib.labelHi : rawHi,
-      required: !isOptionalHint,
+      labelEn: matchedLib ? cleanDocumentLabel(matchedLib.labelEn) : cleanedEn,
+      labelHi: matchedLib ? cleanDocumentLabel(matchedLib.labelHi) : cleanedHi,
+      required: !hasLegacyOptionalSuffix,
       allowedFormats: [...libFormats],
       maxSizeKb: libMaxSize,
       instructionsEn:
@@ -1077,9 +1131,57 @@ export function parseServiceDocumentRequirements(
   return fallbackResult;
 }
 
+export function getServiceDocumentRequirements(
+  service: {
+    documentRequirementsJson?: string;
+    requiredDocs?: string;
+    requiredDocsEn?: string[];
+    requiredDocsHi?: string[];
+  },
+  libraryItems: Array<{
+    id: string;
+    labelEn: string;
+    labelHi: string;
+    acceptedFormats?: AllowedDocFormat[];
+    defaultFormats?: AllowedDocFormat[];
+    maxSizeKb?: number;
+    defaultMaxSizeKb?: number;
+    defaultInstructionsEn?: string;
+    defaultInstructionsHi?: string;
+    allowMultiple?: boolean;
+  }> = []
+): StructuredDocRequirement[] {
+  const rawPipe = String(service.requiredDocs || '');
+  let fallbackEn = service.requiredDocsEn || [];
+  let fallbackHi = service.requiredDocsHi || [];
+  if (fallbackEn.length === 0 && rawPipe) {
+    const [enPart, hiPart] = rawPipe.split('||');
+    fallbackEn = (enPart || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (fallbackHi.length === 0 && hiPart) {
+      fallbackHi = hiPart
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+  }
+  return parseServiceDocumentRequirements(
+    service.documentRequirementsJson,
+    fallbackEn,
+    fallbackHi,
+    libraryItems
+  );
+}
+
 export function syncLegacyRequiredDocsFromRequirements(
   reqs: Array<{ labelEn: string; labelHi: string; required: boolean }>
-): { requiredDocsEn: string[]; requiredDocsHi: string[]; requiredDocsPipe: string } {
+): {
+  requiredDocsEn: string[];
+  requiredDocsHi: string[];
+  requiredDocsPipe: string;
+} {
   if (!Array.isArray(reqs) || reqs.length === 0) {
     return {
       requiredDocsEn: ['Supporting Document'],
@@ -1087,12 +1189,14 @@ export function syncLegacyRequiredDocsFromRequirements(
       requiredDocsPipe: 'Supporting Document||सहायक दस्तावेज़',
     };
   }
-  const requiredDocsEn = reqs.map((r) =>
-    r.required ? r.labelEn.trim() : `${r.labelEn.trim()} (Optional)`
-  );
-  const requiredDocsHi = reqs.map((r) =>
-    r.required ? r.labelHi.trim() : `${r.labelHi.trim()} (वैकल्पिक)`
-  );
+  const requiredDocsEn = reqs.map((r) => {
+    const baseEn = cleanDocumentLabel(r.labelEn) || 'Document';
+    return r.required ? baseEn : `${baseEn} (Optional)`;
+  });
+  const requiredDocsHi = reqs.map((r) => {
+    const baseHi = cleanDocumentLabel(r.labelHi || r.labelEn) || 'दस्तावेज़';
+    return r.required ? baseHi : `${baseHi} (वैकल्पिक)`;
+  });
   const enStr = requiredDocsEn.join(', ').slice(0, 240);
   const hiStr = requiredDocsHi.join(', ').slice(0, 240);
   return {
@@ -1106,19 +1210,23 @@ export function serializeServiceDocumentRequirements(
   reqs: StructuredDocRequirement[]
 ): string {
   if (!Array.isArray(reqs)) return '[]';
-  const clean = reqs.map((r) => ({
-    docId: String(r.docId || '').trim(),
-    labelEn: String(r.labelEn || '').trim(),
-    labelHi: String(r.labelHi || r.labelEn || '').trim(),
-    required: Boolean(r.required),
-    allowedFormats: Array.isArray(r.allowedFormats)
-      ? r.allowedFormats
-      : (['pdf', 'jpg', 'png'] as AllowedDocFormat[]),
-    maxSizeKb: Number(r.maxSizeKb) || 500,
-    instructionsEn: String(r.instructionsEn || '').trim(),
-    instructionsHi: String(r.instructionsHi || '').trim(),
-    allowMultiple: Boolean(r.allowMultiple),
-  }));
+  const clean = reqs.map((r) => {
+    const cleanedEn = cleanDocumentLabel(r.labelEn);
+    const cleanedHi = cleanDocumentLabel(r.labelHi || r.labelEn);
+    return {
+      docId: String(r.docId || '').trim(),
+      labelEn: cleanedEn,
+      labelHi: cleanedHi || cleanedEn,
+      required: Boolean(r.required),
+      allowedFormats: Array.isArray(r.allowedFormats)
+        ? r.allowedFormats
+        : (['pdf', 'jpg', 'png'] as AllowedDocFormat[]),
+      maxSizeKb: Math.min(500, Math.max(50, Number(r.maxSizeKb) || 500)),
+      instructionsEn: String(r.instructionsEn || '').trim(),
+      instructionsHi: String(r.instructionsHi || '').trim(),
+      allowMultiple: Boolean(r.allowMultiple),
+    };
+  });
   return JSON.stringify(clean);
 }
 
@@ -1254,4 +1362,161 @@ export function validateServiceDocumentChecklistUploads(
 
 export { FORMAT_TO_MIME, MIME_TO_FORMAT };
 
+export type SupportedVisualTheme = 'obsidian' | 'royal';
+
+export function resolveVisualTheme(raw: unknown): SupportedVisualTheme {
+  if (raw === 'royal') return 'royal';
+  return 'obsidian';
+}
+
+export function toggleVisualTheme(current: SupportedVisualTheme): SupportedVisualTheme {
+  return current === 'obsidian' ? 'royal' : 'obsidian';
+}
+
+export const BEFORE_AFTER_SHOWCASE_TABS = [
+  {
+    key: 'resume' as const,
+    serviceId: 'srv-modern-resume',
+    labelEn: 'Job Resume (ATS-Ready)',
+    labelHi: 'जॉब रिज़्यूमे (ATS-रेडी)',
+    badgeEn: 'TAB 01 · CAREER & GULF / PRIVATE JOBS',
+    badgeHi: 'टैब 01 · प्राइवेट जॉब और प्लेसमेंट सीवी',
+    beforeTitleEn: 'Raw Customer Input (Handwritten / Phone Notes)',
+    beforeTitleHi: 'ग्राहक द्वारा भेजा गया साधारण कागज़ / नोट्स',
+    afterTitleEn: 'Aditya Online Center Studio Output (ATS PDF)',
+    afterTitleHi: 'आदित्य ऑनलाइन सेंटर द्वारा तैयार प्रोफेशनल PDF',
+  },
+  {
+    key: 'biodata' as const,
+    serviceId: 'srv-marriage-biodata',
+    labelEn: 'Marriage Biodata',
+    labelHi: 'शादी बायोडाटा (विवाह विवरण)',
+    badgeEn: 'TAB 02 · TRADITIONAL & MODERN MATRIMONIAL PDF',
+    badgeHi: 'टैब 02 · पारंपरिक और आधुनिक विवाह बायोडाटा',
+    beforeTitleEn: 'Raw Family Details on Plain Paper Photo',
+    beforeTitleHi: 'सादे कागज़ पर लिखा पारिवारिक विवरण',
+    afterTitleEn: 'Framed High-Resolution Matrimonial Biodata PDF',
+    afterTitleHi: 'सुंदर बॉर्डर और सुस्पष्ट फ़ॉन्ट में तैयार बायोडाटा PDF',
+  },
+] as const;
+
+export const MOBILE_DOCK_SHORTCUTS = [
+  {
+    id: 'home' as const,
+    labelEn: 'Home',
+    labelHi: 'होम',
+    targetView: 'home' as const,
+  },
+  {
+    id: 'services' as const,
+    labelEn: 'Services',
+    labelHi: 'सेवाएं',
+    targetView: 'services' as const,
+  },
+  {
+    id: 'track-order' as const,
+    labelEn: 'Track Order',
+    labelHi: 'ट्रैक',
+    targetView: 'track-order' as const,
+  },
+  {
+    id: 'account' as const,
+    labelEn: 'Account',
+    labelHi: 'खाता',
+    targetView: 'dashboard' as const,
+  },
+  {
+    id: 'whatsapp' as const,
+    labelEn: 'WhatsApp',
+    labelHi: 'व्हाट्सएप',
+    targetView: null,
+  },
+] as const;
+
+export interface BundleEstimateResult {
+  serviceCount: number;
+  totalFeeInr: number;
+  uniqueRequiredDocsEn: string[];
+  uniqueRequiredDocsHi: string[];
+  estimatedTurnaroundEn: string;
+  estimatedTurnaroundHi: string;
+}
+
+export function calculateBundleEstimate(
+  selectedIds: string[],
+  services: Array<{
+    id: string;
+    priceInr: number;
+    documentRequirementsJson?: string;
+    requiredDocs?: string;
+    requiredDocsEn?: string[];
+    requiredDocsHi?: string[];
+  }>
+): BundleEstimateResult {
+  const idSet = new Set(selectedIds || []);
+  const chosen = (services || []).filter((s) => idSet.has(s.id));
+  if (chosen.length === 0) {
+    return {
+      serviceCount: 0,
+      totalFeeInr: 0,
+      uniqueRequiredDocsEn: [],
+      uniqueRequiredDocsHi: [],
+      estimatedTurnaroundEn: 'Select 1 or more services',
+      estimatedTurnaroundHi: 'कोई भी 1 या अधिक सेवा चुनें',
+    };
+  }
+
+  let totalFeeInr = 0;
+  const seenDocIds = new Set<string>();
+  const uniqueRequiredDocsEn: string[] = [];
+  const uniqueRequiredDocsHi: string[] = [];
+
+  for (const srv of chosen) {
+    totalFeeInr += Math.max(0, Number(srv.priceInr) || 0);
+    const reqs = getServiceDocumentRequirements(srv);
+    for (const r of reqs) {
+      if (!r.required) continue;
+      const key = r.docId.toLowerCase();
+      if (!seenDocIds.has(key)) {
+        seenDocIds.add(key);
+        uniqueRequiredDocsEn.push(cleanDocumentLabel(r.labelEn));
+        uniqueRequiredDocsHi.push(cleanDocumentLabel(r.labelHi || r.labelEn));
+      }
+    }
+  }
+
+  const estimatedTurnaroundEn =
+    chosen.length === 1
+      ? 'Same Day (1 to 4 Hours)'
+      : chosen.length <= 3
+      ? 'Same Day (2 to 6 Hours)'
+      : 'Within 24 Hours';
+  const estimatedTurnaroundHi =
+    chosen.length === 1
+      ? 'उसी दिन (1 से 4 घंटे)'
+      : chosen.length <= 3
+      ? 'उसी दिन (2 से 6 घंटे)'
+      : '24 घंटे के भीतर';
+
+  return {
+    serviceCount: chosen.length,
+    totalFeeInr,
+    uniqueRequiredDocsEn,
+    uniqueRequiredDocsHi,
+    estimatedTurnaroundEn,
+    estimatedTurnaroundHi,
+  };
+}
+
+export const HERO_CINEMATIC_MEDIA = {
+  webmSrc: '/hero-ember-loop.webm',
+  mp4Src: '/hero-ember-loop.mp4',
+  posterSrc: '/hero-ember-poster.svg',
+} as const;
+
+export function clampComparisonSlider(value: unknown, fallback = 62): number {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  return Math.min(95, Math.max(5, Math.round(num)));
+}
 

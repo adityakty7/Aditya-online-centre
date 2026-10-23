@@ -1,12 +1,11 @@
 {
-  "projectId": "effortless-deck-k3jkf",
-  "appId": "1:389490863066:web:f287ae42e24af4e8616ee3",
-  "apiKey": "AIzaSyAhpPiyNwZyoF4QeaOA3tFbJuhGiDp6dQ0",
-  "authDomain": "effortless-deck-k3jkf.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-adityaonlinecent-66ac6c85-22d9-4621-97c1-ac4ad93118d4",
-  "storageBucket": "effortless-deck-k3jkf.firebasestorage.app",
-  "messagingSenderId": "389490863066",
+  "projectId": "gen-lang-client-0774506168",
+  "appId": "1:320646811693:web:5d4138eb5caa11b06c68a4",
+  "apiKey": "AIzaSyDdedH0hkGWtet75hshkmoRi-IiYLuoVz0",
+  "authDomain": "gen-lang-client-0774506168.firebaseapp.com",
+  "storageBucket": "gen-lang-client-0774506168.firebasestorage.app",
+  "messagingSenderId": "320646811693",
   "measurementId": "",
-  "oAuthClientId": "389490863066-l8crtotijfkuv9t81i82ta9bvntu00cp.apps.googleusercontent.com",
+  "oAuthClientId": "320646811693-eokt8eqed4vot5agrt94hms2t9o9cv97.apps.googleusercontent.com",
   "recaptchaSiteKey": ""
 }

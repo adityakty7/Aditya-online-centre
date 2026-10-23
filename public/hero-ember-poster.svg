@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" fill="none">
+  <defs>
+    <radialGradient id="bgGlow1" cx="72%" cy="32%" r="55%">
+      <stop offset="0%" stop-color="#FF5C35" stop-opacity="0.32" />
+      <stop offset="48%" stop-color="#FFB547" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#07070B" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="bgGlow2" cx="22%" cy="74%" r="50%">
+      <stop offset="0%" stop-color="#FFB547" stop-opacity="0.22" />
+      <stop offset="55%" stop-color="#FF5C35" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#07070B" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="prismGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFB547" stop-opacity="0.28" />
+      <stop offset="50%" stop-color="#FF5C35" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#101014" stop-opacity="0.05" />
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="#07070B" />
+  <rect width="1280" height="720" fill="url(#bgGlow1)" />
+  <rect width="1280" height="720" fill="url(#bgGlow2)" />
+  <g stroke="#FF5C35" stroke-opacity="0.14" stroke-width="1">
+    <line x1="740" y1="260" x2="120" y2="720" />
+    <line x1="740" y1="260" x2="340" y2="720" />
+    <line x1="740" y1="260" x2="560" y2="720" />
+    <line x1="740" y1="260" x2="740" y2="720" />
+    <line x1="740" y1="260" x2="920" y2="720" />
+    <line x1="740" y1="260" x2="1140" y2="720" />
+  </g>
+  <polygon points="880,140 1040,260 880,380 720,260" fill="url(#prismGrad)" stroke="#FFB547" stroke-opacity="0.25" />
+  <circle cx="960" cy="210" r="4" fill="#FFB547" fill-opacity="0.65" />
+  <circle cx="640" cy="420" r="3" fill="#FF5C35" fill-opacity="0.65" />
+  <circle cx="320" cy="280" r="3.5" fill="#FFB547" fill-opacity="0.5" />
+</svg>

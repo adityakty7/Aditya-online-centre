@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
   signOut,
@@ -42,6 +43,7 @@ import {
   ServiceCategoryKey,
   ServiceOrder,
   UserProfile,
+  VisualTheme,
 } from './types';
 import {
   DEFAULT_CENTER_SETTINGS,
@@ -57,7 +59,10 @@ import {
   generateContactMessageId,
   generateOrderNumber,
   isDuplicateSubmission,
+  MOBILE_DOCK_SHORTCUTS,
+  resolveVisualTheme,
   sanitizeString,
+  toggleVisualTheme,
 } from './utils/rules';
 import { Navbar } from './components/Navbar';
 import { CatalogViews } from './components/CatalogViews';
@@ -68,7 +73,20 @@ import {
   ContactSubmissionPayload,
   InfoPagesView,
 } from './components/InfoPagesView';
-import { LogIn, LogOut, ShieldCheck, UserCheck, X } from 'lucide-react';
+import { ProjectBackupModal } from './components/ProjectBackupModal';
+import { setCachedDriveToken } from './utils/googleDrive';
+import {
+  Home,
+  Layers,
+  LogIn,
+  LogOut,
+  MessageCircle,
+  Search,
+  ShieldCheck,
+  User,
+  UserCheck,
+  X,
+} from 'lucide-react';
 
 function formatTimestampField(val: unknown): string {
   if (!val) return new Date().toISOString();
@@ -82,12 +100,61 @@ function formatTimestampField(val: unknown): string {
 }
 
 export default function App() {
-  const [lang, setLang] = React.useState<Language>('en');
+  const [lang, setLang] = React.useState<Language>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = window.localStorage.getItem('aoc_lang');
+        if (saved === 'hi' || saved === 'en') return saved;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return 'en';
+  });
+
+  const [theme, setTheme] = React.useState<VisualTheme>(() => {
+    try {
+      return resolveVisualTheme(
+        typeof window !== 'undefined'
+          ? window.localStorage.getItem('aoc_visual_theme')
+          : 'obsidian'
+      );
+    } catch {
+      return 'obsidian';
+    }
+  });
   const [currentView, setCurrentView] = React.useState<AppView>('home');
   const [selectedCategory, setSelectedCategory] = React.useState<
     ServiceCategoryKey | 'all'
   >('all');
   const [searchQuery, setSearchQuery] = React.useState('');
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = lang;
+      document.documentElement.setAttribute('lang', lang);
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aoc_lang', lang);
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [lang]);
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', theme);
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aoc_visual_theme', theme);
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [theme]);
 
   // Firebase Auth & Role State
   const [fbUser, setFbUser] = React.useState<FirebaseUser | null>(null);
@@ -97,6 +164,7 @@ export default function App() {
     'none' | 'customer' | 'admin'
   >('none');
   const [authModalOpen, setAuthModalOpen] = React.useState(false);
+  const [backupModalOpen, setBackupModalOpen] = React.useState(false);
   const [authError, setAuthError] = React.useState<string | null>(null);
 
   // Application Data State
@@ -141,7 +209,7 @@ export default function App() {
         isDbAdminDoc)
   );
 
-  const isAuthorizedAdmin = isLiveAdmin || sandboxRole === 'admin';
+  const isAuthorizedAdmin = isLiveAdmin;
 
   // 1. Listen to Firebase Auth State & Ensure User Profile Document
   React.useEffect(() => {
@@ -285,8 +353,14 @@ export default function App() {
                   : fallback?.instructionsHi,
               estimatedTimeEn: d.estimatedTimeEn,
               estimatedTimeHi: d.estimatedTimeHi,
-              requiredDocs: d.requiredDocs,
-              customFieldsJson: d.customFieldsJson || '[]',
+              requiredDocs: d.requiredDocs || fallback?.requiredDocs || '',
+              documentRequirementsJson:
+                typeof d.documentRequirementsJson === 'string' &&
+                d.documentRequirementsJson.trim().length > 2
+                  ? d.documentRequirementsJson
+                  : fallback?.documentRequirementsJson,
+              customFieldsJson:
+                d.customFieldsJson || fallback?.customFieldsJson || '[]',
               isActive: Boolean(d.isActive),
               featured: Boolean(d.featured),
               updatedAt: formatTimestampField(d.updatedAt),
@@ -578,7 +652,11 @@ export default function App() {
   const handleGoogleSignIn = async () => {
     setAuthError(null);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setCachedDriveToken(credential.accessToken);
+      }
       setAuthModalOpen(false);
     } catch (err) {
       setAuthError(
@@ -591,6 +669,7 @@ export default function App() {
 
   const handleSignOut = async () => {
     await signOut(auth);
+    setCachedDriveToken(null);
     setAuthModalOpen(false);
   };
 
@@ -1156,6 +1235,7 @@ export default function App() {
       }
       return [...prev, service];
     });
+    setSelectedService((prev) => (prev?.id === service.id ? service : prev));
   };
 
   const handleSaveDocumentLibraryItem = async (item: DocumentLibraryItem) => {
@@ -1417,7 +1497,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F3EA] text-[#101014]">
+    <div
+      data-theme={theme}
+      className={`min-h-screen flex flex-col ${
+        theme === 'royal'
+          ? 'bg-[#F4F7FB] text-[#0B1528]'
+          : 'bg-[#F7F3EA] text-[#101014]'
+      }`}
+    >
       <Navbar
         currentView={currentView}
         onNavigate={(view) => {
@@ -1426,12 +1513,15 @@ export default function App() {
         }}
         lang={lang}
         onToggleLang={setLang}
+        theme={theme}
+        onToggleTheme={() => setTheme((prev) => toggleVisualTheme(prev))}
         userEmail={fbUser?.email || null}
         userName={fbUser?.displayName || userProfile?.displayName || null}
         isLiveAdmin={isLiveAdmin}
         sandboxRole={sandboxRole}
         onSetSandboxRole={setSandboxRole}
         onOpenAuthModal={() => setAuthModalOpen(true)}
+        onOpenBackupModal={() => setBackupModalOpen(true)}
       />
 
       <main className="flex-1">
@@ -1441,6 +1531,7 @@ export default function App() {
           <CatalogViews
             mode={currentView}
             lang={lang}
+            theme={theme}
             services={services}
             selectedCategory={selectedCategory}
             onSelectCategory={(cat) => {
@@ -1473,6 +1564,7 @@ export default function App() {
             }}
             settings={settings}
             categories={categories}
+            documentLibrary={documentLibrary}
           />
         )}
 
@@ -1482,6 +1574,7 @@ export default function App() {
             mode={currentView}
             lang={lang}
             service={selectedService}
+            documentLibrary={documentLibrary}
             userProfile={userProfile}
             confirmedOrder={confirmedOrder}
             isSubmitting={isSubmittingOrder}
@@ -1520,8 +1613,16 @@ export default function App() {
             isAuthorizedAdmin={isAuthorizedAdmin}
             isLiveAdmin={isLiveAdmin}
             userEmail={fbUser?.email || null}
-            onEnableSandboxAdmin={() => setSandboxRole('admin')}
+            onEnableSandboxAdmin={() => {
+              setSandboxRole('admin');
+              if (!fbUser && orders.length === 0) {
+                setOrders(DEMO_SAMPLE_ORDERS);
+                setOrderFiles(DEMO_SAMPLE_FILES);
+                setOrderHistory(DEMO_SAMPLE_HISTORY);
+              }
+            }}
             onOpenAuthModal={() => setAuthModalOpen(true)}
+            onOpenBackupModal={() => setBackupModalOpen(true)}
             orders={orders}
             orderFiles={orderFiles}
             services={services}
@@ -1645,8 +1746,95 @@ export default function App() {
         </div>
       )}
 
+      {/* Project Source Code & Google Drive Cloud Backup Modal */}
+      <ProjectBackupModal
+        isOpen={backupModalOpen}
+        onClose={() => setBackupModalOpen(false)}
+        lang={lang}
+        userEmail={fbUser?.email || null}
+      />
+
+      {/* Mobile Floating Frosted-Glass Bottom Dock (Home, Services, Track Order, Account, WhatsApp) */}
+      <nav
+        data-testid="mobile-floating-dock"
+        aria-label={
+          lang === 'en' ? 'Mobile Quick Navigation Dock' : 'मोबाइल त्वरित नेविगेशन'
+        }
+        className="lg:hidden fixed bottom-2.5 inset-x-3 z-40 glass-mobile-dock rounded-2xl p-1.5"
+      >
+        <div className="grid grid-cols-5 gap-1">
+          {MOBILE_DOCK_SHORTCUTS.map((item) => {
+            if (item.id === 'whatsapp') {
+              return (
+                <a
+                  key={item.id}
+                  href={BUSINESS_INFO.whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="dock-shortcut-whatsapp"
+                  className="min-h-[46px] px-0.5 py-1.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[9.5px] sm:text-[11px] tracking-tight font-bold text-[#4ADE80] hover:bg-white/[0.08] transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 text-[#4ADE80]" />
+                  <span className="whitespace-nowrap leading-tight">
+                    {lang === 'en' ? item.labelEn : item.labelHi}
+                  </span>
+                </a>
+              );
+            }
+
+            const isActive =
+              (item.id === 'home' && currentView === 'home') ||
+              (item.id === 'services' &&
+                (currentView === 'services' ||
+                  currentView === 'service-detail')) ||
+              (item.id === 'track-order' && currentView === 'track-order') ||
+              (item.id === 'account' &&
+                (currentView === 'dashboard' || authModalOpen));
+
+            const IconComponent =
+              item.id === 'home'
+                ? Home
+                : item.id === 'services'
+                ? Layers
+                : item.id === 'track-order'
+                ? Search
+                : User;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                data-testid={`dock-shortcut-${item.id}`}
+                onClick={() => {
+                  if (item.id === 'account' && !fbUser) {
+                    setAuthModalOpen(true);
+                    return;
+                  }
+                  if (item.targetView) {
+                    setCurrentView(item.targetView);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`min-h-[46px] px-0.5 py-1.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[9.5px] sm:text-[11px] tracking-tight font-bold transition-all ${
+                  isActive
+                    ? theme === 'royal'
+                      ? 'bg-[#2563EB] text-white shadow-[0_0_14px_rgba(37,99,235,0.5)]'
+                      : 'bg-[#FF5C35] text-white shadow-[0_0_14px_rgba(255,92,53,0.45)]'
+                    : 'text-[#D8D3C8] hover:text-white hover:bg-white/[0.06]'
+                }`}
+              >
+                <IconComponent className="w-4 h-4" />
+                <span className="whitespace-nowrap leading-tight">
+                  {lang === 'en' ? item.labelEn : item.labelHi}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
       {/* Professional Multi-Column Enterprise Footer on Charcoal #101014 */}
-      <footer className="bg-[#101014] border-t border-white/10 text-[#B8B2A6] mt-auto">
+      <footer className="bg-[#101014] border-t border-white/10 text-[#B8B2A6] mt-auto pb-28 lg:pb-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-14">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 sm:gap-10 pb-10 border-b border-white/10">
             {/* Col 1: Brand Identity & Location */}
@@ -1891,6 +2079,33 @@ export default function App() {
                   >
                     {lang === 'en' ? 'Terms & Android Guide' : 'शर्तें और गाइड'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setBackupModalOpen(true)}
+                    className="text-[#FFB547] hover:text-white underline underline-offset-4 font-bold"
+                  >
+                    {lang === 'en' ? 'ZIP & Google Drive' : 'ZIP एवं गूगल ड्राइव'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isAuthorizedAdmin) {
+                        setCurrentView('admin');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else {
+                        setAuthModalOpen(true);
+                      }
+                    }}
+                    className="text-[#8E887E] hover:text-[#FF5C35] underline underline-offset-4 font-mono-tabular text-[11px]"
+                  >
+                    {isAuthorizedAdmin
+                      ? lang === 'en'
+                        ? 'Admin Panel'
+                        : 'एडमिन पैनल'
+                      : lang === 'en'
+                      ? 'Admin Portal'
+                      : 'एडमिन पोर्टल'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -1911,6 +2126,34 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Floating WhatsApp Quick-Support Widget (6206800799) */}
+      <a
+        href={BUSINESS_INFO.whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        data-testid="floating-whatsapp-widget"
+        aria-label={
+          lang === 'en'
+            ? `WhatsApp Quick Support ${BUSINESS_INFO.whatsappDisplay}`
+            : `व्हाट्सएप सहायता ${BUSINESS_INFO.whatsappDisplay}`
+        }
+        className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-40 group flex items-center gap-2.5 pl-3.5 pr-4 py-2.5 rounded-full bg-[#101014]/90 hover:bg-[#101014] text-white border border-emerald-500/50 hover:border-emerald-400 shadow-[0_12px_30px_-6px_rgba(16,185,129,0.45)] backdrop-blur-md transition-all duration-300 hover:-translate-y-1"
+      >
+        <span className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+        </span>
+        <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0 transition-transform group-hover:scale-110" />
+        <div className="text-left leading-tight">
+          <div className="font-mono-tabular text-[9px] uppercase tracking-wider text-emerald-400 font-bold">
+            {lang === 'en' ? 'WHATSAPP HELP' : 'व्हाट्सएप सहायता'}
+          </div>
+          <div className="font-mono-tabular text-xs font-extrabold text-white">
+            6206800799
+          </div>
+        </div>
+      </a>
     </div>
   );
 }

@@ -2,15 +2,16 @@ import React from 'react';
 import {
   AppView,
   DigitalService,
+  DocumentLibraryItem,
   Language,
   ServiceCustomField,
   ServiceOrder,
   UserProfile,
 } from '../types';
 import {
-  MAX_FILE_SIZE_BYTES,
+  cleanDocumentLabel,
   getAcceptAttributeForFormats,
-  parseServiceDocumentRequirements,
+  getServiceDocumentRequirements,
   sanitizeString,
   StructuredDocRequirement,
   validateCustomerOrderInput,
@@ -18,7 +19,11 @@ import {
   validateServiceDocumentChecklistUploads,
   validateUploadedFile,
 } from '../utils/rules';
-import { SAMPLE_DELIVERABLE_DATA_URL } from '../data/initialCatalog';
+import {
+  DEFAULT_CENTER_SETTINGS,
+  SAMPLE_DELIVERABLE_DATA_URL,
+} from '../data/initialCatalog';
+import { BUSINESS_INFO } from '../config/businessInfo';
 import {
   CheckCircle2,
   Upload,
@@ -31,9 +36,8 @@ import {
   RefreshCw,
   Plus,
   Paperclip,
-  Image as ImageIcon,
   Check,
-  Info,
+  Clock,
 } from 'lucide-react';
 
 export interface PendingUploadItem {
@@ -51,6 +55,7 @@ interface OrderFlowViewsProps {
   mode: 'order-form' | 'order-confirmation';
   lang: Language;
   service: DigitalService | null;
+  documentLibrary?: DocumentLibraryItem[];
   userProfile: UserProfile | null;
   confirmedOrder: ServiceOrder | null;
   isSubmitting: boolean;
@@ -72,6 +77,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
   mode,
   lang,
   service,
+  documentLibrary = [],
   userProfile,
   confirmedOrder,
   isSubmitting,
@@ -136,18 +142,13 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
     }
   }, [service]);
 
-  // Parse structured document requirements for the selected service
+  // Structured document requirements from single source of truth
   const docRequirements: StructuredDocRequirement[] = React.useMemo(() => {
     if (!service) return [];
-    return parseServiceDocumentRequirements(
-      service.documentRequirementsJson,
-      service.requiredDocsEn || (service.requiredDocs ? service.requiredDocs.split(',') : []),
-      service.requiredDocsHi || []
-    );
-  }, [service]);
+    return getServiceDocumentRequirements(service, documentLibrary);
+  }, [service, documentLibrary]);
 
   React.useEffect(() => {
-    // Initialize default select options
     const initial: Record<string, string> = {};
     for (const f of customFields) {
       if (f.type === 'select' && f.options && f.options.length > 0) {
@@ -200,103 +201,109 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
     return list;
   }, [uploadsByDocId, additionalUploads, docRequirements]);
 
+  // ============================================================================
+  // MODE: ORDER CONFIRMATION CERTIFICATE
+  // ============================================================================
   if (mode === 'order-confirmation' && confirmedOrder) {
     return (
-      <section className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
-        <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-6 sm:p-10 shadow-xs">
-          <div className="flex items-center gap-3 text-emerald-700 font-semibold text-sm mb-3">
-            <CheckCircle2 className="w-6 h-6 shrink-0" />
-            <span>
+      <div className="bg-[#F7F3EA] min-h-screen">
+        <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732] py-12 sm:py-16">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
+            <div className="inline-flex items-center gap-2 font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FFB547]">
+              <CheckCircle2 className="w-4 h-4 text-[#FF5C35]" />
+              <span>
+                {lang === 'en'
+                  ? 'DISPATCH CONFIRMED · DOSSIER QUEUED'
+                  : 'ऑर्डर सफलतापूर्वक दर्ज हो गया है'}
+              </span>
+            </div>
+
+            <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#F7F3EA] tracking-tight leading-[1.05]">
               {lang === 'en'
-                ? 'Order Submitted Successfully'
-                : 'आपका ऑर्डर सफलतापूर्वक दर्ज हो गया है'}
-            </span>
-          </div>
+                ? 'Save Your Unique Order Number.'
+                : 'अपना यूनिक ऑर्डर नंबर सुरक्षित रखें।'}
+            </h1>
 
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#101014] mb-2">
-            {lang === 'en'
-              ? 'Save Your Unique Order Number'
-              : 'अपना यूनिक ऑर्डर नंबर सुरक्षित रखें'}
-          </h1>
-          <p className="text-sm sm:text-base text-[#52504C] mb-6 leading-relaxed">
-            {lang === 'en'
-              ? 'Your order and supporting documents have been securely queued for review at Aditya Online Center, Kateya. Use the Order ID below to track progress, verify your UPI payment, and download your finished document.'
-              : 'आपका ऑर्डर और दस्तावेज़ आदित्य ऑनलाइन सेंटर में समीक्षा के लिए प्राप्त हो गए हैं। स्थिति ट्रैक करने, UPI भुगतान सत्यापित करने और तैयार दस्तावेज़ डाउनलोड करने के लिए नीचे दिए गए ऑर्डर नंबर का उपयोग करें।'}
-          </p>
+            <p className="text-sm sm:text-base text-[#D8D3C8] max-w-2xl leading-relaxed">
+              {lang === 'en'
+                ? 'Your order and supporting documents have been securely queued for review at Aditya Online Center, Kateya. Use the Order ID below to track progress, verify your UPI payment, and download your finished document.'
+                : 'आपका ऑर्डर और दस्तावेज़ आदित्य ऑनलाइन सेंटर में समीक्षा के लिए प्राप्त हो गए हैं। स्थिति ट्रैक करने, UPI भुगतान सत्यापित करने और तैयार दस्तावेज़ डाउनलोड करने के लिए नीचे दिए गए ऑर्डर नंबर का उपयोग करें।'}
+            </p>
 
-          <div className="bg-[#101014] text-[#F7F3EA] border border-[#272732] rounded-xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <div className="text-xs font-medium text-[#A09D96]">
-                {lang === 'en' ? 'Unique Order ID' : 'यूनिक ऑर्डर आईडी'}
+            {/* Glassmorphic Architectural Order Number Monolith */}
+            <div className="glass-obsidian-panel p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <div className="font-mono-tabular text-[11px] uppercase tracking-[0.18em] text-[#A09D96]">
+                  {lang === 'en' ? 'UNIQUE ORDER ID' : 'यूनिक ऑर्डर आईडी'}
+                </div>
+                <div
+                  data-testid="confirmed-order-number"
+                  className="text-2xl sm:text-3xl font-extrabold text-[#FFB547] font-mono-tabular mt-1 tracking-wider"
+                >
+                  {confirmedOrder.orderNumber}
+                </div>
               </div>
-              <div
-                data-testid="confirmed-order-number"
-                className="text-2xl font-bold text-[#FFB547] font-mono-tabular mt-0.5 tracking-wider"
-              >
-                {confirmedOrder.orderNumber}
-              </div>
-            </div>
-            <div className="text-left sm:text-right">
-              <div className="text-xs font-medium text-[#A09D96]">
-                {lang === 'en' ? 'Service Fee & Status' : 'सेवा शुल्क और स्थिति'}
-              </div>
-              <div className="text-base font-bold text-[#F7F3EA] font-mono-tabular mt-0.5">
-                ₹{confirmedOrder.priceInr} · {confirmedOrder.status}
+
+              <div className="sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0 border-white/10">
+                <div className="font-mono-tabular text-[11px] uppercase tracking-[0.18em] text-[#A09D96]">
+                  {lang === 'en' ? 'TARIFF & STATUS' : 'सेवा शुल्क और स्थिति'}
+                </div>
+                <div className="text-lg font-bold text-[#F7F3EA] font-mono-tabular mt-1">
+                  ₹{confirmedOrder.priceInr} · {confirmedOrder.status}
+                </div>
               </div>
             </div>
           </div>
+        </section>
 
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm border-t border-b border-[#E6DFD3] py-5 mb-6">
-            <div>
-              <dt className="text-xs text-[#5C5852]">
-                {lang === 'en' ? 'Selected Service' : 'चयनित सेवा'}
-              </dt>
-              <dd className="font-semibold text-[#101014] mt-0.5">
+        <section className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-8">
+          <div className="border-t-2 border-b border-[#101014] divide-y divide-[#DCD4C6]">
+            <div className="py-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+              <div className="font-mono-tabular text-xs uppercase tracking-wider text-[#5C5852]">
+                {lang === 'en' ? '01. Selected Service' : '01. चयनित सेवा'}
+              </div>
+              <div className="sm:col-span-2 font-bold text-[#101014]">
                 {lang === 'en'
                   ? confirmedOrder.serviceTitleEn
                   : confirmedOrder.serviceTitleHi}
-              </dd>
+              </div>
             </div>
-            <div>
-              <dt className="text-xs text-[#5C5852]">
-                {lang === 'en' ? 'Customer Details' : 'ग्राहक का नाम और मोबाइल'}
-              </dt>
-              <dd className="font-semibold text-[#101014] font-mono-tabular mt-0.5">
-                {confirmedOrder.customerName} ({confirmedOrder.customerPhone})
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-[#5C5852]">
-                {lang === 'en' ? 'Village / Town' : 'गाँव / शहर'}
-              </dt>
-              <dd className="font-semibold text-[#101014] mt-0.5">
+
+            <div className="py-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+              <div className="font-mono-tabular text-xs uppercase tracking-wider text-[#5C5852]">
+                {lang === 'en' ? '02. Applicant' : '02. ग्राहक विवरण'}
+              </div>
+              <div className="sm:col-span-2 font-mono-tabular font-semibold text-[#101014]">
+                {confirmedOrder.customerName} ({confirmedOrder.customerPhone}) —{' '}
                 {confirmedOrder.customerLocation}
-              </dd>
+              </div>
             </div>
-            <div>
-              <dt className="text-xs text-[#5C5852]">
-                {lang === 'en' ? 'Attached Documents' : 'संलग्न दस्तावेज़'}
-              </dt>
-              <dd className="font-semibold text-[#101014] font-mono-tabular mt-0.5">
+
+            <div className="py-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+              <div className="font-mono-tabular text-xs uppercase tracking-wider text-[#5C5852]">
+                {lang === 'en' ? '03. Attached Dossier' : '03. संलग्न दस्तावेज़'}
+              </div>
+              <div className="sm:col-span-2 font-mono-tabular font-semibold text-[#101014]">
                 {confirmedOrder.uploadedFileCount}{' '}
                 {lang === 'en' ? 'file(s) attached' : 'फ़ाइलें जुड़ी हैं'}
-              </dd>
+              </div>
             </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs text-[#5C5852]">
-                {lang === 'en' ? 'Submitted Details' : 'दर्ज किया गया विवरण'}
-              </dt>
-              <dd className="text-[#52504C] mt-0.5">
+
+            <div className="py-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+              <div className="font-mono-tabular text-xs uppercase tracking-wider text-[#5C5852]">
+                {lang === 'en' ? '04. Submitted Summary' : '04. दर्ज विवरण'}
+              </div>
+              <div className="sm:col-span-2 text-[#4A463E]">
                 {confirmedOrder.formResponsesSummary}
-              </dd>
+              </div>
             </div>
-          </dl>
+          </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
               type="button"
               onClick={() => onTrackSpecificOrder(confirmedOrder.orderNumber)}
-              className="min-h-[48px] px-6 py-3 bg-[#FF5C35] hover:bg-[#E84B25] text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="min-h-[48px] px-6 py-3.5 bg-[#FF5C35] hover:bg-[#E54922] text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
             >
               <span>
                 {lang === 'en'
@@ -308,26 +315,26 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('dashboard')}
-              className="min-h-[48px] px-5 py-3 bg-[#F7F3EA] hover:bg-[#ECE5D8] border border-[#E6DFD3] text-[#101014] font-semibold text-sm rounded-xl transition-colors"
+              className="min-h-[48px] px-6 py-3.5 bg-[#101014] hover:bg-[#272732] text-[#F7F3EA] font-semibold text-sm transition-colors"
             >
               {lang === 'en' ? 'Go to Customer Portal' : 'ग्राहक पोर्टल पर जाएं'}
             </button>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
     );
   }
 
   if (!service) {
     return (
       <section className="max-w-3xl mx-auto px-4 sm:px-6 py-12 text-center">
-        <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-8">
-          <h2 className="text-xl font-bold text-[#101014] mb-2 font-display">
+        <div className="bg-[#FFFDF9] border border-[#101014] p-8 space-y-4">
+          <h2 className="text-xl font-bold text-[#101014] font-display">
             {lang === 'en'
               ? 'Please select a digital service first'
               : 'कृपया पहले एक सेवा चुनें'}
           </h2>
-          <p className="text-sm text-[#5C5852] mb-4">
+          <p className="text-sm text-[#5C5852]">
             {lang === 'en'
               ? 'Browse our catalog of resumes, government form-filling, scholarships, and PDF services.'
               : 'हमारे कैटलॉग से रिज्यूमे, सरकारी फॉर्म, छात्रवृत्ति और पीडीएफ सेवाओं में से चुनें।'}
@@ -335,7 +342,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('services')}
-            className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E84B25] text-white text-sm font-semibold rounded-xl"
+            className="min-h-[44px] px-5 py-2.5 bg-[#FF5C35] hover:bg-[#E54922] text-white text-sm font-semibold"
           >
             {lang === 'en' ? 'Browse All Services' : 'सभी सेवाएं देखें'}
           </button>
@@ -390,7 +397,6 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
       setUploadsByDocId((prev) => {
         const existing = prev[req.docId] || [];
-        // If single file allowed, replace it; if allowMultiple is true, append up to 3 files
         if (req.allowMultiple) {
           return {
             ...prev,
@@ -480,7 +486,9 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
     const targetDocId = req ? req.docId : 'doc-additional-supporting';
     const sampleItem: PendingUploadItem = {
       id: `sample-${Date.now()}`,
-      fileName: req ? `${req.labelEn.replace(/[^a-zA-Z0-9]/g, '_')}_Sample.pdf` : 'Sample_Supporting_Document.pdf',
+      fileName: req
+        ? `${req.labelEn.replace(/[^a-zA-Z0-9]/g, '_')}_Sample.pdf`
+        : 'Sample_Supporting_Document.pdf',
       mimeType: 'application/pdf',
       sizeBytes: 42180,
       dataUrl: SAMPLE_DELIVERABLE_DATA_URL,
@@ -503,7 +511,6 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
     e.preventDefault();
     setErrorMsg(null);
 
-    // 1. Validate Customer Contact and Custom Fields
     const contactValidation = validateCustomerOrderInput({
       customerName,
       customerPhone,
@@ -517,11 +524,12 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
     });
 
     if (!contactValidation.valid) {
-      setErrorMsg(lang === 'en' ? contactValidation.errorEn! : contactValidation.errorHi!);
+      setErrorMsg(
+        lang === 'en' ? contactValidation.errorEn! : contactValidation.errorHi!
+      );
       return;
     }
 
-    // 2. Validate Document Checklist Completeness
     const checklistCheck = validateServiceDocumentChecklistUploads(
       docRequirements,
       uploadsByDocId
@@ -553,7 +561,10 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
         service,
         customerName: sanitizeString(customerName, 100),
         customerPhone: sanitizeString(customerPhone, 20),
-        customerEmail: sanitizeString(customerEmail || 'customer@example.com', 150),
+        customerEmail: sanitizeString(
+          customerEmail || 'customer@example.com',
+          150
+        ),
         customerLocation: sanitizeString(customerLocation, 120),
         formResponsesSummary: sanitizeString(
           formattedResponsesSummary || 'Standard Service Order',
@@ -574,90 +585,179 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
   };
 
   return (
-    <section className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={() => onNavigate('services')}
-          className="min-h-[44px] px-3 py-2 text-sm font-semibold text-[#101014] hover:text-[#FF5C35] hover:bg-[#ECE5D8] rounded-lg transition-colors flex items-center gap-1.5"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>{lang === 'en' ? 'Back to Services' : 'सेवा सूची पर वापस जाएं'}</span>
-        </button>
+    <div className="bg-[#F7F3EA] min-h-screen">
+      {/* Dark Charcoal Architectural Masthead */}
+      <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-[#272732]">
+            <button
+              type="button"
+              onClick={() => onNavigate('services')}
+              className="min-h-[40px] px-3 py-1.5 bg-[#16161E] border border-[#272732] hover:border-[#FF5C35] text-xs font-mono-tabular uppercase tracking-wider text-[#F7F3EA] transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-[#FF5C35]" />
+              <span>
+                {lang === 'en' ? 'Back to Services' : 'सेवा सूची पर वापस जाएं'}
+              </span>
+            </button>
 
-        <div className="text-xs font-semibold text-[#5C5852]">
-          {step === 'details'
-            ? lang === 'en'
-              ? 'Step 1 of 2 · Fill Details & Attach Documents'
-              : 'चरण 1 / 2 · विवरण भरें और दस्तावेज़ जोड़ें'
-            : lang === 'en'
-            ? 'Step 2 of 2 · Review & Confirm Order'
-            : 'चरण 2 / 2 · जांचें और पुष्टि करें'}
-        </div>
-      </div>
-
-      <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl p-6 sm:p-10 shadow-xs">
-        {/* Selected Service Summary Header */}
-        <div className="pb-6 mb-6 border-b border-[#E6DFD3] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="text-xs font-semibold text-[#FF5C35] mb-1 uppercase tracking-wider">
-              {lang === 'en' ? 'Digital Service Order Form' : 'डिजिटल सेवा ऑर्डर फॉर्म'}
-            </div>
-            <h1 className="font-display text-xl sm:text-2xl font-bold text-[#101014]">
-              {lang === 'en' ? service.titleEn : service.titleHi}
-            </h1>
-            <p className="text-xs text-[#5C5852] mt-1 max-w-xl">
-              {lang === 'en' ? service.descEn : service.descHi}
-            </p>
-          </div>
-          <div className="sm:text-right shrink-0 bg-[#F7F3EA] border border-[#E6DFD3] p-3.5 rounded-xl">
-            <div className="text-xs text-[#5C5852]">
-              {lang === 'en' ? 'Service Fee' : 'सेवा शुल्क'}
-            </div>
-            <div className="text-2xl font-bold text-[#101014] font-mono-tabular">
-              ₹{service.priceInr}
-            </div>
-            <div className="text-[11px] text-[#787166]">
-              {lang === 'en' ? service.estimatedTimeEn : service.estimatedTimeHi}
+            <div className="font-mono-tabular text-xs text-[#FFB547] uppercase tracking-wider">
+              {step === 'details'
+                ? lang === 'en'
+                  ? 'STEP 01 / 02 · DETAILS & DOCUMENT DOSSIER'
+                  : 'चरण 01 / 02 · विवरण और दस्तावेज़'
+                : lang === 'en'
+                ? 'STEP 02 / 02 · FINAL VERIFICATION & UPI SUMMARY'
+                : 'चरण 02 / 02 · अंतिम जांच और UPI विवरण'}
             </div>
           </div>
-        </div>
 
+          {/* 2-Step Visual Progress Bar */}
+          <div
+            data-testid="order-step-progress-bar"
+            className="pt-5 pb-2 space-y-2.5"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  step === 'details'
+                    ? 'bg-[#FF5C35]/15 border-[#FF5C35] text-white shadow-[0_0_20px_-6px_rgba(255,92,53,0.45)]'
+                    : 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300'
+                }`}
+              >
+                <span
+                  className={`w-7 h-7 rounded-lg font-mono-tabular text-xs font-extrabold flex items-center justify-center shrink-0 ${
+                    step === 'details'
+                      ? 'bg-[#FF5C35] text-white'
+                      : 'bg-emerald-500 text-white'
+                  }`}
+                >
+                  {step === 'details' ? '01' : <Check className="w-4 h-4" />}
+                </span>
+                <div className="min-w-0">
+                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider opacity-80">
+                    {lang === 'en' ? 'STEP 01' : 'चरण 01'}
+                  </div>
+                  <div className="text-xs sm:text-sm font-bold truncate">
+                    {lang === 'en'
+                      ? 'Applicant & Document Dossier'
+                      : 'आवेदक विवरण और दस्तावेज़ अपलोड'}
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  step === 'review'
+                    ? 'bg-[#FF5C35]/15 border-[#FF5C35] text-white shadow-[0_0_20px_-6px_rgba(255,92,53,0.45)]'
+                    : 'bg-white/[0.03] border-white/10 text-[#9E988E]'
+                }`}
+              >
+                <span
+                  className={`w-7 h-7 rounded-lg font-mono-tabular text-xs font-extrabold flex items-center justify-center shrink-0 ${
+                    step === 'review'
+                      ? 'bg-[#FF5C35] text-white'
+                      : 'bg-white/10 text-[#9E988E]'
+                  }`}
+                >
+                  02
+                </span>
+                <div className="min-w-0">
+                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider opacity-80">
+                    {lang === 'en' ? 'STEP 02' : 'चरण 02'}
+                  </div>
+                  <div className="text-xs sm:text-sm font-bold truncate">
+                    {lang === 'en'
+                      ? 'Verify Dossier & UPI Summary'
+                      : 'दस्तावेज़ जांच और UPI सारांश'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#FF5C35] via-[#FFB547] to-emerald-400 transition-all duration-500"
+                style={{ width: step === 'details' ? '50%' : '100%' }}
+              />
+            </div>
+          </div>
+
+          <div className="pt-4 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#FF5C35]">
+                {lang === 'en'
+                  ? 'SERVICE ORDER SPECIFICATION'
+                  : 'डिजिटल सेवा ऑर्डर फॉर्म'}
+              </div>
+              <h1 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#F7F3EA] tracking-tight">
+                {lang === 'en' ? service.titleEn : service.titleHi}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#D8D3C8] max-w-2xl">
+                {lang === 'en' ? service.descEn : service.descHi}
+              </p>
+            </div>
+
+            <div className="shrink-0 bg-[#14141C] border border-[#272732] px-5 py-3.5 sm:text-right">
+              <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#A09D96]">
+                {lang === 'en' ? 'SERVICE FEE' : 'सेवा शुल्क'}
+              </div>
+              <div className="font-mono-tabular text-2xl sm:text-3xl font-extrabold text-[#FFB547]">
+                ₹{service.priceInr}
+              </div>
+              <div className="font-mono-tabular text-[11px] text-[#D8D3C8] flex items-center sm:justify-end gap-1 mt-0.5">
+                <Clock className="w-3 h-3 text-[#FF5C35]" />
+                <span>
+                  {lang === 'en'
+                    ? service.estimatedTimeEn
+                    : service.estimatedTimeHi}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         {errorMsg && (
           <div
             role="alert"
-            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800 flex items-start gap-2.5"
+            className="mb-8 p-4 bg-red-50 border-l-4 border-red-600 text-sm text-red-900 flex items-start gap-2.5"
           >
             <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <div className="font-semibold">{errorMsg}</div>
-            </div>
+            <div className="font-semibold">{errorMsg}</div>
           </div>
         )}
 
         {step === 'details' ? (
-          <form onSubmit={handleProceedToReview} className="space-y-8" noValidate>
-            {/* Section 1: Customer Contact Information */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-display text-base font-bold text-[#101014] flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#101014] text-[#F7F3EA] text-xs font-bold flex items-center justify-center">
-                    1
+          <form
+            onSubmit={handleProceedToReview}
+            className="space-y-12"
+            noValidate
+          >
+            {/* 01 // CUSTOMER CONTACT INFORMATION */}
+            <div className="space-y-6">
+              <div className="flex items-baseline justify-between border-b-2 border-[#101014] pb-3">
+                <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#101014] flex items-center gap-2.5">
+                  <span className="font-mono-tabular text-xs font-bold text-[#FF5C35]">
+                    01 //
                   </span>
                   <span>
-                    {lang === 'en' ? 'Customer Contact Details' : 'ग्राहक संपर्क विवरण'}
+                    {lang === 'en'
+                      ? 'Customer Contact Details'
+                      : 'ग्राहक संपर्क विवरण'}
                   </span>
                 </h2>
-                <span className="text-xs text-[#787166]">
-                  {lang === 'en' ? '* Required fields' : '* अनिवार्य फ़ील्ड'}
+                <span className="font-mono-tabular text-xs text-[#5C5852]">
+                  {lang === 'en' ? '* MANDATORY' : '* अनिवार्य फ़ील्ड'}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label
                     htmlFor="order-customer-name"
-                    className="block text-xs font-semibold text-[#101014] mb-1.5"
+                    className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#101014] mb-1.5"
                   >
                     {lang === 'en' ? 'Full Name *' : 'पूरा नाम *'}
                   </label>
@@ -668,16 +768,18 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder={
-                      lang === 'en' ? 'Enter your full name' : 'अपना पूरा नाम लिखें'
+                      lang === 'en'
+                        ? 'Enter your full name'
+                        : 'अपना पूरा नाम लिखें'
                     }
-                    className="w-full min-h-[44px] px-3.5 py-2 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="order-customer-phone"
-                    className="block text-xs font-semibold text-[#101014] mb-1.5"
+                    className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#101014] mb-1.5"
                   >
                     {lang === 'en'
                       ? '10-Digit Mobile / WhatsApp Number *'
@@ -690,14 +792,14 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     placeholder="9876543210"
-                    className="w-full min-h-[44px] px-3.5 py-2 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] font-mono-tabular focus:border-[#FF5C35] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] font-mono-tabular focus:border-[#FF5C35] focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="order-customer-location"
-                    className="block text-xs font-semibold text-[#101014] mb-1.5"
+                    className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#101014] mb-1.5"
                   >
                     {lang === 'en'
                       ? 'Village / Ward / Town (Kateya & Nearby) *'
@@ -714,16 +816,18 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                         ? 'e.g., Kateya Ward 04, Gopalganj'
                         : 'जैसे: कटेया वार्ड 04, गोपालगंज'
                     }
-                    className="w-full min-h-[44px] px-3.5 py-2 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="order-customer-email"
-                    className="block text-xs font-semibold text-[#101014] mb-1.5"
+                    className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#101014] mb-1.5"
                   >
-                    {lang === 'en' ? 'Email Address (Optional)' : 'ईमेल पता (वैकल्पिक)'}
+                    {lang === 'en'
+                      ? 'Email Address (Optional)'
+                      : 'ईमेल पता (वैकल्पिक)'}
                   </label>
                   <input
                     id="order-customer-email"
@@ -731,33 +835,36 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
                     placeholder="name@example.com"
-                    className="w-full min-h-[44px] px-3.5 py-2 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                    className="w-full min-h-[44px] px-3.5 py-2 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Section 2: Service-Specific Dynamic Fields */}
+            {/* 02 // SERVICE-SPECIFIC DYNAMIC PARAMETERS */}
             {customFields.length > 0 && (
-              <div className="space-y-4 pt-6 border-t border-[#E6DFD3]">
-                <h2 className="font-display text-base font-bold text-[#101014] flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-[#101014] text-[#F7F3EA] text-xs font-bold flex items-center justify-center">
-                    2
-                  </span>
-                  <span>
-                    {lang === 'en'
-                      ? 'Service-Specific Details'
-                      : 'सेवा से संबंधित आवश्यक जानकारी'}
-                  </span>
-                </h2>
-                <div className="space-y-4">
+              <div className="space-y-6">
+                <div className="flex items-baseline justify-between border-b-2 border-[#101014] pb-3">
+                  <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#101014] flex items-center gap-2.5">
+                    <span className="font-mono-tabular text-xs font-bold text-[#FF5C35]">
+                      02 //
+                    </span>
+                    <span>
+                      {lang === 'en'
+                        ? 'Service-Specific Details'
+                        : 'सेवा से संबंधित आवश्यक जानकारी'}
+                    </span>
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 gap-5">
                   {customFields.map((field) => {
                     const inputId = `custom-field-${field.id}`;
                     return (
                       <div key={field.id}>
                         <label
                           htmlFor={inputId}
-                          className="block text-xs font-semibold text-[#101014] mb-1.5"
+                          className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-[#101014] mb-1.5"
                         >
                           {lang === 'en' ? field.labelEn : field.labelHi}{' '}
                           {field.required ? '*' : ''}
@@ -772,7 +879,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                                 [field.id]: e.target.value,
                               }))
                             }
-                            className="w-full min-h-[44px] px-3.5 py-2 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                            className="w-full min-h-[44px] px-3.5 py-2 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
                           >
                             {(field.options || []).map((opt) => (
                               <option key={opt} value={opt}>
@@ -796,7 +903,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                                 ? field.placeholderEn
                                 : field.placeholderHi
                             }
-                            className="w-full px-3.5 py-2.5 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                            className="w-full px-3.5 py-2.5 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
                           />
                         ) : (
                           <input
@@ -814,7 +921,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                                 ? field.placeholderEn
                                 : field.placeholderHi
                             }
-                            className="w-full min-h-[44px] px-3.5 py-2 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                            className="w-full min-h-[44px] px-3.5 py-2 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
                           />
                         )}
                       </div>
@@ -824,13 +931,13 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               </div>
             )}
 
-            {/* Section 3: Dynamic Document Checklist Uploads (Per-Document Slots) */}
-            <div className="space-y-6 pt-6 border-t border-[#E6DFD3]">
-              <div>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <h2 className="font-display text-base font-bold text-[#101014] flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-[#101014] text-[#F7F3EA] text-xs font-bold flex items-center justify-center">
-                      3
+            {/* 03 // DYNAMIC DOCUMENT CHECKLIST UPLOADS (Per-Document Slots) */}
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-[#101014] pb-3">
+                <div>
+                  <h2 className="font-display text-lg sm:text-xl font-extrabold text-[#101014] flex items-center gap-2.5">
+                    <span className="font-mono-tabular text-xs font-bold text-[#FF5C35]">
+                      03 //
                     </span>
                     <span>
                       {lang === 'en'
@@ -838,42 +945,43 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                         : 'दस्तावेज़ अपलोड चेकलिस्ट'}
                     </span>
                   </h2>
-
-                  <button
-                    type="button"
-                    onClick={() => handleAttachSampleDocument(docRequirements[0])}
-                    className="min-h-[36px] px-3 py-1.5 text-xs font-semibold text-[#101014] bg-[#F7F3EA] hover:bg-[#ECE5D8] border border-[#DCD4C6] rounded-lg transition-colors whitespace-nowrap self-start"
-                  >
+                  <p className="text-xs text-[#5C5852] mt-1">
                     {lang === 'en'
-                      ? '+ Attach Sample Test Document'
-                      : '+ टेस्ट दस्तावेज़ जोड़ें'}
-                  </button>
+                      ? 'Upload each required document in its dedicated slot below.'
+                      : 'प्रत्येक आवश्यक दस्तावेज़ को उसके निर्धारित स्थान में अपलोड करें।'}
+                  </p>
                 </div>
 
-                {/* Checklist Progress Bar & Completion Counter */}
-                <div className="mt-4 p-4 bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl">
-                  <div className="flex items-center justify-between text-xs font-bold text-[#101014] mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[#FF5C35]">
-                        {lang === 'en'
-                          ? `${completeness.uploadedRequiredCount} of ${completeness.totalRequiredCount} Required Documents Attached`
-                          : `${completeness.totalRequiredCount} में से ${completeness.uploadedRequiredCount} आवश्यक दस्तावेज़ संलग्न`}
-                      </span>
-                      {completeness.valid && completeness.totalRequiredCount > 0 && (
-                        <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-[11px]">
-                          <Check className="w-3 h-3" />
-                          {lang === 'en' ? 'Checklist Ready' : 'चेकलिस्ट तैयार'}
-                        </span>
-                      )}
-                    </div>
-                    <span className="font-mono-tabular text-[#5C5852]">
-                      {totalAttachedFilesCount} {lang === 'en' ? 'total file(s)' : 'कुल फ़ाइलें'}
-                    </span>
-                  </div>
+                <button
+                  type="button"
+                  onClick={() => handleAttachSampleDocument(docRequirements[0])}
+                  className="min-h-[38px] px-3.5 py-1.5 text-xs font-mono-tabular font-bold uppercase tracking-wider text-[#101014] bg-[#FFFDF9] hover:bg-[#EFE9DC] border border-[#101014] transition-colors whitespace-nowrap self-start sm:self-auto"
+                >
+                  {lang === 'en'
+                    ? '+ Attach Sample Test Document'
+                    : '+ टेस्ट दस्तावेज़ जोड़ें'}
+                </button>
+              </div>
 
-                  <div className="w-full bg-[#E6DFD3] h-2 rounded-full overflow-hidden">
+              {/* Architectural Progress Strip */}
+              <div className="bg-[#101014] text-[#F7F3EA] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2.5 font-mono-tabular text-xs">
+                    <span className="text-[#FFB547] font-bold">
+                      {lang === 'en'
+                        ? `${completeness.uploadedRequiredCount} OF ${completeness.totalRequiredCount} REQUIRED DOCUMENTS ATTACHED`
+                        : `${completeness.totalRequiredCount} में से ${completeness.uploadedRequiredCount} आवश्यक दस्तावेज़ संलग्न`}
+                    </span>
+                    {completeness.valid && completeness.totalRequiredCount > 0 && (
+                      <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
+                        <Check className="w-3.5 h-3.5" />
+                        {lang === 'en' ? 'COMPLETE' : 'पूर्ण'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="w-full sm:w-72 bg-[#272732] h-1.5 overflow-hidden">
                     <div
-                      className="bg-[#FF5C35] h-full transition-all duration-300 rounded-full"
+                      className="bg-[#FF5C35] h-full transition-all duration-300"
                       style={{
                         width: `${
                           completeness.totalRequiredCount > 0
@@ -886,67 +994,100 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                     />
                   </div>
                 </div>
+
+                <div className="font-mono-tabular text-xs text-[#D8D3C8]">
+                  {totalAttachedFilesCount}{' '}
+                  {lang === 'en' ? 'TOTAL FILE(S) IN DOSSIER' : 'कुल फ़ाइलें'}
+                </div>
               </div>
 
-              {/* Dynamically Rendered Dedicated Upload Cards for Each Requirement */}
-              <div className="space-y-4">
+              {/* Dedicated Per-Document Drag-and-Drop Dashed Upload Zones */}
+              <div
+                className="grid grid-cols-1 gap-4"
+                data-testid="order-document-checklist"
+              >
                 {docRequirements.map((req, idx) => {
                   const uploadedFiles = uploadsByDocId[req.docId] || [];
                   const isUploaded = uploadedFiles.length > 0;
                   const slotError = slotErrors[req.docId];
-                  const acceptAttr = getAcceptAttributeForFormats(req.allowedFormats);
+                  const acceptAttr = getAcceptAttributeForFormats(
+                    req.allowedFormats
+                  );
+                  const cleanTitle = cleanDocumentLabel(
+                    lang === 'en' ? req.labelEn : req.labelHi || req.labelEn
+                  );
 
                   return (
                     <div
                       key={req.docId}
-                      className={`rounded-2xl border transition-all p-5 ${
+                      data-testid={`upload-slot-${req.docId}`}
+                      className={`rounded-2xl border-2 border-dashed p-5 sm:p-6 transition-all duration-200 ${
                         isUploaded
-                          ? 'bg-[#FFFDF9] border-emerald-300 ring-1 ring-emerald-200'
-                          : req.required && !completeness.valid
-                          ? 'bg-[#FFFDF9] border-[#FF5C35]/40 shadow-xs'
-                          : 'bg-[#FFFDF9] border-[#E6DFD3]'
+                          ? 'bg-emerald-50/75 border-emerald-500 shadow-[0_10px_24px_-8px_rgba(16,185,129,0.2)]'
+                          : req.required
+                          ? 'bg-[#FFFDF9] border-[#FF5C35]/60 hover:border-[#FF5C35] hover:bg-[#FFF9F6]'
+                          : 'bg-[#F7F3EA]/80 border-[#C5BCAE] hover:border-[#101014]'
                       }`}
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div className="space-y-1.5 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-mono-tabular text-xs font-bold text-[#A09D96] bg-[#101014] text-[#F7F3EA] px-2 py-0.5 rounded-md">
-                              {String(idx + 1).padStart(2, '0')}
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <span
+                              className={`w-7 h-7 rounded-lg font-mono-tabular text-xs font-extrabold flex items-center justify-center shrink-0 ${
+                                isUploaded
+                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  : req.required
+                                  ? 'bg-[#FF5C35]/15 text-[#C83713] border border-[#FF5C35]/40'
+                                  : 'bg-[#EFE9DC] text-[#5C5852]'
+                              }`}
+                            >
+                              {isUploaded ? (
+                                <Check className="w-4 h-4" />
+                              ) : (
+                                String(idx + 1).padStart(2, '0')
+                              )}
                             </span>
-                            <h3 className="font-bold text-base text-[#101014]">
-                              {lang === 'en' ? req.labelEn : req.labelHi}
+                            <h3 className="font-display font-bold text-base sm:text-lg text-[#101014]">
+                              {cleanTitle}
                             </h3>
                             {req.required ? (
-                              <span className="text-[11px] font-bold text-[#C83713] bg-[#FFECE8] border border-[#FF5C35]/30 px-2.5 py-0.5 rounded-full">
+                              <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#C83713] bg-[#FFECE8] border border-[#FF5C35]/40 px-2.5 py-0.5 rounded-full">
                                 {lang === 'en' ? 'Required' : 'अनिवार्य'}
                               </span>
                             ) : (
-                              <span className="text-[11px] font-semibold text-[#5C5852] bg-[#F7F3EA] border border-[#E6DFD3] px-2.5 py-0.5 rounded-full">
+                              <span className="font-mono-tabular text-[10px] font-semibold uppercase tracking-wider text-[#5C5852] bg-[#EFE9DC] border border-[#DCD4C6] px-2.5 py-0.5 rounded-full">
                                 {lang === 'en' ? 'Optional' : 'वैकल्पिक'}
                               </span>
                             )}
                             {isUploaded && (
-                              <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                <Check className="w-3 h-3" />
-                                {lang === 'en' ? 'Attached' : 'संलग्न ✓'}
+                              <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-emerald-950 bg-emerald-200/80 border border-emerald-500/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                                {lang === 'en'
+                                  ? 'Verified & Attached ✓'
+                                  : 'संलग्न ✓'}
                               </span>
                             )}
                           </div>
 
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-[#5C5852]">
-                            <span className="bg-[#F7F3EA] px-2 py-0.5 rounded-md font-mono-tabular">
-                              {lang === 'en' ? 'Formats' : 'प्रारूप'}:{' '}
-                              {req.allowedFormats.map((f) => f.toUpperCase()).join(', ')}
+                          <div className="flex flex-wrap items-center gap-2 font-mono-tabular text-xs text-[#5C5852]">
+                            <span>
+                              {lang === 'en' ? 'DROP OR SELECT' : 'प्रारूप'}:{' '}
+                              {req.allowedFormats
+                                .map((f) => f.toUpperCase())
+                                .join(', ')}
                             </span>
                             <span aria-hidden="true">·</span>
-                            <span className="bg-[#F7F3EA] px-2 py-0.5 rounded-md font-mono-tabular">
-                              {lang === 'en' ? 'Max Size' : 'अधिकतम साइज'}: {req.maxSizeKb} KB
+                            <span>
+                              {lang === 'en' ? 'MAX SIZE' : 'अधिकतम साइज'}:{' '}
+                              {req.maxSizeKb} KB
                             </span>
                           </div>
 
                           {(req.instructionsEn || req.instructionsHi) && (
-                            <p className="text-xs text-[#52504C] leading-relaxed pt-1">
-                              {lang === 'en' ? req.instructionsEn : req.instructionsHi}
+                            <p className="text-xs text-[#4A463E] leading-relaxed pt-0.5">
+                              {lang === 'en'
+                                ? req.instructionsEn
+                                : req.instructionsHi}
                             </p>
                           )}
                         </div>
@@ -967,26 +1108,28 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                           <button
                             type="button"
                             onClick={() => handleTriggerFileInput(req.docId)}
-                            className={`min-h-[44px] px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2 whitespace-nowrap ${
+                            className={`min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 whitespace-nowrap ${
                               isUploaded
-                                ? 'bg-[#F7F3EA] hover:bg-[#ECE5D8] border border-[#DCD4C6] text-[#101014]'
+                                ? 'bg-white hover:bg-emerald-50 border border-emerald-600 text-emerald-900 shadow-sm'
                                 : req.required
-                                ? 'bg-[#FF5C35] hover:bg-[#E84B25] text-white'
+                                ? 'bg-gradient-to-r from-[#FF5C35] to-[#E54922] hover:from-[#FF6B47] hover:to-[#FF5C35] text-white shadow-[0_8px_20px_-6px_rgba(255,92,53,0.5)]'
                                 : 'bg-[#101014] hover:bg-[#272732] text-white'
                             }`}
                           >
                             {isUploaded ? (
                               <>
-                                <RefreshCw className="w-4 h-4" />
-                                <span>{lang === 'en' ? 'Replace File' : 'फ़ाइल बदलें'}</span>
+                                <RefreshCw className="w-3.5 h-3.5 text-emerald-700" />
+                                <span>
+                                  {lang === 'en' ? 'Replace File' : 'फ़ाइल बदलें'}
+                                </span>
                               </>
                             ) : (
                               <>
-                                <Upload className="w-4 h-4" />
+                                <Upload className="w-3.5 h-3.5" />
                                 <span>
                                   {lang === 'en'
-                                    ? `Upload ${req.labelEn}`
-                                    : `${req.labelHi} अपलोड करें`}
+                                    ? `Upload ${cleanTitle}`
+                                    : `${cleanTitle} अपलोड करें`}
                                 </span>
                               </>
                             )}
@@ -996,7 +1139,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
                       {/* Slot Error Message */}
                       {slotError && (
-                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800 flex items-center gap-2">
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 text-xs text-red-800 flex items-center gap-2">
                           <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
                           <span>{slotError}</span>
                         </div>
@@ -1004,17 +1147,17 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
                       {/* Uploaded File Previews Inside This Document Slot */}
                       {isUploaded && (
-                        <div className="mt-4 pt-4 border-t border-[#E6DFD3] space-y-2">
+                        <div className="mt-4 pt-3 border-t border-[#DCD4C6] space-y-2">
                           {uploadedFiles.map((up) => {
                             const isImage = up.mimeType.startsWith('image/');
                             return (
                               <div
                                 key={up.id}
-                                className="flex items-center justify-between gap-3 p-3 bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl text-xs"
+                                className="flex items-center justify-between gap-3 p-2.5 bg-[#F7F3EA] border border-[#DCD4C6] text-xs"
                               >
                                 <div className="flex items-center gap-3 min-w-0">
                                   {isImage ? (
-                                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-white border border-[#DCD4C6] shrink-0">
+                                    <div className="w-10 h-10 overflow-hidden bg-white border border-[#DCD4C6] shrink-0">
                                       <img
                                         src={up.dataUrl}
                                         alt={up.fileName}
@@ -1022,7 +1165,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                                       />
                                     </div>
                                   ) : (
-                                    <div className="w-10 h-10 rounded-lg bg-white border border-[#DCD4C6] flex items-center justify-center text-[#FF5C35] shrink-0">
+                                    <div className="w-10 h-10 bg-white border border-[#DCD4C6] flex items-center justify-center text-[#FF5C35] shrink-0">
                                       <FileText className="w-5 h-5" />
                                     </div>
                                   )}
@@ -1032,7 +1175,11 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                                       {up.fileName}
                                     </div>
                                     <div className="text-[11px] text-[#5C5852] font-mono-tabular">
-                                      {Math.max(1, Math.round(up.sizeBytes / 1024))} KB ·{' '}
+                                      {Math.max(
+                                        1,
+                                        Math.round(up.sizeBytes / 1024)
+                                      )}{' '}
+                                      KB ·{' '}
                                       {up.mimeType.split('/')[1]?.toUpperCase()}
                                     </div>
                                   </div>
@@ -1041,16 +1188,20 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                                 <div className="flex items-center gap-2 shrink-0">
                                   <button
                                     type="button"
-                                    onClick={() => handleTriggerFileInput(req.docId)}
-                                    className="min-h-[36px] px-2.5 py-1 text-xs font-semibold text-[#5C5852] hover:text-[#101014] hover:bg-white rounded-lg transition-colors"
+                                    onClick={() =>
+                                      handleTriggerFileInput(req.docId)
+                                    }
+                                    className="min-h-[34px] px-2.5 py-1 text-xs font-semibold text-[#5C5852] hover:text-[#101014] hover:bg-white transition-colors"
                                   >
                                     {lang === 'en' ? 'Replace' : 'बदलें'}
                                   </button>
                                   <button
                                     type="button"
                                     aria-label={`Remove ${up.fileName}`}
-                                    onClick={() => handleRemoveSlotFile(req.docId, up.id)}
-                                    className="min-h-[36px] min-w-[36px] flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                    onClick={() =>
+                                      handleRemoveSlotFile(req.docId, up.id)
+                                    }
+                                    className="min-h-[34px] min-w-[34px] flex items-center justify-center text-red-600 hover:bg-red-50 transition-colors"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -1081,7 +1232,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               </div>
 
               {/* Optional Additional Supporting Documents Upload Section */}
-              <div className="p-5 bg-[#F7F3EA] border border-[#E6DFD3] rounded-2xl space-y-3">
+              <div className="p-5 bg-[#EFE9DC] border border-[#DCD4C6] space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="font-display text-sm font-bold text-[#101014] flex items-center gap-1.5">
@@ -1092,16 +1243,18 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                           : 'अतिरिक्त सहायक दस्तावेज़ (वैकल्पिक)'}
                       </span>
                     </h3>
-                    <p className="text-xs text-[#5C5852] mt-0.5">
+                    <p className="text-xs text-[#4A463E] mt-0.5">
                       {lang === 'en'
-                        ? 'Have an extra marksheet, bank statement, or caste certificate not listed above? Attach it here.'
+                        ? 'Have an extra marksheet, bank statement, or certificate not listed above? Attach it here.'
                         : 'कोई अन्य मार्कशीट, बैंक पासबुक या अतिरिक्त दस्तावेज़ यहाँ जोड़ सकते हैं।'}
                     </p>
                   </div>
 
-                  <label className="min-h-[40px] px-4 py-2 bg-white border border-[#DCD4C6] hover:bg-[#ECE5D8] text-[#101014] text-xs font-semibold rounded-xl cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap self-start sm:self-auto">
+                  <label className="min-h-[40px] px-4 py-2 bg-[#FFFDF9] border border-[#101014] hover:bg-[#101014] hover:text-white text-[#101014] text-xs font-semibold cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap self-start sm:self-auto transition-colors">
                     <Upload className="w-4 h-4 text-[#FF5C35]" />
-                    <span>{lang === 'en' ? 'Attach Extra File' : 'फ़ाइल जोड़ें'}</span>
+                    <span>
+                      {lang === 'en' ? 'Attach Extra File' : 'फ़ाइल जोड़ें'}
+                    </span>
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.docx"
@@ -1116,7 +1269,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                     {additionalUploads.map((up) => (
                       <li
                         key={up.id}
-                        className="flex items-center justify-between gap-3 p-3 bg-white border border-[#E6DFD3] rounded-xl text-xs"
+                        className="flex items-center justify-between gap-3 p-2.5 bg-[#FFFDF9] border border-[#DCD4C6] text-xs"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <FileText className="w-4 h-4 text-[#FF5C35] shrink-0" />
@@ -1136,7 +1289,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                               prev.filter((item) => item.id !== up.id)
                             )
                           }
-                          className="min-h-[36px] min-w-[36px] flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg"
+                          className="min-h-[34px] min-w-[34px] flex items-center justify-center text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1147,16 +1300,23 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               </div>
             </div>
 
-            {/* Section 4: Special Instructions */}
-            <div className="space-y-2 pt-6 border-t border-[#E6DFD3]">
-              <label
-                htmlFor="order-special-notes"
-                className="block text-xs font-semibold text-[#101014]"
-              >
-                {lang === 'en'
-                  ? '4. Additional Instructions or Formatting Notes (Optional)'
-                  : '4. अतिरिक्त निर्देश या विशेष जानकारी (वैकल्पिक)'}
-              </label>
+            {/* 04 // SPECIAL INSTRUCTIONS */}
+            <div className="space-y-3">
+              <div className="border-b-2 border-[#101014] pb-2">
+                <label
+                  htmlFor="order-special-notes"
+                  className="font-display text-base sm:text-lg font-extrabold text-[#101014] flex items-center gap-2.5"
+                >
+                  <span className="font-mono-tabular text-xs font-bold text-[#FF5C35]">
+                    04 //
+                  </span>
+                  <span>
+                    {lang === 'en'
+                      ? 'Additional Instructions or Formatting Notes (Optional)'
+                      : 'अतिरिक्त निर्देश या विशेष जानकारी (वैकल्पिक)'}
+                  </span>
+                </label>
+              </div>
               <textarea
                 id="order-special-notes"
                 rows={2}
@@ -1167,24 +1327,24 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                     ? 'Any specific layout requirement, urgent deadline, or spelling note...'
                     : 'कोई विशेष निर्देश या समय सीमा यहाँ लिखें...'
                 }
-                className="w-full px-3.5 py-2.5 bg-white border border-[#DCD4C6] rounded-xl text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
               />
             </div>
 
-            <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-xs text-[#5C5852]">
+            <div className="pt-4 border-t border-[#DCD4C6] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-xs font-mono-tabular">
                 {completeness.valid ? (
-                  <span className="text-emerald-700 font-semibold flex items-center gap-1.5">
+                  <span className="text-emerald-800 font-bold flex items-center gap-1.5">
                     <Check className="w-4 h-4" />
                     {lang === 'en'
-                      ? 'All required documents attached. Ready to review.'
-                      : 'सभी आवश्यक दस्तावेज़ संलग्न हैं। समीक्षा के लिए तैयार।'}
+                      ? 'ALL REQUIRED DOCUMENTS ATTACHED · READY FOR REVIEW'
+                      : 'सभी आवश्यक दस्तावेज़ संलग्न हैं · समीक्षा के लिए तैयार'}
                   </span>
                 ) : (
-                  <span className="text-[#C83713] font-semibold flex items-center gap-1.5">
+                  <span className="text-[#C83713] font-bold flex items-center gap-1.5">
                     <AlertCircle className="w-4 h-4" />
                     {lang === 'en'
-                      ? `Missing: ${completeness.missingDocsEn.join(', ')}`
+                      ? `MISSING: ${completeness.missingDocsEn.join(', ')}`
                       : `शेष: ${completeness.missingDocsHi.join(', ')}`}
                   </span>
                 )}
@@ -1192,124 +1352,194 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
               <button
                 type="submit"
-                className="min-h-[48px] px-6 py-3 bg-[#FF5C35] hover:bg-[#E84B25] text-white font-semibold text-sm rounded-xl transition-colors flex items-center gap-2 w-full sm:w-auto justify-center"
+                className="min-h-[48px] px-7 py-3.5 bg-[#FF5C35] hover:bg-[#E54922] text-white font-bold text-sm transition-colors flex items-center gap-2 w-full sm:w-auto justify-center"
               >
                 <span>
-                  {lang === 'en' ? 'Review Order Details' : 'ऑर्डर विवरण की समीक्षा करें'}
+                  {lang === 'en'
+                    ? 'Review Order Details'
+                    : 'ऑर्डर विवरण की समीक्षा करें'}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </form>
         ) : (
-          /* Step 2: Review & Confirm Order */
-          <div className="space-y-6">
-            <div className="bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl p-5 space-y-4">
-              <h2 className="font-display text-base font-bold text-[#101014]">
-                {lang === 'en'
-                  ? 'Review Your Order Before Submitting'
-                  : 'सबमिट करने से पहले अपने ऑर्डर की जांच करें'}
-              </h2>
+          /* STEP 2: REVIEW & CONFIRM ORDER */
+          <div className="space-y-8">
+            <div className="border-t-2 border-b border-[#101014] divide-y divide-[#DCD4C6]">
+              <div className="py-4 flex items-center justify-between">
+                <h2 className="font-display text-xl font-extrabold text-[#101014]">
+                  {lang === 'en'
+                    ? 'Review Your Order Dossier Before Dispatch'
+                    : 'सबमिट करने से पहले अपने ऑर्डर की जांच करें'}
+                </h2>
+                <span className="font-mono-tabular text-xs text-[#C83713] font-bold">
+                  STEP 02 // VERIFY
+                </span>
+              </div>
 
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div className="py-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <dt className="text-xs text-[#5C5852]">
+                  <div className="font-mono-tabular text-xs uppercase text-[#5C5852]">
                     {lang === 'en' ? 'Customer Name' : 'ग्राहक का नाम'}
-                  </dt>
-                  <dd className="font-semibold text-[#101014] mt-0.5">
+                  </div>
+                  <div className="font-bold text-[#101014] mt-0.5">
                     {customerName}
-                  </dd>
+                  </div>
                 </div>
                 <div>
-                  <dt className="text-xs text-[#5C5852]">
+                  <div className="font-mono-tabular text-xs uppercase text-[#5C5852]">
                     {lang === 'en' ? 'Mobile Number' : 'मोबाइल नंबर'}
-                  </dt>
-                  <dd className="font-semibold text-[#101014] font-mono-tabular mt-0.5">
+                  </div>
+                  <div className="font-bold text-[#101014] font-mono-tabular mt-0.5">
                     {customerPhone}
-                  </dd>
+                  </div>
                 </div>
                 <div>
-                  <dt className="text-xs text-[#5C5852]">
+                  <div className="font-mono-tabular text-xs uppercase text-[#5C5852]">
                     {lang === 'en' ? 'Village / Town' : 'गाँव / शहर'}
-                  </dt>
-                  <dd className="font-semibold text-[#101014] mt-0.5">
+                  </div>
+                  <div className="font-bold text-[#101014] mt-0.5">
                     {customerLocation}
-                  </dd>
+                  </div>
                 </div>
                 <div>
-                  <dt className="text-xs text-[#5C5852]">
-                    {lang === 'en' ? 'Total Attached Files' : 'संलग्न दस्तावेज़'}
-                  </dt>
-                  <dd className="font-semibold text-[#101014] font-mono-tabular mt-0.5">
+                  <div className="font-mono-tabular text-xs uppercase text-[#5C5852]">
+                    {lang === 'en' ? 'Attached Dossier' : 'संलग्न दस्तावेज़'}
+                  </div>
+                  <div className="font-bold text-[#101014] font-mono-tabular mt-0.5">
                     {allFlattenedUploads.length}{' '}
                     {lang === 'en' ? 'file(s) attached' : 'फ़ाइलें जुड़ी हैं'}
-                  </dd>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <dt className="text-xs text-[#5C5852]">
-                    {lang === 'en' ? 'Attached Document Breakdown' : 'संलग्न दस्तावेज़ों की सूची'}
-                  </dt>
-                  <dd className="mt-1 space-y-1.5">
-                    {allFlattenedUploads.map((up) => (
-                      <div
-                        key={up.id}
-                        className="flex items-center justify-between text-xs bg-white px-3 py-1.5 rounded-lg border border-[#E6DFD3]"
-                      >
-                        <span className="font-medium text-[#101014]">
-                          {lang === 'en' ? up.documentLabelEn : up.documentLabelHi}:{' '}
-                          <span className="text-[#52504C]">{up.fileName}</span>
-                        </span>
-                        <span className="text-[#787166] font-mono-tabular">
-                          {Math.round(up.sizeBytes / 1024)} KB
-                        </span>
-                      </div>
-                    ))}
-                  </dd>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <dt className="text-xs text-[#5C5852]">
-                    {lang === 'en' ? 'Service Details' : 'सेवा विवरण'}
-                  </dt>
-                  <dd className="text-[#101014] mt-0.5">
-                    {formattedResponsesSummary || 'Standard Request'}
-                  </dd>
-                </div>
-                {customerNotes && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-xs text-[#5C5852]">
-                      {lang === 'en' ? 'Customer Instructions' : 'ग्राहक निर्देश'}
-                    </dt>
-                    <dd className="text-[#101014] mt-0.5">{customerNotes}</dd>
                   </div>
-                )}
-              </dl>
+                </div>
+              </div>
+
+              <div className="py-4 space-y-2">
+                <div className="font-mono-tabular text-xs uppercase text-[#5C5852]">
+                  {lang === 'en'
+                    ? 'Attached Document Breakdown'
+                    : 'संलग्न दस्तावेज़ों की सूची'}
+                </div>
+                <div className="divide-y divide-[#DCD4C6] border border-[#DCD4C6] bg-[#FFFDF9]">
+                  {allFlattenedUploads.map((up) => (
+                    <div
+                      key={up.id}
+                      className="flex items-center justify-between text-xs px-3.5 py-2.5"
+                    >
+                      <span className="font-semibold text-[#101014]">
+                        {cleanDocumentLabel(
+                          lang === 'en'
+                            ? up.documentLabelEn || up.fileName
+                            : up.documentLabelHi || up.fileName
+                        )}
+                        :{' '}
+                        <span className="text-[#52504C] font-normal">
+                          {up.fileName}
+                        </span>
+                      </span>
+                      <span className="text-[#787166] font-mono-tabular">
+                        {Math.round(up.sizeBytes / 1024)} KB
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="py-4 text-sm">
+                <div className="font-mono-tabular text-xs uppercase text-[#5C5852]">
+                  {lang === 'en' ? 'Service Parameters' : 'सेवा विवरण'}
+                </div>
+                <div className="text-[#101014] mt-1">
+                  {formattedResponsesSummary || 'Standard Request'}
+                </div>
+              </div>
             </div>
 
-            <div className="p-4 bg-[#101014] border border-[#272732] rounded-xl text-xs text-[#D8D3C8] flex items-start gap-2.5">
-              <ShieldCheck className="w-5 h-5 text-[#FFB547] shrink-0 mt-0.5" />
-              <span>
-                {lang === 'en'
-                  ? 'Security Notice: We never ask for bank passwords, UPI PINs, or OTPs. You will pay the transparent fee via UPI only after submitting the order and enter the UTR transaction reference for manual admin verification.'
-                  : 'सुरक्षा सूचना: हम कभी भी बैंक पासवर्ड, UPI पिन या OTP नहीं मांगते हैं। ऑर्डर जमा करने के बाद आप सीधे UPI से भुगतान करेंगे और सत्यापन के लिए UTR नंबर दर्ज करेंगे।'}
-              </span>
+            {/* Framed UPI Payment Summary Card */}
+            <div
+              data-testid="upi-payment-summary-card"
+              className="rounded-2xl bg-[#101014] text-[#F7F3EA] border border-[#272732] p-6 sm:p-7 space-y-5 shadow-[0_20px_40px_-15px_rgba(16,16,20,0.45)]"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <div className="space-y-1">
+                  <div className="font-mono-tabular text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
+                    {lang === 'en'
+                      ? 'FRAMED UPI PAYMENT SUMMARY'
+                      : 'UPI भुगतान सारांश'}
+                  </div>
+                  <h3 className="font-display text-lg sm:text-xl font-extrabold text-white">
+                    {lang === 'en'
+                      ? 'Manual UPI Verification Protocol'
+                      : 'मैनुअल UPI भुगतान सत्यापन प्रणाली'}
+                  </h3>
+                </div>
+                <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF5C35]/20 to-[#FFB547]/20 border border-[#FFB547]/40 sm:text-right">
+                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#FFB547]">
+                    {lang === 'en' ? 'PAYABLE TARIFF' : 'देय शुल्क'}
+                  </div>
+                  <div className="font-mono-tabular text-2xl font-extrabold text-white">
+                    ₹{service.priceInr}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
+                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
+                    {lang === 'en' ? 'OFFICIAL UPI DESK' : 'आधिकारिक UPI सहायता'}
+                  </div>
+                  <div className="font-mono-tabular text-sm font-bold text-[#FFB547] mt-1">
+                    {DEFAULT_CENTER_SETTINGS.upiId ||
+                      `WhatsApp: ${BUSINESS_INFO.whatsappNumber}`}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
+                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
+                    {lang === 'en' ? 'VERIFIED PAYEE' : 'प्राप्तकर्ता का नाम'}
+                  </div>
+                  <div className="font-bold text-sm text-white mt-1">
+                    {DEFAULT_CENTER_SETTINGS.payeeName}
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
+                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
+                    {lang === 'en' ? 'ESTIMATED DELIVERY' : 'अनुमानित समय'}
+                  </div>
+                  <div className="font-mono-tabular text-sm font-bold text-emerald-400 mt-1">
+                    {lang === 'en'
+                      ? service.estimatedTimeEn
+                      : service.estimatedTimeHi}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-1 flex items-start gap-3 text-xs text-[#D8D3C8]">
+                <ShieldCheck className="w-5 h-5 text-[#FFB547] shrink-0 mt-0.5" />
+                <span>
+                  {lang === 'en'
+                    ? 'Security Notice: We never ask for bank passwords, UPI PINs, or OTPs. Place your order first to generate your unique Order ID, then pay via any UPI app and submit your 12-digit UTR reference on the Track Order screen.'
+                    : 'सुरक्षा सूचना: हम कभी भी बैंक पासवर्ड, UPI पिन या OTP नहीं मांगते हैं। पहले ऑर्डर सबमिट कर अपना यूनिक ऑर्डर नंबर प्राप्त करें, फिर UPI से भुगतान कर 12-अंकीय UTR नंबर दर्ज करें।'}
+                </span>
+              </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => setStep('details')}
-                className="min-h-[48px] px-5 py-2.5 bg-[#F7F3EA] hover:bg-[#ECE5D8] border border-[#DCD4C6] text-[#101014] font-semibold text-sm rounded-xl transition-colors"
+                className="min-h-[48px] px-5 py-3 bg-[#FFFDF9] hover:bg-[#EFE9DC] border border-[#101014] text-[#101014] font-semibold text-sm transition-colors"
               >
-                ← {lang === 'en' ? 'Edit Details & Files' : 'विवरण और फ़ाइलें संशोधित करें'}
+                ←{' '}
+                {lang === 'en'
+                  ? 'Edit Details & Files'
+                  : 'विवरण और फ़ाइलें संशोधित करें'}
               </button>
 
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleConfirmSubmit}
-                className="min-h-[48px] px-6 py-3 bg-[#FF5C35] hover:bg-[#E84B25] disabled:opacity-60 text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+                className="min-h-[48px] px-7 py-3.5 bg-[#FF5C35] hover:bg-[#E54922] disabled:opacity-60 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
               >
                 <span>
                   {isSubmitting
@@ -1325,7 +1555,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </section>
+      </section>
+    </div>
   );
 };

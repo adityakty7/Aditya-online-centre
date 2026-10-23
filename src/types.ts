@@ -1,5 +1,7 @@
 export type Language = 'en' | 'hi';
 
+export type VisualTheme = 'obsidian' | 'royal';
+
 export type ServiceCategoryKey = string;
 
 export interface CategoryMeta {
