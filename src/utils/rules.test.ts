@@ -1045,10 +1045,16 @@ test('Official Brand Identity, Uploaded Transparent PNG Logo, Simplified Square 
   assert.match(faviconSvg, /#FF5C35/);
   assert.match(faviconSvg, /#FFB547/);
 
-  // Verify index.html links both /favicon.svg and the official logo for social sharing
+  // Verify index.html links both /favicon.svg, official logo, and exact Google Search Console verification tag
   const indexHtml = fs.readFileSync(
     new URL('../../index.html', import.meta.url),
     'utf8'
+  );
+  assert.equal(
+    indexHtml.includes(
+      '<meta name="google-site-verification" content="qGWdO49t719aj_IYQf4hNbrI4xXo5s93VVHLJu46P78" />'
+    ),
+    true
   );
   assert.match(indexHtml, /Aditya Online Center — Your Digital World, Simplified\./);
   assert.match(indexHtml, /href="\/favicon\.svg"/);
