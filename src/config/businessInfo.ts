@@ -5,9 +5,31 @@ export interface SocialLinkItem {
   url: string;
 }
 
+export const BRAND_IDENTITY = {
+  brandName: 'ADITYA ONLINE CENTER',
+  displayNameEn: 'Aditya Online Center',
+  displayNameHi: 'आदित्य ऑनलाइन सेंटर',
+  taglineEn: 'Your Digital World, Simplified.',
+  taglineHi: 'आपकी डिजिटल दुनिया, अब और सरल।',
+  logoUrl: '/assets/aistudio/Aditya_Online_Center_Logo_Transparent_59adeda5.png',
+  faviconSvgUrl: '/favicon.svg',
+  colors: {
+    charcoalBlack: '#101014',
+    neonEmberOrange: '#FF5C35',
+    amberGold: '#FFB547',
+    metallicSilver: '#D4D8E2',
+    warmCream: '#F7F3EA',
+  },
+} as const;
+
 export interface BusinessInfoConfig {
   businessName: string;
+  businessNameUpper: string;
   businessNameHi: string;
+  taglineEn: string;
+  taglineHi: string;
+  logoUrl: string;
+  faviconSvgUrl: string;
   serviceAreaEn: string;
   serviceAreaHi: string;
   phone: string; // Empty string if not provided yet
@@ -28,7 +50,12 @@ export interface BusinessInfoConfig {
 
 export const BUSINESS_INFO: BusinessInfoConfig = {
   businessName: 'Aditya Online Center',
+  businessNameUpper: BRAND_IDENTITY.brandName,
   businessNameHi: 'आदित्य ऑनलाइन सेंटर',
+  taglineEn: BRAND_IDENTITY.taglineEn,
+  taglineHi: BRAND_IDENTITY.taglineHi,
+  logoUrl: BRAND_IDENTITY.logoUrl,
+  faviconSvgUrl: BRAND_IDENTITY.faviconSvgUrl,
   serviceAreaEn: 'Kateya, Gopalganj, Bihar, India',
   serviceAreaHi: 'कटेया, गोपालगंज, बिहार, भारत',
   phone: '', // Not provided yet

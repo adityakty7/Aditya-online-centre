@@ -26,6 +26,7 @@ import {
   DEMO_SAMPLE_ORDERS,
 } from '../data/initialCatalog';
 import { BUSINESS_INFO } from '../config/businessInfo';
+import { BrandLogo } from './BrandLogo';
 import {
   Search,
   CheckCircle2,
@@ -260,9 +261,12 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
         <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
             <div className="rounded-3xl glass-obsidian-panel p-6 sm:p-8 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-              <div className="space-y-2">
-                <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
-                  03. CUSTOMER PORTAL & ARCHIVE
+              <div className="space-y-2.5">
+                <div className="flex flex-wrap items-center gap-3">
+                  <BrandLogo variant="badge" lang={lang} showSubtitle={false} />
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
+                    03. CUSTOMER PORTAL & ARCHIVE
+                  </div>
                 </div>
                 <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#F7F3EA] tracking-tight">
                   {lang === 'en'
@@ -545,9 +549,12 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
       <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
           <div className="rounded-3xl glass-obsidian-panel p-6 sm:p-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-            <div className="space-y-2">
-              <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
-                02. LIVE WORKFLOW & DELIVERABLE VAULT
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-center gap-3">
+                <BrandLogo variant="badge" lang={lang} showSubtitle={false} />
+                <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
+                  02. LIVE WORKFLOW & DELIVERABLE VAULT
+                </div>
               </div>
               <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#F7F3EA] tracking-tight">
                 {lang === 'en'

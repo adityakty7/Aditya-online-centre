@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppView, Language, VisualTheme } from '../types';
-import { BUSINESS_INFO } from '../config/businessInfo';
+import { BRAND_IDENTITY, BUSINESS_INFO } from '../config/businessInfo';
+import { AdityaSymbolIcon } from './BrandLogo';
 import {
   Globe,
   Menu,
@@ -29,82 +30,33 @@ interface NavbarProps {
 }
 
 /**
- * 3D-Faceted Brand Symbol for Aditya Online Center
- * Adapts between Cyber Obsidian 3D (Neon Ember) and Royal Blue Studio.
+ * Official Brand Symbol & Logo Lockup for Aditya Online Center.
+ * Renders the uploaded official transparent PNG with preserved proportions and transparency.
  */
 export const AdityaBrandMark: React.FC<{
   className?: string;
   theme?: VisualTheme;
-}> = ({ className = 'w-8 h-8', theme = 'obsidian' }) => {
+}> = ({ className = 'w-9 h-9', theme = 'obsidian' }) => {
   const isRoyal = theme === 'royal';
-  const primaryHex = isRoyal ? '#2563EB' : '#FF5C35';
-  const secondaryHex = isRoyal ? '#38BDF8' : '#FFB547';
-  const deepHex = isRoyal ? '#1E3A8A' : '#9E2205';
 
   return (
-    <svg
-      viewBox="0 0 36 36"
-      fill="none"
-      aria-hidden="true"
-      className={`shrink-0 ${
+    <span
+      className={`relative inline-flex items-center justify-center rounded-xl p-0.5 shrink-0 border transition-all duration-300 ${
         isRoyal
-          ? 'drop-shadow-[0_0_12px_rgba(37,99,235,0.45)]'
-          : 'drop-shadow-[0_0_12px_rgba(255,92,53,0.45)]'
+          ? 'bg-[#0A162E] border-[#38BDF8]/45 shadow-[0_0_14px_rgba(37,99,235,0.38)]'
+          : 'bg-[#101014] border-[#FF5C35]/45 shadow-[0_0_16px_rgba(255,92,53,0.32)] group-hover:border-[#FFB547]/70'
       } ${className}`}
     >
-      <defs>
-        <linearGradient id="brandBg3D" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={isRoyal ? '#102447' : '#232334'} />
-          <stop offset="100%" stopColor={isRoyal ? '#061024' : '#0B0B12'} />
-        </linearGradient>
-        <linearGradient id="brandPrismLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={secondaryHex} />
-          <stop offset="100%" stopColor={primaryHex} />
-        </linearGradient>
-        <linearGradient id="brandPrismRight" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={primaryHex} />
-          <stop offset="100%" stopColor={deepHex} />
-        </linearGradient>
-      </defs>
-      <rect
-        x="1"
-        y="1"
-        width="34"
-        height="34"
-        rx="10"
-        fill="url(#brandBg3D)"
-        stroke={primaryHex}
-        strokeOpacity="0.55"
-        strokeWidth="1.4"
+      <img
+        src={BRAND_IDENTITY.logoUrl}
+        alt="Aditya Online Center Official Logo"
+        width={40}
+        height={40}
+        loading="eager"
+        decoding="async"
+        className="w-full h-full object-contain brand-logo-glow"
       />
-      <ellipse
-        cx="18"
-        cy="18"
-        rx="13"
-        ry="7"
-        transform="rotate(-24 18 18)"
-        stroke={secondaryHex}
-        strokeOpacity="0.45"
-        strokeWidth="1"
-      />
-      <polygon
-        points="18,5.5 7,26.5 14.5,26.5 18,16.5"
-        fill="url(#brandPrismLeft)"
-      />
-      <polygon
-        points="18,5.5 29,26.5 21.5,26.5 18,16.5"
-        fill="url(#brandPrismRight)"
-      />
-      <polygon points="18,18.5 21.8,26.5 14.2,26.5" fill="#F7F3EA" />
-      <rect
-        x="16.4"
-        y="11.4"
-        width="3.2"
-        height="3.2"
-        transform="rotate(45 18 13)"
-        fill="#FFFDF9"
-      />
-    </svg>
+    </span>
   );
 };
 
@@ -188,19 +140,32 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Floating Frosted-Glass Command Bar */}
       <header className="sticky top-0 z-30 glass-nav-header text-[#F7F3EA]">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-4 lg:gap-6 px-2.5 sm:px-6 h-16">
-          {/* Zone 1: 3D Faceted Brand Symbol + Clean Wordmark Lockup */}
+          {/* Zone 1: Official Transparent Logo + Brand Name Lockup (Clickable to Home) */}
           <button
             type="button"
+            data-testid="navbar-brand-home-btn"
+            aria-label={
+              lang === 'en'
+                ? 'Aditya Online Center — Go to Homepage'
+                : 'आदित्य ऑनलाइन सेंटर — होम पेज पर जाएं'
+            }
             onClick={() => handleNavClick('home')}
-            className="group min-h-[44px] flex items-center gap-2 sm:gap-3 text-left shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C35]"
+            className="group min-h-[44px] flex items-center gap-1.5 sm:gap-3 text-left min-w-0 shrink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C35] animate-logo-reveal"
           >
             <AdityaBrandMark
               theme={theme}
-              className="w-7 h-7 sm:w-9 sm:h-9 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-3"
+              className="w-8 h-8 sm:w-11 sm:h-11 transition-transform duration-300 group-hover:scale-105"
             />
-            <span className="block font-display text-[13px] sm:text-lg font-extrabold tracking-tight text-[#F7F3EA] group-hover:text-[#FFB547] transition-colors whitespace-nowrap leading-none">
-              {lang === 'en' ? 'Aditya Online Center' : 'आदित्य ऑनलाइन सेंटर'}
-            </span>
+            <div className="leading-tight min-w-0">
+              <span className="block font-display text-[12px] sm:text-base lg:text-[17px] font-extrabold tracking-tight text-[#F7F3EA] group-hover:text-[#FFB547] transition-colors truncate leading-none">
+                {lang === 'en' ? 'ADITYA ONLINE CENTER' : 'आदित्य ऑनलाइन सेंटर'}
+              </span>
+              <span className="hidden sm:block font-mono-tabular text-[9.5px] tracking-[0.12em] text-[#FFB547] mt-1 whitespace-nowrap">
+                {lang === 'en'
+                  ? BRAND_IDENTITY.taglineEn
+                  : BRAND_IDENTITY.taglineHi}
+              </span>
+            </div>
           </button>
 
           {/* Zone 2: Glassmorphic Pill Navigation Capsule */}
@@ -247,7 +212,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </nav>
 
           {/* Zone 3: Accessibility Font Toggle + Language Switcher + Account Action + Mobile Menu Trigger */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Accessibility Font Size / Screen Readability Toggle */}
             <button
               type="button"
@@ -268,14 +233,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ? 'Accessibility: Toggle Larger Font & Enhanced Readability'
                   : 'पठनीयता: बड़े और स्पष्ट अक्षर चालू/बंद करें'
               }
-              className={`min-h-[34px] sm:min-h-[38px] px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-mono-tabular font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
+              className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-3 py-1 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-mono-tabular font-bold flex items-center gap-1 sm:gap-1.5 transition-all whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
                 largeTextMode
                   ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.35)]'
                   : 'bg-white/[0.06] border-white/15 text-[#F7F3EA] hover:bg-white/[0.12] hover:border-[#FFB547]/50'
               }`}
             >
-              <Type className="w-3.5 h-3.5 text-[#FFB547]" />
-              <span>
+              <Type className="w-3.5 h-3.5 text-[#FFB547] shrink-0" />
+              <span className="sm:hidden">A+</span>
+              <span className="hidden sm:inline">
                 {largeTextMode
                   ? lang === 'en'
                     ? 'A+ Large Text ON'

@@ -56,7 +56,8 @@ import {
   INITIAL_SERVICES,
   SERVICE_CATEGORIES,
 } from './data/initialCatalog';
-import { BUSINESS_INFO } from './config/businessInfo';
+import { BRAND_IDENTITY, BUSINESS_INFO } from './config/businessInfo';
+import { BrandLogo } from './components/BrandLogo';
 import {
   DEFAULT_STAFF_PIN,
   formatFriendlyAuthError,
@@ -1996,20 +1997,23 @@ export default function App() {
         >
           <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-[0_24px_60px_rgba(0,0,0,0.65)] my-auto">
             <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-3">
-              <div>
-                <h2
-                  id="auth-modal-title"
-                  className="text-lg font-extrabold text-[#101014] font-display"
-                >
-                  {lang === 'en'
-                    ? 'Account & Authentication'
-                    : 'खाता और प्रमाणीकरण'}
-                </h2>
-                <p className="text-[11px] text-[#787166]">
-                  {lang === 'en'
-                    ? 'Aditya Online Center · Private Customer & Staff Vault'
-                    : 'आदित्य ऑनलाइन सेंटर · सुरक्षित ग्राहक एवं स्टाफ लॉगिन'}
-                </p>
+              <div className="flex items-center gap-2.5">
+                <BrandLogo variant="modal" lang={lang} showSubtitle={false} priority />
+                <div>
+                  <h2
+                    id="auth-modal-title"
+                    className="text-base sm:text-lg font-extrabold text-[#101014] font-display leading-tight"
+                  >
+                    {lang === 'en'
+                      ? 'Account & Authentication'
+                      : 'खाता और प्रमाणीकरण'}
+                  </h2>
+                  <p className="text-[11px] text-[#787166]">
+                    {lang === 'en'
+                      ? `${BRAND_IDENTITY.displayNameEn} · ${BRAND_IDENTITY.taglineEn}`
+                      : 'आदित्य ऑनलाइन सेंटर · सुरक्षित ग्राहक एवं स्टाफ लॉगिन'}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -2223,6 +2227,16 @@ export default function App() {
                           >
                             <span>Firebase Auth Settings</span>
                             <ExternalLink className="w-3 h-3 text-[#FFB547]" />
+                          </a>
+
+                          <a
+                            href={friendlyAuthDetails.oauthConsentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] inline-flex items-center gap-1"
+                          >
+                            <span>Publish OAuth App (Fix 403)</span>
+                            <ExternalLink className="w-3 h-3 text-white" />
                           </a>
                         </div>
                       </div>
@@ -2459,9 +2473,7 @@ export default function App() {
           <div className="bg-[#121721] border border-white/15 rounded-2xl max-w-md w-full p-6 space-y-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.85)]">
             <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#FF5722]/15 border border-[#FF5722]/40 flex items-center justify-center text-[#FF5722]">
-                  <KeyRound className="w-4 h-4" />
-                </div>
+                <BrandLogo variant="badge" lang={lang} showSubtitle={false} priority />
                 <div>
                   <h2
                     id="staff-pin-modal-title"
@@ -2701,38 +2713,16 @@ export default function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 sm:gap-10 pb-10 border-b border-white/10">
             {/* Col 1: Brand Identity & Location */}
             <div className="lg:col-span-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#18181F] border border-white/15 flex items-center justify-center shrink-0">
-                  <svg
-                    viewBox="0 0 36 36"
-                    className="w-6 h-6"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M18 4L31 28H23.5L18 17.5L12.5 28H5L18 4Z"
-                      fill="#FF5C35"
-                    />
-                    <path
-                      d="M18 19.5L22.2 28H13.8L18 19.5Z"
-                      fill="#FFB547"
-                    />
-                    <circle cx="18" cy="11.5" r="2" fill="#F7F3EA" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-base font-extrabold text-[#F7F3EA] tracking-tight font-display">
-                    {lang === 'en'
-                      ? BUSINESS_INFO.businessName
-                      : BUSINESS_INFO.businessNameHi}
-                  </div>
-                  <div className="text-xs text-[#9E988E]">
-                    {lang === 'en'
-                      ? BUSINESS_INFO.addressEn
-                      : BUSINESS_INFO.addressHi}
-                  </div>
-                </div>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentView('home');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-left group focus-visible:outline-2 focus-visible:outline-[#FF5C35] rounded-xl"
+              >
+                <BrandLogo variant="footer" lang={lang} />
+              </button>
               <p className="text-xs sm:text-sm text-[#B8B2A6] leading-relaxed max-w-sm">
                 {lang === 'en'
                   ? 'Trusted digital documentation, resume drafting, PDF formatting, and online government & scholarship form assistance for residents across Kateya and Gopalganj.'

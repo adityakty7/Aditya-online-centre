@@ -28,6 +28,7 @@ import {
   SAMPLE_DELIVERABLE_DATA_URL,
 } from '../data/initialCatalog';
 import { BUSINESS_INFO } from '../config/businessInfo';
+import { BrandLogo } from './BrandLogo';
 import {
   CheckCircle2,
   Upload,
@@ -367,13 +368,16 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
       <div className="bg-[#F7F3EA] min-h-screen">
         <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732] py-12 sm:py-16">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-6">
-            <div className="inline-flex items-center gap-2 font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FFB547]">
-              <CheckCircle2 className="w-4 h-4 text-[#FF5C35]" />
-              <span>
-                {lang === 'en'
-                  ? 'DISPATCH CONFIRMED · DOSSIER QUEUED'
-                  : 'ऑर्डर सफलतापूर्वक दर्ज हो गया है'}
-              </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <BrandLogo variant="badge" lang={lang} showSubtitle={false} />
+              <div className="inline-flex items-center gap-2 font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FFB547]">
+                <CheckCircle2 className="w-4 h-4 text-[#FF5C35]" />
+                <span>
+                  {lang === 'en'
+                    ? 'DISPATCH CONFIRMED · DOSSIER QUEUED'
+                    : 'ऑर्डर सफलतापूर्वक दर्ज हो गया है'}
+                </span>
+              </div>
             </div>
 
             <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#F7F3EA] tracking-tight leading-[1.05]">

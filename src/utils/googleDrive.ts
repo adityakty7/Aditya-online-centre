@@ -1,12 +1,5 @@
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
-
-// Ensure the Google Drive file scope is added to the provider
-try {
-  googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
-} catch (e) {
-  console.warn('Scope may already be added:', e);
-}
+import { auth } from '../firebase';
 
 // In-memory token cache (never stored in localStorage/sessionStorage per security guidelines)
 let inMemoryDriveToken: string | null = null;
@@ -29,14 +22,18 @@ export interface DriveUploadResult {
 
 /**
  * Obtains a fresh or cached Google OAuth access token with Google Drive scope.
+ * Uses a dedicated provider instance so regular customer Google Sign-In never requests Drive scope.
  */
 export async function getDriveAccessToken(): Promise<string> {
   if (inMemoryDriveToken) {
     return inMemoryDriveToken;
   }
 
-  // Request token interactively via Firebase Auth Google provider
-  const result = await signInWithPopup(auth, googleProvider);
+  const driveProvider = new GoogleAuthProvider();
+  driveProvider.addScope('https://www.googleapis.com/auth/drive.file');
+
+  // Request token interactively via dedicated Google Drive provider
+  const result = await signInWithPopup(auth, driveProvider);
   const credential = GoogleAuthProvider.credentialFromResult(result);
   const token = credential?.accessToken;
 

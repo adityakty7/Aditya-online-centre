@@ -26,7 +26,7 @@ export const db = getFirestore(
 );
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('https://www.googleapis.com/auth/drive.file');
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 export const BOOTSTRAPPED_ADMIN_EMAIL = 'adityakty77@gmail.com';
 

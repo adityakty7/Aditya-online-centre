@@ -11,7 +11,8 @@ import {
   VisualTheme,
 } from '../types';
 import { SERVICE_CATEGORIES } from '../data/initialCatalog';
-import { BUSINESS_INFO } from '../config/businessInfo';
+import { BRAND_IDENTITY, BUSINESS_INFO } from '../config/businessInfo';
+import { BrandLogo } from './BrandLogo';
 import {
   BEFORE_AFTER_SHOWCASE_TABS,
   CUSTOMER_TESTIMONIALS,
@@ -612,14 +613,27 @@ const EditorialEmberSculpture: React.FC<{
 
         {/* Bottom Glassmorphic Caption Bar inside 3D Stage */}
         <div className="relative z-20 rounded-2xl bg-white/[0.06] border border-white/15 backdrop-blur-xl px-4 py-3 flex items-center justify-between gap-4">
-          <div>
-            <div className="font-mono-tabular text-[10px] uppercase tracking-[0.16em] text-[#FFB547] font-bold">
-              {lang === 'en' ? 'DIGITAL ATELIER · KATEYA' : 'डिजिटल प्रणाली · कटेया'}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-[#101014] border border-[#FF5C35]/45 p-1 flex items-center justify-center shrink-0">
+              <img
+                src={BRAND_IDENTITY.logoUrl}
+                alt="Aditya Online Center Emblem"
+                width={36}
+                height={36}
+                loading="eager"
+                decoding="async"
+                className="w-full h-full object-contain brand-logo-glow"
+              />
             </div>
-            <div className="font-display text-xs sm:text-sm font-bold text-white mt-0.5">
-              {lang === 'en'
-                ? 'Interactive 3D Document & Form Studio'
-                : 'सटीक दस्तावेज़ और ऑनलाइन फॉर्म सेवा'}
+            <div className="min-w-0">
+              <div className="font-mono-tabular text-[10px] uppercase tracking-[0.16em] text-[#FFB547] font-bold truncate">
+                {lang === 'en' ? 'ADITYA ONLINE CENTER · KATEYA' : 'आदित्य ऑनलाइन सेंटर · कटेया'}
+              </div>
+              <div className="font-display text-xs sm:text-sm font-bold text-white mt-0.5 truncate">
+                {lang === 'en'
+                  ? 'Interactive 3D Document & Form Studio'
+                  : 'सटीक दस्तावेज़ और ऑनलाइन फॉर्म सेवा'}
+              </div>
             </div>
           </div>
           <div className="text-right font-mono-tabular text-[10px] sm:text-[11px] text-[#F7F3EA] shrink-0">
@@ -1840,20 +1854,15 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                 />
 
                 <div className="space-y-6 relative z-10">
-                  {/* Glowing Glass Issue Capsule */}
-                  <div className="inline-flex flex-wrap items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.07] border border-white/20 backdrop-blur-xl">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34D399]" />
-                    <span className="font-mono-tabular text-[11px] font-bold uppercase tracking-[0.16em] text-[#FFB547]">
-                      00. KATEYA 3D DIGITAL STUDIO
-                    </span>
-                    <span aria-hidden="true" className="text-white/30">
-                      ·
-                    </span>
-                    <span className="font-mono-tabular text-[11px] text-white">
-                      {lang === 'en'
-                        ? 'GOPALGANJ, BIHAR'
-                        : 'कटेया, गोपालगंज (बिहार)'}
-                    </span>
+                  {/* Intentional Hero Brand Identity Lockup + Glowing Glass Issue Capsule */}
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <BrandLogo variant="hero" lang={lang} />
+                    <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.07] border border-white/20 backdrop-blur-xl">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34D399]" />
+                      <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-[0.16em] text-[#FFB547]">
+                        00. KATEYA 3D STUDIO
+                      </span>
+                    </div>
                   </div>
 
                   {/* Required Split Hero Headline with Luminous Multi-Stop Gradient */}

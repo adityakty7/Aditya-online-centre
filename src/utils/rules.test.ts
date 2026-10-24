@@ -75,6 +75,7 @@ import {
   validateQuickCustomerSignIn,
 } from './rules.ts';
 import {
+  BRAND_IDENTITY,
   BUSINESS_INFO,
   getActiveSocialLinks,
 } from '../config/businessInfo.ts';
@@ -1017,3 +1018,43 @@ test('External Domain & Vercel Authentication: auth/unauthorized-domain detectio
   });
   assert.equal(invalidQuick.valid, false);
 });
+
+test('Official Brand Identity, Uploaded Transparent PNG Logo, Simplified Square Favicon & HTML Metadata', () => {
+  assert.equal(BRAND_IDENTITY.brandName, 'ADITYA ONLINE CENTER');
+  assert.equal(BRAND_IDENTITY.taglineEn, 'Your Digital World, Simplified.');
+  assert.equal(
+    BRAND_IDENTITY.logoUrl,
+    '/assets/aistudio/Aditya_Online_Center_Logo_Transparent_59adeda5.png'
+  );
+  assert.equal(BRAND_IDENTITY.colors.charcoalBlack, '#101014');
+  assert.equal(BRAND_IDENTITY.colors.neonEmberOrange, '#FF5C35');
+  assert.equal(BRAND_IDENTITY.colors.amberGold, '#FFB547');
+  assert.equal(BRAND_IDENTITY.colors.warmCream, '#F7F3EA');
+
+  // Verify uploaded official transparent PNG exists in /public/assets/aistudio/
+  const logoDiskPath = new URL(
+    '../../public/assets/aistudio/Aditya_Online_Center_Logo_Transparent_59adeda5.png',
+    import.meta.url
+  );
+  assert.equal(fs.existsSync(logoDiskPath), true);
+
+  // Verify simplified square A-symbol favicon SVG exists in /public/favicon.svg
+  const faviconDiskPath = new URL('../../public/favicon.svg', import.meta.url);
+  assert.equal(fs.existsSync(faviconDiskPath), true);
+  const faviconSvg = fs.readFileSync(faviconDiskPath, 'utf8');
+  assert.match(faviconSvg, /#FF5C35/);
+  assert.match(faviconSvg, /#FFB547/);
+
+  // Verify index.html links both /favicon.svg and the official logo for social sharing
+  const indexHtml = fs.readFileSync(
+    new URL('../../index.html', import.meta.url),
+    'utf8'
+  );
+  assert.match(indexHtml, /Aditya Online Center — Your Digital World, Simplified\./);
+  assert.match(indexHtml, /href="\/favicon\.svg"/);
+  assert.match(
+    indexHtml,
+    /Aditya_Online_Center_Logo_Transparent_59adeda5\.png/
+  );
+});
+

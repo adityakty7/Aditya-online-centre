@@ -52,6 +52,7 @@ import {
   SAMPLE_DELIVERABLE_DATA_URL,
   SERVICE_CATEGORIES,
 } from '../data/initialCatalog';
+import { BrandLogo } from './BrandLogo';
 import {
   ShieldCheck,
   Lock,
@@ -1221,13 +1222,16 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732] py-14 sm:py-20">
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <div className="glass-obsidian-panel p-6 sm:p-10 space-y-6">
-              <div className="inline-flex items-center gap-2 font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
-                <Lock className="w-4 h-4 text-[#FFB547]" />
-                <span>
-                  {lang === 'en'
-                    ? '04. ROLE-BASED SECURITY ENFORCEMENT'
-                    : '04. सुरक्षित एडमिन नियंत्रण'}
-                </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <BrandLogo variant="badge" lang={lang} showSubtitle={false} />
+                <div className="inline-flex items-center gap-2 font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
+                  <Lock className="w-4 h-4 text-[#FFB547]" />
+                  <span>
+                    {lang === 'en'
+                      ? '04. ROLE-BASED SECURITY ENFORCEMENT'
+                      : '04. सुरक्षित एडमिन नियंत्रण'}
+                  </span>
+                </div>
               </div>
 
               <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#F7F3EA] tracking-tight leading-[1.06]">
@@ -1414,19 +1418,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
           className="w-full lg:w-64 shrink-0 bg-[#101014] border border-[#272732] rounded-2xl shadow-xl text-[#F7F3EA] p-4 lg:sticky lg:top-20 space-y-4"
         >
           <div className="pb-3.5 border-b border-white/10 flex items-center justify-between lg:block">
-            <div>
-              <div className="inline-flex items-center gap-1.5 font-mono-tabular text-[10px] font-bold uppercase tracking-[0.18em] text-[#FFB547]">
-                <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-[#FF5C35]" />
-                <span>
-                  {isLiveAdmin ? 'LIVE FIRESTORE ADMIN' : 'SANDBOX ADMIN'}
-                </span>
+            <div className="space-y-2">
+              <BrandLogo
+                variant="sidebar"
+                lang={lang}
+                subtitleText={
+                  isLiveAdmin ? 'LIVE FIRESTORE ADMIN' : 'KATEYA · ADMIN DESK'
+                }
+              />
+              <div>
+                <h1 className="text-sm font-extrabold text-[#F7F3EA] tracking-tight font-display">
+                  {lang === 'en' ? 'Admin Control Center' : 'एडमिन कंट्रोल पैनल'}
+                </h1>
+                <p className="font-mono-tabular text-[10px] text-[#D8D3C8]">
+                  {lang === 'en' ? 'KATEYA · OPERATIONS' : 'कटेया डिजिटल संचालन'}
+                </p>
               </div>
-              <h1 className="text-base font-extrabold text-[#F7F3EA] mt-1.5 tracking-tight font-display">
-                {lang === 'en' ? 'Admin Control Center' : 'एडमिन कंट्रोल पैनल'}
-              </h1>
-              <p className="font-mono-tabular text-[11px] text-[#D8D3C8] mt-0.5">
-                {lang === 'en' ? 'KATEYA · OPERATIONS' : 'कटेया डिजिटल संचालन'}
-              </p>
             </div>
 
             <button

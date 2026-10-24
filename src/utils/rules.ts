@@ -2562,7 +2562,10 @@ export function isFirebaseUnauthorizedDomainError(err: unknown): boolean {
     lower.includes('auth/unauthorized-domain') ||
     lower.includes('unauthorized-domain') ||
     lower.includes('operation-not-supported-in-this-environment') ||
-    lower.includes('auth/popup-blocked')
+    lower.includes('auth/popup-blocked') ||
+    lower.includes('access_denied') ||
+    lower.includes('auth/popup-closed-by-user') ||
+    lower.includes('auth/cancelled-popup-request')
   );
 }
 
@@ -2575,6 +2578,7 @@ export interface FriendlyAuthErrorDetails {
   domainToAuthorize: string;
   firebaseProjectId: string;
   firebaseConsoleUrl: string;
+  oauthConsentUrl: string;
 }
 
 export function formatFriendlyAuthError(
@@ -2587,17 +2591,19 @@ export function formatFriendlyAuthError(
   const cleanProject =
     String(firebaseProjectId || '').trim() || 'gen-lang-client-0774506168';
   const consoleUrl = `https://console.firebase.google.com/project/${cleanProject}/authentication/settings`;
+  const oauthConsentUrl = `https://console.cloud.google.com/apis/credentials/consent?project=${cleanProject}`;
 
   if (isFirebaseUnauthorizedDomainError(err)) {
     return {
       isDomainError: true,
-      titleEn: 'Google Popup Not Yet Authorized on This Domain — Use Instant Mobile Sign-In Below',
-      titleHi: 'इस डोमेन पर Google पॉपअप अभी अधिकृत नहीं है — नीचे मोबाइल नंबर से तुरंत लॉगिन करें',
-      messageEn: `You can sign in immediately on ${cleanHost} using your Name & 10-Digit Mobile Number below (no Google popup needed). To also enable Google Sign-In on ${cleanHost}, add "${cleanHost}" in Firebase Console → Authentication → Settings → Authorized domains.`,
-      messageHi: `आप बिना किसी रुकावट के नीचे अपना नाम और 10-अंकीय मोबाइल नंबर दर्ज करके तुरंत लॉगिन कर सकते हैं। यदि आप ${cleanHost} पर Google लॉगिन भी चालू करना चाहते हैं, तो Firebase Console → Authentication → Settings → Authorized domains में जाकर "${cleanHost}" जोड़ें।`,
+      titleEn: 'Use Instant Mobile Sign-In Below (Works for All Customers Immediately)',
+      titleHi: 'नीचे मोबाइल नंबर से तुरंत लॉगिन करें (सभी ग्राहकों के लिए चालू)',
+      messageEn: `Any customer can sign in immediately using their Name & 10-Digit Mobile Number below. If Google Popup showed "Error 403: access_denied (Testing mode)", click "Publish OAuth App" below in Google Cloud Console → OAuth consent screen → Click "PUBLISH APP" so all public Gmail accounts can sign in.`,
+      messageHi: `कोई भी ग्राहक नीचे अपना नाम और 10-अंकीय मोबाइल नंबर दर्ज करके तुरंत लॉगिन कर सकता है। यदि किसी अन्य Gmail से लॉगिन करने पर "Error 403: access_denied" दिखता है, तो नीचे "Publish OAuth App" खोलें और "PUBLISH APP" बटन दबाएं।`,
       domainToAuthorize: cleanHost,
       firebaseProjectId: cleanProject,
       firebaseConsoleUrl: consoleUrl,
+      oauthConsentUrl,
     };
   }
 
@@ -2616,6 +2622,7 @@ export function formatFriendlyAuthError(
     domainToAuthorize: cleanHost,
     firebaseProjectId: cleanProject,
     firebaseConsoleUrl: consoleUrl,
+    oauthConsentUrl,
   };
 }
 

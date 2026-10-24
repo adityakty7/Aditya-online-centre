@@ -7,10 +7,12 @@ import {
   ShopVisitToken,
 } from '../types';
 import {
+  BRAND_IDENTITY,
   BUSINESS_INFO,
   getActiveSocialLinks,
   SocialLinkItem,
 } from '../config/businessInfo';
+import { BrandLogo } from './BrandLogo';
 import {
   SHOP_TIME_SLOTS,
   buildShopTokenWhatsAppUrl,
@@ -484,10 +486,13 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
       {/* Dark Charcoal Editorial Masthead */}
       <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732] py-10 sm:py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-3">
-          <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
-            {lang === 'en'
-              ? '05 // CITIZEN ASSISTANCE & CONTACT DESK'
-              : '05 // आधिकारिक ग्राहक सहायता और संपर्क केंद्र'}
+          <div className="flex flex-wrap items-center gap-3">
+            <BrandLogo variant="badge" lang={lang} showSubtitle={false} />
+            <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
+              {lang === 'en'
+                ? '05 // CITIZEN ASSISTANCE & CONTACT DESK'
+                : '05 // आधिकारिक ग्राहक सहायता और संपर्क केंद्र'}
+            </div>
           </div>
           <h1
             id="contact-page-heading"
@@ -1212,14 +1217,27 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                     className="rounded-2xl bg-gradient-to-br from-[#121721] via-[#161E2E] to-[#0A0D12] border-2 border-[#FFB547]/60 p-6 space-y-5 shadow-[0_16px_40px_-10px_rgba(255,181,71,0.25)]"
                   >
                     <div className="flex items-center justify-between border-b border-white/15 pb-3.5">
-                      <div>
-                        <div className="font-mono-tabular text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
-                          {lang === 'en'
-                            ? 'OFFICIAL DIGITAL APPOINTMENT PASS'
-                            : 'आधिकारिक डिजिटल अपॉइंटमेंट पास'}
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-[#0A0D12] border border-[#FF5C35]/40 p-1 flex items-center justify-center shrink-0">
+                          <img
+                            src={BRAND_IDENTITY.logoUrl}
+                            alt="Aditya Online Center Logo"
+                            width={32}
+                            height={32}
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-full object-contain brand-logo-glow"
+                          />
                         </div>
-                        <div className="font-display text-sm font-extrabold text-white mt-0.5">
-                          Aditya Online Center · Kateya
+                        <div>
+                          <div className="font-mono-tabular text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+                            {lang === 'en'
+                              ? 'OFFICIAL DIGITAL APPOINTMENT PASS'
+                              : 'आधिकारिक डिजिटल अपॉइंटमेंट पास'}
+                          </div>
+                          <div className="font-display text-sm font-extrabold text-white mt-0.5">
+                            Aditya Online Center · Kateya
+                          </div>
                         </div>
                       </div>
                       <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono-tabular text-[10px] font-bold">
