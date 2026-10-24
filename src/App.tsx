@@ -195,7 +195,33 @@ export default function App() {
       return 'obsidian';
     }
   });
-  const [currentView, setCurrentView] = React.useState<AppView>('home');
+  const [currentView, setCurrentView] = React.useState<AppView>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const viewParam = params.get('view') as AppView | null;
+        const allowedViews: AppView[] = [
+          'home',
+          'services',
+          'service-detail',
+          'order-form',
+          'order-confirmation',
+          'track-order',
+          'dashboard',
+          'admin',
+          'contact',
+          'privacy',
+          'terms',
+        ];
+        if (viewParam && allowedViews.includes(viewParam)) {
+          return viewParam;
+        }
+      }
+    } catch {
+      // Ignore URL parse errors
+    }
+    return 'home';
+  });
   const [selectedCategory, setSelectedCategory] = React.useState<
     ServiceCategoryKey | 'all'
   >('all');
@@ -311,7 +337,20 @@ export default function App() {
 
   // Active Order Flow & Selection State
   const [selectedService, setSelectedService] =
-    React.useState<DigitalService | null>(INITIAL_SERVICES[0]);
+    React.useState<DigitalService | null>(() => {
+      try {
+        if (typeof window !== 'undefined') {
+          const serviceId = new URLSearchParams(window.location.search).get('service');
+          if (serviceId) {
+            const match = INITIAL_SERVICES.find((s) => s.id === serviceId);
+            if (match) return match;
+          }
+        }
+      } catch {
+        // Ignore URL parsing errors
+      }
+      return INITIAL_SERVICES[0];
+    });
   const [confirmedOrder, setConfirmedOrder] =
     React.useState<ServiceOrder | null>(null);
   const [selectedOrderNumber, setSelectedOrderNumber] = React.useState<string>(
@@ -2939,6 +2978,13 @@ export default function App() {
                   >
                     {lang === 'en' ? 'Terms of Service' : 'सेवा की शर्तें'}
                   </button>
+                  <a
+                    href="/sitemap.html"
+                    data-testid="footer-sitemap-link"
+                    className="text-[#D6D1C7] hover:text-[#FFB547] underline underline-offset-4"
+                  >
+                    {lang === 'en' ? 'HTML Sitemap' : 'साइटमैप (Sitemap)'}
+                  </a>
                   <button
                     type="button"
                     data-testid="footer-staff-login-btn"

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://aditya-online-centre-jk87.vercel.app/sitemap.xml
+Sitemap: https://aditya-online-centre-jk87.vercel.app/sitemap.html

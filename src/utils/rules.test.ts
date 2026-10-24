@@ -1062,5 +1062,17 @@ test('Official Brand Identity, Uploaded Transparent PNG Logo, Simplified Square 
     indexHtml,
     /Aditya_Online_Center_Logo_Transparent_59adeda5\.png/
   );
+
+  // Verify sitemap.html, sitemap.xml, and robots.txt exist in /public/
+  const sitemapHtmlPath = new URL('../../public/sitemap.html', import.meta.url);
+  assert.equal(fs.existsSync(sitemapHtmlPath), true);
+  const sitemapHtml = fs.readFileSync(sitemapHtmlPath, 'utf8');
+  assert.match(sitemapHtml, /HTML Sitemap — Aditya Online Center/);
+  assert.match(sitemapHtml, /srv-modern-resume/);
+
+  const sitemapXmlPath = new URL('../../public/sitemap.xml', import.meta.url);
+  assert.equal(fs.existsSync(sitemapXmlPath), true);
+  const sitemapXml = fs.readFileSync(sitemapXmlPath, 'utf8');
+  assert.match(sitemapXml, /https:\/\/aditya-online-centre-jk87\.vercel\.app\/sitemap\.html/);
 });
 
