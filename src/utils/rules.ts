@@ -1520,3 +1520,73 @@ export function clampComparisonSlider(value: unknown, fallback = 62): number {
   return Math.min(95, Math.max(5, Math.round(num)));
 }
 
+export function buildServiceWhatsAppUrl(
+  serviceTitle: string,
+  whatsappNumber = '6206800799'
+): string {
+  const cleanTitle = sanitizeString(serviceTitle || 'Digital Service', 140);
+  const digits = String(whatsappNumber || '6206800799').replace(/\D/g, '');
+  const fullNumber = digits.startsWith('91') && digits.length === 12 ? digits : `91${digits}`;
+  const text = `Hello Aditya, I want to apply for ${cleanTitle}`;
+  return `https://wa.me/${fullNumber}?text=${encodeURIComponent(text)}`;
+}
+
+export interface CustomerTestimonialItem {
+  id: string;
+  nameEn: string;
+  nameHi: string;
+  locationEn: string;
+  locationHi: string;
+  serviceTagEn: string;
+  serviceTagHi: string;
+  rating: number;
+  quoteEn: string;
+  quoteHi: string;
+}
+
+export const CUSTOMER_TESTIMONIALS: CustomerTestimonialItem[] = [
+  {
+    id: 'rev-fast-form-filling',
+    nameEn: 'Ankit Kumar Verma',
+    nameHi: 'अंकित कुमार वर्मा',
+    locationEn: 'Ward No. 08, Near G.A. High School, Kateya',
+    locationHi: 'वार्ड नं. 08, जी.ए. हाई स्कूल के पास, कटेया',
+    serviceTagEn: 'Fast Scholarship & Exam Form Filling',
+    serviceTagHi: 'तेज़ छात्रवृत्ति और परीक्षा फॉर्म सहायता',
+    rating: 5,
+    quoteEn:
+      'I sent my Bihar Post-Matric Scholarship and BSSC exam documents from home on WhatsApp. Every marksheet and certificate was resized accurately and my form receipt PDF was delivered within 3 hours without standing in any queue.',
+    quoteHi:
+      'मैंने घर बैठे बिहार पोस्ट-मैट्रिक छात्रवृत्ति और BSSC फॉर्म के दस्तावेज़ अपलोड किए। बिना किसी कतार में लगे 3 घंटे के भीतर सही साइज में दस्तावेज़ अपलोड होकर फाइनल रसीद PDF मिल गई।',
+  },
+  {
+    id: 'rev-biodata-typing',
+    nameEn: 'Priya Kumari',
+    nameHi: 'प्रिया कुमारी',
+    locationEn: 'Kateya Bazar, Nagar Panchayat, Gopalganj',
+    locationHi: 'कटेया बाज़ार, नगर पंचायत, गोपालगंज',
+    serviceTagEn: 'Accurate Biodata & ATS Resume Typing',
+    serviceTagHi: 'सटीक विवाह बायोडाटा और जॉब रिज़्यूमे टाइपिंग',
+    rating: 5,
+    quoteEn:
+      'Aditya Online Center prepared both my English ATS job resume and a traditional Hindi marriage biodata for my brother with zero spelling mistakes. The print-ready PDF layout looked clean and professional.',
+    quoteHi:
+      'आदित्य ऑनलाइन सेंटर ने मेरा अंग्रेजी जॉब रिज़्यूमे और भाई के लिए हिंदी विवाह बायोडाटा बिना किसी वर्तनी (spelling) त्रुटि के बेहद सुंदर बॉर्डर और साफ प्रिंट-रेडी PDF में तैयार किया।',
+  },
+  {
+    id: 'rev-instant-resizing',
+    nameEn: 'Rakesh Tiwari',
+    nameHi: 'राकेश तिवारी',
+    locationEn: 'Bathua Bazar, Kateya Block, Gopalganj',
+    locationHi: 'बथुआ बाज़ार, प्रखंड कटेया, गोपालगंज',
+    serviceTagEn: 'Instant PDF Merge & KB Photo Resizing',
+    serviceTagHi: 'तुरंत PDF मर्ज और फोटो/हस्ताक्षर KB रीसाइज',
+    rating: 5,
+    quoteEn:
+      'My portal rejected my phone photos for being over 200 KB. Within 45 minutes of placing the ₹40 order, I received a merged marksheet PDF under 150 KB plus my photo and signature with exact pixel dimensions.',
+    quoteHi:
+      'पोर्टल पर फोटो और मार्कशीट का साइज बड़ा होने के कारण अपलोड नहीं हो रहा था। मात्र ₹40 में 45 मिनट के अंदर मुझे 150 KB से कम की साफ PDF और सही माप में फोटो-सिग्नेचर मिल गए।',
+  },
+];
+
+

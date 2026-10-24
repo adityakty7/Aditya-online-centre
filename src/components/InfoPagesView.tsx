@@ -132,12 +132,12 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
 
             <div className="py-6 grid grid-cols-1 sm:grid-cols-12 gap-4">
               <div className="sm:col-span-3 font-mono-tabular text-xs font-bold uppercase text-[#C83713]">
-                02 // ABAC VAULT
+                02 // PRIVATE VAULT
               </div>
               <div className="sm:col-span-9 text-[#101014]">
                 {lang === 'en'
-                  ? '2. Strict Document Isolation: Uploaded files (marksheets, ID proofs, photos, and receipts) are stored with strict Attribute-Based Access Control (ABAC) in Cloud Firestore. Customers can only read or download their own orders and files. Public directory listing is strictly disabled.'
-                  : '2. सख्त दस्तावेज़ सुरक्षा: अपलोड की गई फ़ाइलें (मार्कशीट, फोटो, प्रमाणपत्र) सख्त सुरक्षा नियमों के तहत सुरक्षित रहती हैं। कोई भी अन्य ग्राहक आपके दस्तावेज़ या ऑर्डर नहीं देख सकता।'}
+                  ? '2. 100% Private & Safe Document Vault: Uploaded files (marksheets, ID proofs, photos, and receipts) are protected under our Complete Data Privacy Guarantee. Customers can only view or download their own orders and files, and no documents are ever shared publicly.'
+                  : '2. 100% सुरक्षित एवं गोपनीय दस्तावेज़ वॉल्ट: अपलोड की गई फ़ाइलें (मार्कशीट, फोटो, प्रमाणपत्र) पूर्ण डेटा गोपनीयता गारंटी के तहत सुरक्षित रहती हैं। कोई भी अन्य ग्राहक आपके दस्तावेज़ या ऑर्डर नहीं देख सकता।'}
               </div>
             </div>
 
@@ -412,6 +412,23 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                   <span>{lang === 'en' ? 'Send Email' : 'ईमेल भेजें'}</span>
                 </a>
               </div>
+
+              {/* Direct Google Maps Direction Link Button */}
+              <a
+                href={BUSINESS_INFO.googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="google-maps-direction-btn"
+                className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-gradient-to-r from-[#FF5C35] to-[#E54922] hover:from-[#FF6B47] hover:to-[#FF5C35] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_-6px_rgba(255,92,53,0.45)] transition-all"
+              >
+                <MapPin className="w-4 h-4 shrink-0" />
+                <span>
+                  {lang === 'en'
+                    ? 'Get Directions on Google Maps (Kateya Ward 08)'
+                    : 'गूगल मैप्स (Google Maps) पर रास्ता देखें'}
+                </span>
+                <ExternalLink className="w-3.5 h-3.5 opacity-90 shrink-0" />
+              </a>
             </div>
 
             {/* Verified Business Information Ledger */}
@@ -506,7 +523,9 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                 <Calendar className="w-4 h-4 text-[#FF5C35] shrink-0 mt-1" />
                 <div>
                   <dt className="font-mono-tabular text-xs font-bold uppercase text-[#5C5852]">
-                    {lang === 'en' ? 'Working Days' : 'कार्य दिवस'}
+                    {lang === 'en'
+                      ? 'Working Days & Hours'
+                      : 'कार्य दिवस एवं समय'}
                   </dt>
                   <dd className="text-[#101014] font-semibold mt-0.5">
                     {lang === 'en'

@@ -8,8 +8,8 @@ import {
   PhoneCall,
   ShieldCheck,
   ArrowUpRight,
-  Palette,
-  FolderArchive,
+  Type,
+  Clock,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -114,15 +114,34 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang,
   onToggleLang,
   theme = 'obsidian',
-  onToggleTheme,
   userEmail,
   userName,
   isLiveAdmin,
   onOpenAuthModal,
-  onOpenBackupModal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [largeTextMode, setLargeTextMode] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem('aoc_a11y_large_text') === '1';
+    } catch {
+      return false;
+    }
+  });
   const isRoyal = theme === 'royal';
+
+  React.useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.toggle('a11y-large-text', largeTextMode);
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('aoc_a11y_large_text', largeTextMode ? '1' : '0');
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, [largeTextMode]);
 
   const isAuthorizedEmail =
     isLiveAdmin || userEmail?.toLowerCase() === 'adityakty77@gmail.com';
@@ -227,46 +246,45 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </nav>
 
-          {/* Zone 3: Theme Switcher + Language Switcher + Account Action + Mobile Menu Trigger */}
+          {/* Zone 3: Accessibility Font Toggle + Language Switcher + Account Action + Mobile Menu Trigger */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Theme Toggle Button (Cyber Obsidian 3D vs Royal Blue) */}
-            {onToggleTheme && (
-              <button
-                type="button"
-                onClick={onToggleTheme}
-                data-testid="theme-toggle-btn"
-                aria-label={
-                  isRoyal
-                    ? 'Switch to Cyber Obsidian 3D theme'
-                    : 'Switch to Royal Blue theme'
-                }
-                title={
-                  isRoyal
-                    ? 'Active: Royal Blue · Click for Cyber Obsidian 3D'
-                    : 'Active: Cyber Obsidian 3D · Click for Royal Blue'
-                }
-                className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-3 py-1 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-mono-tabular font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 ${
-                  isRoyal
-                    ? 'bg-[#2563EB]/25 border-[#38BDF8]/50 text-[#E0F2FE] hover:bg-[#2563EB]/35'
-                    : 'bg-white/[0.06] border-white/15 text-[#FFB547] hover:bg-white/[0.12]'
-                }`}
-              >
-                <Palette
-                  className={`w-3.5 h-3.5 ${
-                    isRoyal ? 'text-[#38BDF8]' : 'text-[#FF5C35]'
-                  }`}
-                />
-                <span className="hidden sm:inline">
-                  {isRoyal
-                    ? lang === 'en'
-                      ? 'Royal Blue'
-                      : 'रॉयल ब्लू'
-                    : lang === 'en'
-                    ? 'Obsidian 3D'
-                    : 'ऑब्सीडियन 3D'}
-                </span>
-              </button>
-            )}
+            {/* Accessibility Font Size / Screen Readability Toggle */}
+            <button
+              type="button"
+              onClick={() => setLargeTextMode((prev) => !prev)}
+              data-testid="accessibility-font-toggle"
+              aria-pressed={largeTextMode}
+              aria-label={
+                lang === 'en'
+                  ? largeTextMode
+                    ? 'Switch to standard font size'
+                    : 'Enable large readable font size for accessibility'
+                  : largeTextMode
+                  ? 'सामान्य अक्षर आकार चुनें'
+                  : 'बड़े और स्पष्ट अक्षर आकार चालू करें'
+              }
+              title={
+                lang === 'en'
+                  ? 'Accessibility: Toggle Larger Font & Enhanced Readability'
+                  : 'पठनीयता: बड़े और स्पष्ट अक्षर चालू/बंद करें'
+              }
+              className={`min-h-[34px] sm:min-h-[38px] px-2.5 sm:px-3 py-1 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-mono-tabular font-bold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
+                largeTextMode
+                  ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.35)]'
+                  : 'bg-white/[0.06] border-white/15 text-[#F7F3EA] hover:bg-white/[0.12] hover:border-[#FFB547]/50'
+              }`}
+            >
+              <Type className="w-3.5 h-3.5 text-[#FFB547]" />
+              <span>
+                {largeTextMode
+                  ? lang === 'en'
+                    ? 'A+ Large Text ON'
+                    : 'A+ बड़े अक्षर चालू'
+                  : lang === 'en'
+                  ? 'A+ Readability'
+                  : 'A+ बड़े अक्षर'}
+              </span>
+            </button>
 
             {/* Compact Mobile Language Switcher */}
             <div
@@ -305,18 +323,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 हिं
               </button>
             </div>
-
-            {onOpenBackupModal && (
-              <button
-                type="button"
-                onClick={onOpenBackupModal}
-                title={lang === 'en' ? 'Project ZIP & Drive Backup' : 'प्रोजेक्ट बैकअप एवं गूगल ड्राइव'}
-                className="hidden md:flex min-h-[40px] sm:min-h-[42px] px-3 py-1.5 text-xs font-bold text-[#F7F3EA] bg-white/[0.08] hover:bg-white/[0.14] border border-white/20 rounded-xl transition-all items-center gap-1.5 shrink-0 focus-visible:outline-2 focus-visible:outline-[#FF5C35]"
-              >
-                <FolderArchive className="w-3.5 h-3.5 text-[#FFB547]" />
-                <span className="hidden xl:inline">{lang === 'en' ? 'Project ZIP' : 'प्रोजेक्ट ZIP'}</span>
-              </button>
-            )}
 
             <button
               type="button"
@@ -408,44 +414,28 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
             </div>
 
-            {onToggleTheme && (
-              <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
-                <span className="text-xs text-[#D8D3C8]">
-                  {lang === 'en' ? 'Visual Theme:' : 'विजुअल थीम:'}
+            <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+              <span className="text-xs text-[#D8D3C8]">
+                {lang === 'en' ? 'Text Readability:' : 'अक्षर आकार (पठनीयता):'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setLargeTextMode((prev) => !prev)}
+                aria-pressed={largeTextMode}
+                className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-white/[0.08] border border-white/15 text-xs font-mono-tabular font-bold text-white flex items-center gap-2"
+              >
+                <Type className="w-3.5 h-3.5 text-[#FFB547]" />
+                <span>
+                  {largeTextMode
+                    ? lang === 'en'
+                      ? 'Large Text Enabled (Tap for Standard)'
+                      : 'बड़े अक्षर चालू हैं'
+                    : lang === 'en'
+                    ? 'Enable Large Text (A+)'
+                    : 'बड़े अक्षर चालू करें (A+)'}
                 </span>
-                <button
-                  type="button"
-                  onClick={onToggleTheme}
-                  className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-white/[0.08] border border-white/15 text-xs font-mono-tabular font-bold text-white flex items-center gap-2"
-                >
-                  <Palette className="w-3.5 h-3.5 text-[#FFB547]" />
-                  <span>
-                    {isRoyal
-                      ? 'Royal Blue (Switch to Cyber Obsidian 3D)'
-                      : 'Cyber Obsidian 3D (Switch to Royal Blue)'}
-                  </span>
-                </button>
-              </div>
-            )}
-
-            {onOpenBackupModal && (
-              <div className="pt-2 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenBackupModal();
-                  }}
-                  className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/20 text-xs font-bold text-white flex items-center justify-between"
-                >
-                  <span className="flex items-center gap-2">
-                    <FolderArchive className="w-4 h-4 text-[#FFB547]" />
-                    <span>{lang === 'en' ? 'Project ZIP & Google Drive' : 'प्रोजेक्ट ZIP & गूगल ड्राइव'}</span>
-                  </span>
-                  <span className="font-mono-tabular text-[10px] text-[#38BDF8]">8.5 MB</span>
-                </button>
-              </div>
-            )}
+              </button>
+            </div>
 
             <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs text-[#D8D3C8]">
               <span className="font-mono-tabular text-[11px]">
@@ -492,17 +482,31 @@ export const Navbar: React.FC<NavbarProps> = ({
               />
               <span>
                 {lang === 'en'
-                  ? 'Kateya, Gopalganj, Bihar · Online Cyber Studio'
-                  : `${BUSINESS_INFO.addressHi} · ऑनलाइन साइबर स्टूडियो`}
+                  ? 'Ward No. 08, Near G.A. High School, Kateya, Gopalganj (PIN 841437)'
+                  : 'वार्ड नं. 08, जी.ए. हाई स्कूल के पास, कटेया, गोपालगंज (पिन 841437)'}
               </span>
             </span>
             <span aria-hidden="true" className="text-white/25">
               ·
             </span>
-            <span className="truncate text-[#B8B2A6]">
-              {userEmail ? (
-                <span className="inline-flex items-center gap-1 text-[#FFB547]">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#FF5C35] inline" />
+            <span
+              data-testid="top-bar-working-hours"
+              className="inline-flex items-center gap-1.5 text-[#FFB547] font-semibold truncate"
+            >
+              <Clock className="w-3.5 h-3.5 text-[#FF5C35] shrink-0" />
+              <span>
+                {lang === 'en'
+                  ? BUSINESS_INFO.workingDaysEn
+                  : BUSINESS_INFO.workingDaysHi}
+              </span>
+            </span>
+            {userEmail && (
+              <>
+                <span aria-hidden="true" className="text-white/25">
+                  ·
+                </span>
+                <span className="inline-flex items-center gap-1 text-emerald-300 truncate">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 inline" />
                   {isLiveAdmin
                     ? lang === 'en'
                       ? `Verified Admin (${userEmail})`
@@ -511,12 +515,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                     ? `Signed in (${userEmail})`
                     : `लॉगिन खाता (${userEmail})`}
                 </span>
-              ) : lang === 'en' ? (
-                BUSINESS_INFO.workingDaysEn
-              ) : (
-                BUSINESS_INFO.workingDaysHi
-              )}
-            </span>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-4 shrink-0">

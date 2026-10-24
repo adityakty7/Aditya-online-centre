@@ -20,8 +20,9 @@ export interface BusinessInfoConfig {
   addressHi: string;
   workingDaysEn: string;
   workingDaysHi: string;
-  workingHoursEn: string; // Empty string if not provided yet
-  workingHoursHi: string; // Empty string if not provided yet
+  workingHoursEn: string;
+  workingHoursHi: string;
+  googleMapsUrl: string;
   socialLinks: SocialLinkItem[];
 }
 
@@ -36,12 +37,16 @@ export const BUSINESS_INFO: BusinessInfoConfig = {
   whatsappUrl: 'https://wa.me/916206800799',
   email: 'Adityakty77@gmail.com',
   mailtoUrl: 'mailto:Adityakty77@gmail.com',
-  addressEn: 'Kateya, Gopalganj, Bihar, India',
-  addressHi: 'कटेया, गोपालगंज, बिहार, भारत',
-  workingDaysEn: 'Monday to Saturday',
-  workingDaysHi: 'सोमवार से शनिवार',
-  workingHoursEn: '', // Not provided yet
-  workingHoursHi: '', // Not provided yet
+  addressEn:
+    'Ward No. 08, Near G.A. High School / Nagar Panchayat, Kateya, Gopalganj (PIN 841437)',
+  addressHi:
+    'वार्ड नं. 08, जी.ए. हाई स्कूल / नगर पंचायत के पास, कटेया, गोपालगंज (पिन 841437)',
+  workingDaysEn: 'Monday to Saturday (8:00 AM – 8:00 PM)',
+  workingDaysHi: 'सोमवार से शनिवार (सुबह 8:00 – रात 8:00 बजे)',
+  workingHoursEn: '8:00 AM – 8:00 PM',
+  workingHoursHi: 'सुबह 8:00 बजे – रात 8:00 बजे',
+  googleMapsUrl:
+    'https://www.google.com/maps/dir/?api=1&destination=G.A.+High+School+Ward+No+08+Kateya+Gopalganj+Bihar+841437',
   socialLinks: [
     {
       key: 'facebook',

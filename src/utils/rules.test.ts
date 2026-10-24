@@ -50,6 +50,8 @@ import {
   calculateBundleEstimate,
   HERO_CINEMATIC_MEDIA,
   clampComparisonSlider,
+  buildServiceWhatsAppUrl,
+  CUSTOMER_TESTIMONIALS,
 } from './rules.ts';
 import {
   BUSINESS_INFO,
@@ -67,14 +69,21 @@ test('generateOrderNumber creates valid formatted AOC order numbers', () => {
 test('BUSINESS_INFO centralized configuration matches verified owner details and hides unconfigured links', () => {
   assert.equal(BUSINESS_INFO.businessName, 'Aditya Online Center');
   assert.equal(BUSINESS_INFO.serviceAreaEn, 'Kateya, Gopalganj, Bihar, India');
-  assert.equal(BUSINESS_INFO.addressEn, 'Kateya, Gopalganj, Bihar, India');
+  assert.equal(
+    BUSINESS_INFO.addressEn,
+    'Ward No. 08, Near G.A. High School / Nagar Panchayat, Kateya, Gopalganj (PIN 841437)'
+  );
   assert.equal(BUSINESS_INFO.phone, '');
   assert.equal(BUSINESS_INFO.whatsappNumber, '6206800799');
   assert.equal(BUSINESS_INFO.whatsappUrl, 'https://wa.me/916206800799');
   assert.equal(BUSINESS_INFO.email, 'Adityakty77@gmail.com');
   assert.equal(BUSINESS_INFO.mailtoUrl, 'mailto:Adityakty77@gmail.com');
-  assert.equal(BUSINESS_INFO.workingDaysEn, 'Monday to Saturday');
-  assert.equal(BUSINESS_INFO.workingHoursEn, '');
+  assert.equal(BUSINESS_INFO.workingDaysEn, 'Monday to Saturday (8:00 AM – 8:00 PM)');
+  assert.equal(BUSINESS_INFO.workingHoursEn, '8:00 AM – 8:00 PM');
+  assert.equal(
+    BUSINESS_INFO.googleMapsUrl.includes('G.A.+High+School+Ward+No+08+Kateya+Gopalganj'),
+    true
+  );
 
   const activeSocials = getActiveSocialLinks();
   assert.equal(activeSocials.length, 2);
@@ -87,6 +96,16 @@ test('BUSINESS_INFO centralized configuration matches verified owner details and
     activeSocials[1].url,
     'https://www.instagram.com/aditya_kty45?exln=bzNpNjE3aGN2NXNn'
   );
+});
+
+test('buildServiceWhatsAppUrl and CUSTOMER_TESTIMONIALS provide valid WhatsApp deep links and 3 local reviews', () => {
+  const resumeUrl = buildServiceWhatsAppUrl('Professional Job Resume / CV');
+  assert.equal(
+    resumeUrl,
+    'https://wa.me/916206800799?text=Hello%20Aditya%2C%20I%20want%20to%20apply%20for%20Professional%20Job%20Resume%20%2F%20CV'
+  );
+  assert.equal(CUSTOMER_TESTIMONIALS.length, 3);
+  assert.equal(INITIAL_SERVICES.length, 8);
 });
 
 test('validateContactMessageInput validates required and optional fields accurately', () => {

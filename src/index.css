@@ -26,6 +26,24 @@
     background-color: #f7f3ea;
     color: #101014;
     overflow-x: hidden;
+    transition: font-size 0.2s ease;
+  }
+
+  /* Accessibility & Screen Readability Mode (Large Text + Enhanced Contrast) */
+  html.a11y-large-text {
+    font-size: 112.5%;
+  }
+
+  html.a11y-large-text body {
+    line-height: 1.65;
+    letter-spacing: 0.01em;
+  }
+
+  html.a11y-large-text p,
+  html.a11y-large-text li,
+  html.a11y-large-text dd,
+  html.a11y-large-text label {
+    line-height: 1.7;
   }
 
   body {

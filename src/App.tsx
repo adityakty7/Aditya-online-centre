@@ -1724,8 +1724,8 @@ export default function App() {
               <div className="space-y-4">
                 <p className="text-xs text-[#4A463E] leading-relaxed">
                   {lang === 'en'
-                    ? 'Sign in with your Google account to save orders and private documents directly to Cloud Firestore. Admin privileges are strictly enforced by server security rules.'
-                    : 'क्लाउड डेटाबेस में अपने ऑर्डर और दस्तावेज़ सुरक्षित रखने के लिए गूगल खाते से लॉगिन करें।'}
+                    ? 'Sign in with your Google account to access your 100% Private & Safe Document Vault, track orders, and download completed PDFs under our Complete Data Privacy Guarantee.'
+                    : 'अपने 100% सुरक्षित एवं गोपनीय दस्तावेज़ वॉल्ट तक पहुँचने और तैयार PDF डाउनलोड करने के लिए गूगल खाते से लॉगिन करें।'}
                 </p>
 
                 <button
@@ -1945,12 +1945,12 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setCurrentView('admin');
+                      setCurrentView('contact');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="text-[#D6D1C7] hover:text-[#FF5C35] transition-colors"
                   >
-                    {lang === 'en' ? 'Admin Control Panel' : 'एडमिन पैनल'}
+                    {lang === 'en' ? 'Contact & Location' : 'संपर्क और पता'}
                   </button>
                 </li>
               </ul>
@@ -2059,6 +2059,14 @@ export default function App() {
                   >
                     {lang === 'en' ? 'Contact Us' : 'संपर्क करें'}
                   </button>
+                  <a
+                    href={BUSINESS_INFO.googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#FFB547] hover:text-white underline underline-offset-4 font-bold"
+                  >
+                    {lang === 'en' ? 'Google Maps Directions ↗' : 'गूगल मैप्स रास्ता ↗'}
+                  </a>
                   <button
                     type="button"
                     onClick={() => {
@@ -2077,14 +2085,7 @@ export default function App() {
                     }}
                     className="text-[#D6D1C7] hover:text-[#FF5C35] underline underline-offset-4"
                   >
-                    {lang === 'en' ? 'Terms & Android Guide' : 'शर्तें और गाइड'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBackupModalOpen(true)}
-                    className="text-[#FFB547] hover:text-white underline underline-offset-4 font-bold"
-                  >
-                    {lang === 'en' ? 'ZIP & Google Drive' : 'ZIP एवं गूगल ड्राइव'}
+                    {lang === 'en' ? 'Terms of Service' : 'सेवा की शर्तें'}
                   </button>
                   <button
                     type="button"
@@ -2103,8 +2104,8 @@ export default function App() {
                         ? 'Admin Panel'
                         : 'एडमिन पैनल'
                       : lang === 'en'
-                      ? 'Admin Portal'
-                      : 'एडमिन पोर्टल'}
+                      ? 'Staff Login'
+                      : 'स्टाफ लॉगिन'}
                   </button>
                 </div>
               </div>
@@ -2113,10 +2114,10 @@ export default function App() {
 
           <div className="pt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-[#9E988E]">
             <div>
-              © {new Date().getFullYear()} {BUSINESS_INFO.businessName} (Kateya, Bihar).{' '}
+              © {new Date().getFullYear()} {BUSINESS_INFO.businessName} ({BUSINESS_INFO.addressEn}).{' '}
               {lang === 'en'
-                ? 'Private user-isolated document workflow.'
-                : 'गोपनीय और सुरक्षित दस्तावेज़ प्रणाली।'}
+                ? '100% Private & Safe Document Vault · Complete Data Privacy Guarantee.'
+                : '100% सुरक्षित एवं गोपनीय दस्तावेज़ वॉल्ट · पूर्ण डेटा गोपनीयता गारंटी।'}
             </div>
             <div className="text-[#787166]">
               {lang === 'en'

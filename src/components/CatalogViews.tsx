@@ -14,7 +14,9 @@ import { SERVICE_CATEGORIES } from '../data/initialCatalog';
 import { BUSINESS_INFO } from '../config/businessInfo';
 import {
   BEFORE_AFTER_SHOWCASE_TABS,
+  CUSTOMER_TESTIMONIALS,
   HERO_CINEMATIC_MEDIA,
+  buildServiceWhatsAppUrl,
   calculateBundleEstimate,
   clampComparisonSlider,
   cleanDocumentLabel,
@@ -33,6 +35,7 @@ import {
   Layers,
   ChevronRight,
   ChevronDown,
+  ChevronLeft,
   Lock,
   PhoneCall,
   HelpCircle,
@@ -49,6 +52,9 @@ import {
   Fingerprint,
   Zap,
   Plus,
+  MessageCircle,
+  Star,
+  MapPin,
 } from 'lucide-react';
 
 interface CatalogViewsProps {
@@ -589,10 +595,10 @@ const EditorialEmberSculpture: React.FC<{
           >
             <div className="flex items-center gap-1.5 font-mono-tabular text-[10px] text-[#FFB547] font-bold">
               <Lock className="w-3 h-3 text-[#FF5C35]" />
-              <span>03 · USER-ISOLATED VAULT</span>
+              <span>03 · 100% PRIVATE & SAFE VAULT</span>
             </div>
             <div className="text-xs font-display font-bold text-white">
-              {lang === 'en' ? '100% Private Document Rules' : '100% सुरक्षित निजी फ़ाइलें'}
+              {lang === 'en' ? 'Complete Data Privacy Guarantee' : '100% सुरक्षित निजी फ़ाइलें'}
             </div>
           </div>
         </div>
@@ -1392,6 +1398,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
   const [heroTrackId, setHeroTrackId] = React.useState('AOC-20261018-D101');
   const [isPageHidden, setIsPageHidden] = React.useState(false);
   const [openFaqIndex, setOpenFaqIndex] = React.useState<number | null>(0);
+  const [activeTestimonialIdx, setActiveTestimonialIdx] = React.useState(0);
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -1550,18 +1557,34 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => onStartOrder(selectedService)}
-                  className="w-full min-h-[48px] px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF5C35] to-[#E54922] hover:from-[#FF6B47] hover:to-[#FF5C35] text-white font-bold text-sm shadow-[0_8px_28px_rgba(255,92,53,0.4)] transition-all flex items-center justify-center gap-2"
-                >
-                  <span>
-                    {lang === 'en'
-                      ? 'Start Service Order & Upload'
-                      : 'ऑर्डर शुरू करें और दस्तावेज़ जोड़ें'}
-                  </span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="space-y-2.5 w-full">
+                  <button
+                    type="button"
+                    onClick={() => onStartOrder(selectedService)}
+                    className="w-full min-h-[48px] px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF5C35] to-[#E54922] hover:from-[#FF6B47] hover:to-[#FF5C35] text-white font-bold text-sm shadow-[0_8px_28px_rgba(255,92,53,0.4)] transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>
+                      {lang === 'en'
+                        ? 'Start Service Order & Upload'
+                        : 'ऑर्डर शुरू करें और दस्तावेज़ जोड़ें'}
+                    </span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                  <a
+                    href={buildServiceWhatsAppUrl(selectedService.titleEn)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid={`detail-whatsapp-order-${selectedService.id}`}
+                    className="w-full min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-400/50 text-emerald-200 hover:text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4 text-emerald-400" />
+                    <span>
+                      {lang === 'en'
+                        ? 'Order on WhatsApp (6206800799)'
+                        : 'WhatsApp पर ऑर्डर करें (6206800799)'}
+                    </span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -1844,8 +1867,8 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                   {/* Concise Supporting Copy — Crisp White/Cream on Frosted Glass */}
                   <p className="text-sm sm:text-base lg:text-lg text-[#EAE5DA] leading-relaxed max-w-xl font-normal">
                     {lang === 'en'
-                      ? 'ATS resumes, marriage biodata, government & scholarship form submissions, and PDF formatting for Kateya and Gopalganj—delivered online with user-isolated document security.'
-                      : 'कटेया और गोपालगंज के नागरिकों के लिए घर बैठे ATS रिज़्यूमे, शादी बायोडाटा, सरकारी व छात्रवृत्ति फॉर्म सहायता और PDF सुधार—सुरक्षित दस्तावेज़ अपलोड और पारदर्शी शुल्क के साथ।'}
+                      ? 'ATS resumes, marriage biodata, government & scholarship form submissions, and PDF formatting for Kateya and Gopalganj—delivered online with a 100% Private & Safe Document Vault and Complete Data Privacy Guarantee.'
+                      : 'कटेया और गोपालगंज के नागरिकों के लिए घर बैठे ATS रिज़्यूमे, शादी बायोडाटा, सरकारी व छात्रवृत्ति फॉर्म सहायता और PDF सुधार—100% सुरक्षित प्राइवेट डॉक्यूमेंट वॉल्ट और पारदर्शी शुल्क के साथ।'}
                   </p>
 
                   {/* Primary & Secondary Glassmorphic Actions */}
@@ -2356,7 +2379,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     </div>
                   </div>
 
-                  {/* Full-Width Gradient CTA Button ("Start Application →") + Details */}
+                  {/* Full-Width Gradient CTA Button ("Start Application →") + Order on WhatsApp + Details */}
                   <div className="pt-2 space-y-2 relative z-10">
                     <button
                       type="button"
@@ -2369,6 +2392,24 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                           : 'आवेदन शुरू करें →'}
                       </span>
                     </button>
+                    <a
+                      href={buildServiceWhatsAppUrl(srv.titleEn)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid={`whatsapp-order-${srv.id}`}
+                      className={`w-full min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${
+                        isDarkTile
+                          ? 'bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-400/45 text-emerald-300 hover:text-white'
+                          : 'bg-emerald-50 hover:bg-emerald-600 border-emerald-600/35 text-emerald-900 hover:text-white'
+                      }`}
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {lang === 'en'
+                          ? 'Order on WhatsApp'
+                          : 'WhatsApp पर ऑर्डर करें'}
+                      </span>
+                    </a>
                     <button
                       type="button"
                       onClick={() => onInspectService(srv)}
@@ -2616,23 +2657,179 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
             </div>
           </section>
 
+          {/* 03.B — CUSTOMER TESTIMONIALS & LOCAL TRUST CAROUSEL (3-CARD REVIEW CAROUSEL) */}
+          <section
+            data-testid="customer-testimonials-section"
+            aria-label={
+              lang === 'en'
+                ? 'Customer Testimonials from Kateya and Gopalganj'
+                : 'कटेया और गोपालगंज के ग्राहकों की प्रतिक्रिया'
+            }
+            className="border-b border-[#DCD4C6] bg-[#FFFDF9] py-14 sm:py-20"
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#DCD4C6] pb-6">
+                <div className="space-y-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-600/30 font-mono-tabular text-xs font-bold uppercase tracking-[0.16em] text-emerald-900">
+                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                    <span>
+                      {lang === 'en'
+                        ? 'VERIFIED LOCAL CITIZEN & STUDENT REVIEWS'
+                        : 'स्थानीय छात्र एवं नागरिक समीक्षाएं'}
+                    </span>
+                  </div>
+                  <h2 className="font-display text-2xl sm:text-4xl font-extrabold text-[#101014] tracking-tight">
+                    {lang === 'en'
+                      ? 'Trusted Across Kateya & Gopalganj'
+                      : 'कटेया और गोपालगंज के नागरिकों का भरोसा'}
+                  </h2>
+                </div>
+
+                {/* Carousel Controls (Prev / Next / Dots) */}
+                <div className="flex items-center gap-2.5 self-start md:self-auto">
+                  <button
+                    type="button"
+                    data-testid="testimonial-prev-btn"
+                    onClick={() =>
+                      setActiveTestimonialIdx((prev) =>
+                        prev === 0 ? CUSTOMER_TESTIMONIALS.length - 1 : prev - 1
+                      )
+                    }
+                    aria-label={lang === 'en' ? 'Previous review' : 'पिछली समीक्षा'}
+                    className="min-h-[42px] min-w-[42px] rounded-xl border border-[#101014]/20 bg-[#F7F3EA] hover:bg-[#101014] text-[#101014] hover:text-white flex items-center justify-center transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <div className="flex items-center gap-1.5 px-2">
+                    {CUSTOMER_TESTIMONIALS.map((item, idx) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setActiveTestimonialIdx(idx)}
+                        aria-label={`Review ${idx + 1}`}
+                        className={`h-2.5 rounded-full transition-all ${
+                          activeTestimonialIdx === idx
+                            ? 'w-7 bg-[#FF5C35]'
+                            : 'w-2.5 bg-[#101014]/25 hover:bg-[#101014]/50'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="testimonial-next-btn"
+                    onClick={() =>
+                      setActiveTestimonialIdx(
+                        (prev) => (prev + 1) % CUSTOMER_TESTIMONIALS.length
+                      )
+                    }
+                    aria-label={lang === 'en' ? 'Next review' : 'अगली समीक्षा'}
+                    className="min-h-[42px] min-w-[42px] rounded-xl border border-[#101014]/20 bg-[#F7F3EA] hover:bg-[#101014] text-[#101014] hover:text-white flex items-center justify-center transition-colors"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 3-Card Review Carousel Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {CUSTOMER_TESTIMONIALS.map((review, idx) => {
+                  const isActiveSpotlight = activeTestimonialIdx === idx;
+                  return (
+                    <article
+                      key={review.id}
+                      data-testid={`testimonial-card-${review.id}`}
+                      onClick={() => setActiveTestimonialIdx(idx)}
+                      className={`rounded-3xl p-6 sm:p-7 flex flex-col justify-between gap-5 transition-all cursor-pointer border ${
+                        isActiveSpotlight
+                          ? 'glass-bento-flagship text-[#F7F3EA] border-[#FF5C35] shadow-[0_18px_40px_-14px_rgba(255,92,53,0.3)] -translate-y-1'
+                          : 'glass-cream-panel text-[#101014] border-[#DCD4C6] hover:border-[#FF5C35]/50'
+                      }`}
+                    >
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <div
+                            className="flex items-center gap-1 text-amber-400"
+                            aria-label={`${review.rating} out of 5 stars`}
+                          >
+                            {Array.from({ length: review.rating }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className="w-4 h-4 fill-amber-400 text-amber-400"
+                              />
+                            ))}
+                          </div>
+                          <span
+                            className={`px-2.5 py-1 rounded-full font-mono-tabular text-[10px] font-bold uppercase tracking-wider ${
+                              isActiveSpotlight
+                                ? 'bg-white/10 text-[#FFB547] border border-white/15'
+                                : 'bg-[#EFE9DC] text-[#C83713] border border-[#DCD4C6]'
+                            }`}
+                          >
+                            {lang === 'en' ? review.serviceTagEn : review.serviceTagHi}
+                          </span>
+                        </div>
+
+                        <blockquote
+                          className={`text-sm sm:text-base leading-relaxed font-medium ${
+                            isActiveSpotlight ? 'text-white' : 'text-[#101014]'
+                          }`}
+                        >
+                          “{lang === 'en' ? review.quoteEn : review.quoteHi}”
+                        </blockquote>
+                      </div>
+
+                      <div
+                        className={`pt-4 border-t flex items-center justify-between gap-3 ${
+                          isActiveSpotlight ? 'border-white/15' : 'border-[#DCD4C6]'
+                        }`}
+                      >
+                        <div>
+                          <div
+                            className={`font-display text-sm sm:text-base font-bold ${
+                              isActiveSpotlight ? 'text-[#FFB547]' : 'text-[#101014]'
+                            }`}
+                          >
+                            {lang === 'en' ? review.nameEn : review.nameHi}
+                          </div>
+                          <div
+                            className={`text-xs ${
+                              isActiveSpotlight ? 'text-[#D8D3C8]' : 'text-[#4A463E]'
+                            }`}
+                          >
+                            {lang === 'en' ? review.locationEn : review.locationHi}
+                          </div>
+                        </div>
+                        <CheckCircle2
+                          className={`w-5 h-5 shrink-0 ${
+                            isActiveSpotlight ? 'text-emerald-400' : 'text-emerald-600'
+                          }`}
+                        />
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
           {/* 04 & 05. ASYMMETRIC PRIVACY ARCHITECTURE & INTERACTIVE FAQ ACCORDION */}
           <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-24">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
               {/* Left 5 Columns: Privacy & Security Manifesto */}
               <div className="lg:col-span-5 rounded-3xl glass-cream-panel p-6 sm:p-8 space-y-6">
                 <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#C83713]">
-                  04. SECURITY & DATA ISOLATION
+                  04. 100% PRIVATE & SAFE DOCUMENT VAULT
                 </div>
                 <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-[#101014] tracking-tight leading-[1.08]">
                   {lang === 'en'
-                    ? 'Engineered for Citizen Document Privacy.'
-                    : 'ग्राहक के निजी दस्तावेज़ों की पूर्ण सुरक्षा।'}
+                    ? 'Complete Data Privacy Guarantee.'
+                    : 'ग्राहक के निजी दस्तावेज़ों की 100% सुरक्षा गारंटी।'}
                 </h2>
                 <p className="text-sm text-[#4A463E] leading-relaxed">
                   {lang === 'en'
-                    ? 'Unlike informal cyber cafes where files linger on shared desktops, Aditya Online Center isolates every order under strict Firestore ownership rules.'
-                    : 'आदित्य ऑनलाइन सेंटर में आपके आधार, मार्कशीट और फोटो सख्त सुरक्षा नियमों के तहत केवल आपके खाते और अधिकृत एडमिन तक ही सीमित रहते हैं।'}
+                    ? 'Unlike informal cyber cafes where files linger on shared desktops, Aditya Online Center protects every order inside a 100% Private & Safe Document Vault with a Complete Data Privacy Guarantee.'
+                    : 'आदित्य ऑनलाइन सेंटर में आपके आधार, मार्कशीट और फोटो 100% सुरक्षित प्राइवेट डॉक्यूमेंट वॉल्ट में केवल आपके खाते तक ही सीमित रहते हैं।'}
                 </p>
 
                 <div className="border-t border-[#DCD4C6] divide-y divide-[#DCD4C6]">
@@ -2641,12 +2838,12 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     <div>
                       <h3 className="text-sm font-bold text-[#101014]">
                         {lang === 'en'
-                          ? 'Strict Per-Customer File Isolation'
+                          ? '100% Private & Safe Document Vault'
                           : 'केवल स्वयं के ऑर्डर और फ़ाइलों तक पहुँच'}
                       </h3>
                       <p className="text-xs text-[#4A463E] mt-0.5 leading-relaxed">
                         {lang === 'en'
-                          ? 'Customers can only read or download files linked to their own authenticated account.'
+                          ? 'Customers can only read or download files linked to their own private account.'
                           : 'कोई भी अन्य उपयोगकर्ता आपके द्वारा अपलोड किए गए दस्तावेज़ नहीं देख सकता।'}
                       </p>
                     </div>
@@ -2667,6 +2864,22 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       </p>
                     </div>
                   </div>
+
+                  <div className="py-4 flex items-start gap-3">
+                    <MapPin className="w-4 h-4 text-[#FF5C35] shrink-0 mt-1" />
+                    <div>
+                      <h3 className="text-sm font-bold text-[#101014]">
+                        {lang === 'en'
+                          ? BUSINESS_INFO.addressEn
+                          : BUSINESS_INFO.addressHi}
+                      </h3>
+                      <p className="text-xs text-[#4A463E] mt-0.5 leading-relaxed">
+                        {lang === 'en'
+                          ? `Working Hours: ${BUSINESS_INFO.workingDaysEn}`
+                          : `कार्य समय: ${BUSINESS_INFO.workingDaysHi}`}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">
@@ -2684,6 +2897,20 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                   >
                     {lang === 'en' ? 'Contact Center Desk' : 'सहायता केंद्र संपर्क'}
                   </button>
+                  <a
+                    href={BUSINESS_INFO.googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="home-google-maps-btn"
+                    className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#FF5C35] hover:bg-[#E54922] text-white text-xs font-mono-tabular uppercase tracking-wider font-bold transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>
+                      {lang === 'en'
+                        ? 'Google Maps Directions'
+                        : 'गूगल मैप्स दिशा-निर्देश'}
+                    </span>
+                  </a>
                 </div>
               </div>
 

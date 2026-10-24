@@ -1115,8 +1115,10 @@ export const DEFAULT_CENTER_SETTINGS: CenterSettings = {
     'ऑर्डर की समीक्षा के बाद, निर्धारित शुल्क का UPI से भुगतान करें और 12-अंकों का UTR / ट्रांजेक्शन नंबर नीचे दर्ज करें। अपना UPI पिन, पासवर्ड या OTP कभी किसी के साथ साझा न करें।',
   isUpiConfigured: false,
   shopPhone: 'WhatsApp: 6206800799',
-  shopAddressEn: 'Kateya, Gopalganj, Bihar, India',
-  shopAddressHi: 'कटेया, गोपालगंज, बिहार, भारत',
+  shopAddressEn:
+    'Ward No. 08, Near G.A. High School / Nagar Panchayat, Kateya, Gopalganj (PIN 841437)',
+  shopAddressHi:
+    'वार्ड नं. 08, जी.ए. हाई स्कूल / नगर पंचायत के पास, कटेया, गोपालगंज (पिन 841437)',
   updatedAt: '2026-10-19T08:00:00.000Z',
 };
 
