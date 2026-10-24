@@ -35,6 +35,7 @@ import {
   ContactMessage,
   DigitalService,
   DocumentLibraryItem,
+  ExamRadarItem,
   Language,
   OrderFile,
   OrderStatus,
@@ -56,13 +57,16 @@ import {
 } from './data/initialCatalog';
 import { BUSINESS_INFO } from './config/businessInfo';
 import {
+  DEFAULT_STAFF_PIN,
   generateContactMessageId,
   generateOrderNumber,
+  INITIAL_EXAM_RADAR_ITEMS,
   isDuplicateSubmission,
   MOBILE_DOCK_SHORTCUTS,
   resolveVisualTheme,
   sanitizeString,
   toggleVisualTheme,
+  verifyStaffAdminPin,
 } from './utils/rules';
 import { Navbar } from './components/Navbar';
 import { CatalogViews } from './components/CatalogViews';
@@ -77,7 +81,9 @@ import { ProjectBackupModal } from './components/ProjectBackupModal';
 import { setCachedDriveToken } from './utils/googleDrive';
 import {
   Home,
+  KeyRound,
   Layers,
+  Lock,
   LogIn,
   LogOut,
   MessageCircle,
@@ -97,6 +103,63 @@ function formatTimestampField(val: unknown): string {
     return (val as { toDate: () => Date }).toDate().toISOString();
   }
   return String(val);
+}
+
+function loadInitialGuestOrders(): ServiceOrder[] {
+  try {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('aoc_local_orders');
+      if (saved) {
+        const parsed = JSON.parse(saved) as ServiceOrder[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const byNum = new Map(parsed.map((o) => [o.orderNumber, o]));
+          for (const demo of DEMO_SAMPLE_ORDERS) {
+            if (!byNum.has(demo.orderNumber)) {
+              byNum.set(demo.orderNumber, demo);
+            }
+          }
+          return Array.from(byNum.values());
+        }
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return DEMO_SAMPLE_ORDERS;
+}
+
+function loadInitialGuestOrderFiles(): Record<string, OrderFile[]> {
+  try {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('aoc_local_order_files');
+      if (saved) {
+        const parsed = JSON.parse(saved) as Record<string, OrderFile[]>;
+        if (parsed && typeof parsed === 'object') {
+          return { ...DEMO_SAMPLE_FILES, ...parsed };
+        }
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return DEMO_SAMPLE_FILES;
+}
+
+function loadInitialGuestOrderHistory(): Record<string, OrderStatusEvent[]> {
+  try {
+    if (typeof window !== 'undefined') {
+      const saved = window.localStorage.getItem('aoc_local_order_history');
+      if (saved) {
+        const parsed = JSON.parse(saved) as Record<string, OrderStatusEvent[]>;
+        if (parsed && typeof parsed === 'object') {
+          return { ...DEMO_SAMPLE_HISTORY, ...parsed };
+        }
+      }
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return DEMO_SAMPLE_HISTORY;
 }
 
 export default function App() {
@@ -163,6 +226,19 @@ export default function App() {
   const [sandboxRole, setSandboxRole] = React.useState<
     'none' | 'customer' | 'admin'
   >('none');
+  const [isPinAdminUnlocked, setIsPinAdminUnlocked] = React.useState<boolean>(() => {
+    try {
+      return (
+        typeof window !== 'undefined' &&
+        window.sessionStorage.getItem('aoc_pin_admin') === '1'
+      );
+    } catch {
+      return false;
+    }
+  });
+  const [staffPinModalOpen, setStaffPinModalOpen] = React.useState(false);
+  const [staffPinInput, setStaffPinInput] = React.useState('');
+  const [staffPinError, setStaffPinError] = React.useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = React.useState(false);
   const [backupModalOpen, setBackupModalOpen] = React.useState(false);
   const [authError, setAuthError] = React.useState<string | null>(null);
@@ -174,16 +250,30 @@ export default function App() {
     React.useState<CategoryMeta[]>(SERVICE_CATEGORIES);
   const [documentLibrary, setDocumentLibrary] =
     React.useState<DocumentLibraryItem[]>(INITIAL_DOCUMENT_LIBRARY);
+  const [examRadarItems, setExamRadarItems] = React.useState<ExamRadarItem[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = window.localStorage.getItem('aoc_exam_radar_items');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return INITIAL_EXAM_RADAR_ITEMS;
+  });
   const [settings, setSettings] = React.useState<CenterSettings>(
     DEFAULT_CENTER_SETTINGS
   );
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
-  const [orders, setOrders] = React.useState<ServiceOrder[]>([]);
+  const [orders, setOrders] = React.useState<ServiceOrder[]>(loadInitialGuestOrders);
   const [orderFiles, setOrderFiles] =
-    React.useState<Record<string, OrderFile[]>>({});
+    React.useState<Record<string, OrderFile[]>>(loadInitialGuestOrderFiles);
   const [orderHistory, setOrderHistory] = React.useState<
     Record<string, OrderStatusEvent[]>
-  >({});
+  >(loadInitialGuestOrderHistory);
   const [contactMessages, setContactMessages] = React.useState<
     ContactMessage[]
   >([]);
@@ -193,8 +283,58 @@ export default function App() {
     React.useState<DigitalService | null>(INITIAL_SERVICES[0]);
   const [confirmedOrder, setConfirmedOrder] =
     React.useState<ServiceOrder | null>(null);
-  const [selectedOrderNumber, setSelectedOrderNumber] = React.useState<string>('');
+  const [selectedOrderNumber, setSelectedOrderNumber] = React.useState<string>(
+    DEMO_SAMPLE_ORDERS[0]?.orderNumber || ''
+  );
   const [isSubmittingOrder, setIsSubmittingOrder] = React.useState(false);
+
+  // Sync guest/local orders, files, and history to localStorage for real-time Section 02 & Admin Portal persistence
+  React.useEffect(() => {
+    if (fbUser) return;
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aoc_local_orders', JSON.stringify(orders));
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [orders, fbUser]);
+
+  React.useEffect(() => {
+    if (fbUser) return;
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aoc_local_order_files', JSON.stringify(orderFiles));
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [orderFiles, fbUser]);
+
+  React.useEffect(() => {
+    if (fbUser) return;
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aoc_local_order_history', JSON.stringify(orderHistory));
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [orderHistory, fbUser]);
+
+  const handleSaveExamRadarItems = (nextItems: ExamRadarItem[]) => {
+    setExamRadarItems(nextItems);
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(
+          'aoc_exam_radar_items',
+          JSON.stringify(nextItems)
+        );
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+  };
 
   // Duplicate submission guard state
   const lastSubmissionRef = React.useRef<{
@@ -209,7 +349,8 @@ export default function App() {
         isDbAdminDoc)
   );
 
-  const isAuthorizedAdmin = isLiveAdmin;
+  const isAuthorizedAdmin =
+    isLiveAdmin || isPinAdminUnlocked || sandboxRole === 'admin';
 
   // 1. Listen to Firebase Auth State & Ensure User Profile Document
   React.useEffect(() => {
@@ -278,6 +419,9 @@ export default function App() {
         setUserProfile(null);
         setIsDbAdminDoc(false);
         setSandboxRole('none');
+        setOrders(loadInitialGuestOrders());
+        setOrderFiles(loadInitialGuestOrderFiles());
+        setOrderHistory(loadInitialGuestOrderHistory());
       }
     });
     return () => unsub();
@@ -500,9 +644,6 @@ export default function App() {
   // 3. Attach Real-Time Orders Listener for Authenticated Users
   React.useEffect(() => {
     if (!authReady || !fbUser) {
-      setOrders([]);
-      setOrderFiles({});
-      setOrderHistory({});
       return;
     }
 
@@ -540,6 +681,8 @@ export default function App() {
             customerInfoReply: d.customerInfoReply,
             uploadedFileCount: Number(d.uploadedFileCount) || 0,
             hasDeliverable: Boolean(d.hasDeliverable),
+            voiceNoteDataUrl: d.voiceNoteDataUrl || undefined,
+            paymentMode: d.paymentMode || undefined,
             createdAt: formatTimestampField(d.createdAt),
             updatedAt: formatTimestampField(d.updatedAt),
           };
@@ -682,18 +825,11 @@ export default function App() {
     formResponsesSummary: string;
     customerNotes: string;
     uploads: PendingUploadItem[];
+    voiceNoteDataUrl?: string;
+    paymentMode?: string;
   }) => {
     const signature = `${payload.service.id}|${payload.customerPhone}|${payload.customerName}|${payload.formResponsesSummary}`;
     const nowMs = Date.now();
-
-    if (!fbUser || !fbUser.emailVerified) {
-      setAuthModalOpen(true);
-      throw new Error(
-        lang === 'en'
-          ? 'Please sign in with your Google account first so your order and private documents are saved securely to your account.'
-          : 'कृपया अपना ऑर्डर और दस्तावेज़ सुरक्षित रूप से जमा करने के लिए पहले अपने गूगल (Google) खाते से लॉगिन करें।'
-      );
-    }
 
     if (
       isDuplicateSubmission(
@@ -715,34 +851,16 @@ export default function App() {
     try {
       const orderNumber = generateOrderNumber(new Date());
       const nowIso = new Date().toISOString();
+      const customerUid =
+        fbUser && fbUser.emailVerified ? fbUser.uid : 'guest-customer-kateya';
 
-      // Ensure customer profile exists first for relational rule verification
-      const userRef = doc(db, 'users', fbUser.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          uid: fbUser.uid,
-          displayName: sanitizeString(payload.customerName, 100),
-          email: sanitizeString(
-            fbUser.email || payload.customerEmail || 'user@example.com',
-            150
-          ),
-          phone: sanitizeString(payload.customerPhone, 20),
-          villageOrTown: sanitizeString(payload.customerLocation, 120),
-          preferredLanguage: lang,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
-
-      const orderRef = doc(db, 'orders', orderNumber);
-      const firestoreOrderData = {
+      const baseOrderFields = {
         orderNumber,
-        customerId: fbUser.uid,
+        customerId: customerUid,
         customerName: sanitizeString(payload.customerName, 100),
         customerPhone: sanitizeString(payload.customerPhone, 20),
         customerEmail: sanitizeString(
-          fbUser.email || payload.customerEmail || 'customer@example.com',
+          fbUser?.email || payload.customerEmail || 'customer@example.com',
           150
         ),
         customerLocation: sanitizeString(payload.customerLocation, 120),
@@ -768,74 +886,148 @@ export default function App() {
         customerInfoReply: '',
         uploadedFileCount: payload.uploads.length,
         hasDeliverable: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        voiceNoteDataUrl: payload.voiceNoteDataUrl || undefined,
+        paymentMode: payload.paymentMode || 'Dynamic UPI QR / Instant Transfer',
       };
 
-      try {
-        await setDoc(orderRef, firestoreOrderData);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.CREATE, `orders/${orderNumber}`);
-      }
+      if (fbUser && fbUser.emailVerified) {
+        // Ensure customer profile exists first for relational rule verification
+        const userRef = doc(db, 'users', fbUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid: fbUser.uid,
+            displayName: sanitizeString(payload.customerName, 100),
+            email: sanitizeString(
+              fbUser.email || payload.customerEmail || 'user@example.com',
+              150
+            ),
+            phone: sanitizeString(payload.customerPhone, 20),
+            villageOrTown: sanitizeString(payload.customerLocation, 120),
+            preferredLanguage: lang,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+        }
 
-      // Upload private files to subcollection
-      for (const up of payload.uploads) {
-        const fileId = up.id.replace(/[^a-zA-Z0-9_\-]/g, '');
-        const fileRef = doc(db, 'orders', orderNumber, 'files', fileId);
+        const orderRef = doc(db, 'orders', orderNumber);
+        const firestoreOrderData = {
+          ...baseOrderFields,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
         try {
-          await setDoc(fileRef, {
-            fileId,
+          await setDoc(orderRef, firestoreOrderData);
+        } catch (err) {
+          handleFirestoreError(
+            err,
+            OperationType.CREATE,
+            `orders/${orderNumber}`
+          );
+        }
+
+        // Upload private files to subcollection
+        for (const up of payload.uploads) {
+          const fileId = up.id.replace(/[^a-zA-Z0-9_\-]/g, '');
+          const fileRef = doc(db, 'orders', orderNumber, 'files', fileId);
+          try {
+            await setDoc(fileRef, {
+              fileId,
+              orderId: orderNumber,
+              customerId: fbUser.uid,
+              uploadedByRole: 'customer',
+              fileCategory: 'customer_document',
+              documentTypeId: up.documentTypeId || 'doc-general',
+              documentLabelEn: up.documentLabelEn || 'Supporting Document',
+              documentLabelHi: up.documentLabelHi || 'सहायक दस्तावेज़',
+              fileName: sanitizeString(up.fileName, 150),
+              mimeType: up.mimeType,
+              sizeBytes: up.sizeBytes,
+              dataUrl: up.dataUrl,
+              createdAt: serverTimestamp(),
+            });
+          } catch (err) {
+            handleFirestoreError(
+              err,
+              OperationType.CREATE,
+              `orders/${orderNumber}/files/${fileId}`
+            );
+          }
+        }
+
+        // Record initial status event
+        const histId = `hist-${Date.now()}`;
+        const histRef = doc(db, 'orders', orderNumber, 'history', histId);
+        try {
+          await setDoc(histRef, {
+            historyId: histId,
             orderId: orderNumber,
             customerId: fbUser.uid,
-            uploadedByRole: 'customer',
-            fileCategory: 'customer_document',
-            documentTypeId: up.documentTypeId || 'doc-general',
-            documentLabelEn: up.documentLabelEn || 'Supporting Document',
-            documentLabelHi: up.documentLabelHi || 'सहायक दस्तावेज़',
-            fileName: sanitizeString(up.fileName, 150),
-            mimeType: up.mimeType,
-            sizeBytes: up.sizeBytes,
-            dataUrl: up.dataUrl,
+            status: 'Submitted',
+            note: 'Order created and submitted by customer.',
+            actorUid: fbUser.uid,
+            actorRole: 'customer',
+            actorName: sanitizeString(payload.customerName, 100),
             createdAt: serverTimestamp(),
           });
         } catch (err) {
           handleFirestoreError(
             err,
             OperationType.CREATE,
-            `orders/${orderNumber}/files/${fileId}`
+            `orders/${orderNumber}/history/${histId}`
           );
         }
       }
 
-      // Record initial status event
-      const histId = `hist-${Date.now()}`;
-      const histRef = doc(db, 'orders', orderNumber, 'history', histId);
-      try {
-        await setDoc(histRef, {
-          historyId: histId,
-          orderId: orderNumber,
-          customerId: fbUser.uid,
-          status: 'Submitted',
-          note: 'Order created and submitted by customer.',
-          actorUid: fbUser.uid,
-          actorRole: 'customer',
-          actorName: sanitizeString(payload.customerName, 100),
-          createdAt: serverTimestamp(),
-        });
-      } catch (err) {
-        handleFirestoreError(
-          err,
-          OperationType.CREATE,
-          `orders/${orderNumber}/history/${histId}`
-        );
-      }
-
       const createdUiOrder: ServiceOrder = {
         id: orderNumber,
-        ...firestoreOrderData,
+        ...baseOrderFields,
         createdAt: nowIso,
         updatedAt: nowIso,
       };
+
+      const localFilesList: OrderFile[] = payload.uploads.map((up) => ({
+        fileId: up.id.replace(/[^a-zA-Z0-9_\-]/g, ''),
+        orderId: orderNumber,
+        customerId: customerUid,
+        uploadedByRole: 'customer',
+        fileCategory: 'customer_document',
+        documentTypeId: up.documentTypeId || 'doc-general',
+        documentLabelEn: up.documentLabelEn || 'Supporting Document',
+        documentLabelHi: up.documentLabelHi || 'सहायक दस्तावेज़',
+        fileName: sanitizeString(up.fileName, 150),
+        mimeType: up.mimeType,
+        sizeBytes: up.sizeBytes,
+        dataUrl: up.dataUrl,
+        createdAt: nowIso,
+      }));
+
+      const initialHistEvent: OrderStatusEvent = {
+        historyId: `hist-${Date.now()}`,
+        orderId: orderNumber,
+        customerId: customerUid,
+        status: 'Submitted',
+        note: 'Order created and submitted by customer.',
+        actorUid: customerUid,
+        actorRole: 'customer',
+        actorName: sanitizeString(payload.customerName, 100),
+        createdAt: nowIso,
+      };
+
+      setOrders((prev) => [
+        createdUiOrder,
+        ...prev.filter((o) => o.orderNumber !== orderNumber),
+      ]);
+      setOrderFiles((prev) => ({
+        ...prev,
+        [orderNumber]: localFilesList,
+      }));
+      setOrderHistory((prev) => ({
+        ...prev,
+        [orderNumber]: [initialHistEvent],
+      }));
+
       setConfirmedOrder(createdUiOrder);
       setSelectedOrderNumber(orderNumber);
 
@@ -1565,6 +1757,7 @@ export default function App() {
             settings={settings}
             categories={categories}
             documentLibrary={documentLibrary}
+            examRadarItems={examRadarItems}
           />
         )}
 
@@ -1643,6 +1836,8 @@ export default function App() {
               handleAdminUpdateContactMessageStatus
             }
             onAdminDeleteContactMessage={handleAdminDeleteContactMessage}
+            examRadarItems={examRadarItems}
+            onSaveExamRadarItems={handleSaveExamRadarItems}
           />
         )}
 
@@ -1742,6 +1937,167 @@ export default function App() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* PIN-Protected Staff / Admin Login Modal (Default Demo PIN: 841437) */}
+      {staffPinModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="staff-pin-modal-title"
+          data-testid="staff-pin-modal"
+          className="fixed inset-0 z-50 bg-[#07080C]/85 backdrop-blur-md flex items-center justify-center p-4"
+        >
+          <div className="bg-[#121721] border border-white/15 rounded-2xl max-w-md w-full p-6 space-y-5 text-white shadow-[0_24px_60px_rgba(0,0,0,0.85)]">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#FF5722]/15 border border-[#FF5722]/40 flex items-center justify-center text-[#FF5722]">
+                  <KeyRound className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2
+                    id="staff-pin-modal-title"
+                    className="text-base font-extrabold text-white font-display"
+                  >
+                    {lang === 'en'
+                      ? 'Staff / Admin Portal Access'
+                      : 'स्टाफ / एडमिन पोर्टल लॉगिन'}
+                  </h2>
+                  <p className="text-[11px] text-[#9E988E]">
+                    {lang === 'en'
+                      ? 'Aditya Online Center · Kateya Desk PIN Verification'
+                      : 'आदित्य ऑनलाइन सेंटर · कटेया डेस्क पिन सत्यापन'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Close staff PIN modal"
+                onClick={() => setStaffPinModalOpen(false)}
+                className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#B8B2A6] hover:text-white hover:bg-white/10"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {staffPinError && (
+              <div
+                role="alert"
+                data-testid="staff-pin-error"
+                className="p-3 bg-red-500/15 border border-red-400/40 rounded-xl text-xs font-semibold text-red-200"
+              >
+                {staffPinError}
+              </div>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (verifyStaffAdminPin(staffPinInput, DEFAULT_STAFF_PIN)) {
+                  setIsPinAdminUnlocked(true);
+                  setSandboxRole('admin');
+                  try {
+                    if (typeof window !== 'undefined') {
+                      window.sessionStorage.setItem('aoc_pin_admin', '1');
+                    }
+                  } catch {
+                    // Ignore storage errors
+                  }
+                  if (!fbUser && orders.length === 0) {
+                    setOrders(loadInitialGuestOrders());
+                    setOrderFiles(loadInitialGuestOrderFiles());
+                    setOrderHistory(loadInitialGuestOrderHistory());
+                  }
+                  setStaffPinError(null);
+                  setStaffPinModalOpen(false);
+                  setCurrentView('admin');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                  setStaffPinError(
+                    lang === 'en'
+                      ? 'Invalid Staff PIN. Enter the 6-digit Kateya PIN (841437) to unlock.'
+                      : 'अमान्य स्टाफ पिन। अनलॉक करने के लिए 6 अंकों का कटेया पिन (841437) दर्ज करें।'
+                  );
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label
+                  htmlFor="staff-pin-input"
+                  className="block text-xs font-bold text-[#EAE6DF] mb-1.5"
+                >
+                  {lang === 'en'
+                    ? 'Enter 6-Digit Staff Security PIN'
+                    : '6-अंकों का स्टाफ सुरक्षा पिन दर्ज करें'}
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-[#9E988E] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    id="staff-pin-input"
+                    data-testid="staff-pin-input"
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={staffPinInput}
+                    onChange={(e) => {
+                      setStaffPinInput(e.target.value);
+                      if (staffPinError) setStaffPinError(null);
+                    }}
+                    placeholder={
+                      lang === 'en' ? 'Enter PIN (e.g., 841437)' : 'पिन दर्ज करें (841437)'
+                    }
+                    className="w-full min-h-[46px] pl-10 pr-4 py-2.5 bg-[#0A0D12] border border-white/20 rounded-xl text-sm font-mono-tabular tracking-widest text-white focus:outline-none focus:border-[#FF5722]"
+                    autoFocus
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-[#B8B2A6]">
+                  <span>
+                    {lang === 'en'
+                      ? 'Default Demo PIN: 841437'
+                      : 'डिफ़ॉल्ट डेमो पिन: 841437'}
+                  </span>
+                  <button
+                    type="button"
+                    data-testid="staff-pin-fill-demo-btn"
+                    onClick={() => {
+                      setStaffPinInput(DEFAULT_STAFF_PIN);
+                      setStaffPinError(null);
+                    }}
+                    className="text-[#FF5722] hover:text-[#FFB547] font-mono-tabular font-bold underline underline-offset-2"
+                  >
+                    {lang === 'en' ? 'Fill 841437' : '841437 भरें'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                <button
+                  type="submit"
+                  data-testid="staff-pin-submit-btn"
+                  className="flex-1 min-h-[46px] px-5 py-2.5 bg-[#FF5722] hover:bg-[#E04823] text-white text-xs sm:text-sm font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_20px_-4px_rgba(255,87,34,0.5)] transition-all"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>
+                    {lang === 'en'
+                      ? 'Unlock Admin Dashboard'
+                      : 'एडमिन डैशबोर्ड खोलें'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStaffPinModalOpen(false);
+                    setAuthModalOpen(true);
+                  }}
+                  className="min-h-[46px] px-4 py-2.5 bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-[#EAE6DF] text-xs font-bold rounded-xl"
+                >
+                  {lang === 'en' ? 'Google Admin Login' : 'गूगल एडमिन लॉगिन'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -2089,12 +2445,15 @@ export default function App() {
                   </button>
                   <button
                     type="button"
+                    data-testid="footer-staff-login-btn"
                     onClick={() => {
                       if (isAuthorizedAdmin) {
                         setCurrentView('admin');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       } else {
-                        setAuthModalOpen(true);
+                        setStaffPinInput('');
+                        setStaffPinError(null);
+                        setStaffPinModalOpen(true);
                       }
                     }}
                     className="text-[#8E887E] hover:text-[#FF5C35] underline underline-offset-4 font-mono-tabular text-[11px]"

@@ -101,6 +101,7 @@ export type AdminSection =
   | 'customers'
   | 'payments'
   | 'messages'
+  | 'exam_radar'
   | 'settings';
 
 export interface DigitalService {
@@ -162,6 +163,8 @@ export interface ServiceOrder {
   customerInfoReply: string;
   uploadedFileCount: number;
   hasDeliverable: boolean;
+  voiceNoteDataUrl?: string;
+  paymentMode?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -218,3 +221,51 @@ export interface ContactMessage {
   status: 'New' | 'Replied';
   createdAt: string;
 }
+
+export type ExamRadarCategory =
+  | 'scholarship'
+  | 'recruitment'
+  | 'board_admission'
+  | 'rtps_certificate'
+  | 'job_exam';
+
+export interface ExamRadarItem {
+  id: string;
+  category: ExamRadarCategory;
+  portalBadgeEn: string;
+  portalBadgeHi: string;
+  titleEn: string;
+  titleHi: string;
+  startDate: string; // YYYY-MM-DD
+  lastDate: string; // YYYY-MM-DD
+  requiredDocsEn: string[];
+  requiredDocsHi: string[];
+  feeInr: number;
+  linkedServiceId: string;
+  isRolling?: boolean;
+  isHot?: boolean;
+  authorityEn?: string;
+  authorityHi?: string;
+  matchedServiceId?: string;
+  badgeEn?: string;
+  badgeHi?: string;
+  isActive?: boolean;
+}
+
+export type ShopTimeSlotKey = 'morning' | 'afternoon' | 'evening';
+
+export interface ShopVisitToken {
+  tokenNumber: string; // e.g., #KTY-104
+  customerName: string;
+  customerPhone: string;
+  visitDate: string;
+  timeSlot: ShopTimeSlotKey;
+  timeSlotLabelEn: string;
+  timeSlotLabelHi: string;
+  serviceType?: string;
+  serviceTitleEn?: string;
+  serviceTitleHi?: string;
+  createdAt: string;
+}
+
+

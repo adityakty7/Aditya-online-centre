@@ -9,7 +9,11 @@ import {
   UserProfile,
 } from '../types';
 import {
+  buildDynamicUpiUri,
+  buildOrderWhatsAppDispatchUrl,
   cleanDocumentLabel,
+  createSampleVoiceNoteWavDataUrl,
+  generateQrMatrix,
   getAcceptAttributeForFormats,
   getServiceDocumentRequirements,
   sanitizeString,
@@ -38,6 +42,11 @@ import {
   Paperclip,
   Check,
   Clock,
+  Mic,
+  Square,
+  Volume2,
+  QrCode,
+  MessageCircle,
 } from 'lucide-react';
 
 export interface PendingUploadItem {
@@ -68,6 +77,8 @@ interface OrderFlowViewsProps {
     formResponsesSummary: string;
     customerNotes: string;
     uploads: PendingUploadItem[];
+    voiceNoteDataUrl?: string;
+    paymentMode?: string;
   }) => Promise<void>;
   onNavigate: (view: AppView) => void;
   onTrackSpecificOrder: (orderNumber: string) => void;
@@ -103,6 +114,20 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
   );
   const [customerNotes, setCustomerNotes] = React.useState('');
 
+  // Voice Note Recorder State (30-second MediaRecorder + sample WAV fallback)
+  const [voiceNoteDataUrl, setVoiceNoteDataUrl] = React.useState<string>('');
+  const [isRecordingVoice, setIsRecordingVoice] = React.useState(false);
+  const [recordingSeconds, setRecordingSeconds] = React.useState(0);
+  const [voiceStatusMsg, setVoiceStatusMsg] = React.useState<string | null>(null);
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = React.useRef<MediaStream | null>(null);
+  const recordTimerRef = React.useRef<number | null>(null);
+
+  // Payment Mode State for Dynamic UPI QR & WhatsApp Dispatch
+  const [paymentMode, setPaymentMode] = React.useState<string>(
+    'UPI QR Instant Scan'
+  );
+
   // Per-Document Upload State: docId -> array of files
   const [uploadsByDocId, setUploadsByDocId] = React.useState<
     Record<string, PendingUploadItem[]>
@@ -119,6 +144,118 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
   // Hidden file inputs refs map
   const fileInputRefs = React.useRef<Record<string, HTMLInputElement | null>>({});
+
+  const stopActiveVoiceRecording = React.useCallback(() => {
+    if (recordTimerRef.current) {
+      window.clearInterval(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+    if (
+      mediaRecorderRef.current &&
+      mediaRecorderRef.current.state !== 'inactive'
+    ) {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {
+        // Ignore stop errors
+      }
+    }
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+      mediaStreamRef.current = null;
+    }
+    setIsRecordingVoice(false);
+  }, []);
+
+  React.useEffect(() => {
+    return () => {
+      stopActiveVoiceRecording();
+    };
+  }, [stopActiveVoiceRecording]);
+
+  const handleStartVoiceRecording = async () => {
+    setVoiceStatusMsg(null);
+    if (
+      typeof window === 'undefined' ||
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia ||
+      typeof MediaRecorder === 'undefined'
+    ) {
+      const fallbackWav = createSampleVoiceNoteWavDataUrl();
+      setVoiceNoteDataUrl(fallbackWav);
+      setRecordingSeconds(3);
+      setVoiceStatusMsg(
+        lang === 'en'
+          ? 'Microphone unavailable in this browser environment — attached 3-second studio voice note preview.'
+          : 'माइक्रोफ़ोन उपलब्ध नहीं है — 3-सेकंड का सैंपल वॉइस नोट जोड़ दिया गया है।'
+      );
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaStreamRef.current = stream;
+      const chunks: BlobPart[] = [];
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (ev) => {
+        if (ev.data && ev.data.size > 0) {
+          chunks.push(ev.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, {
+          type: recorder.mimeType || 'audio/webm',
+        });
+        const reader = new FileReader();
+        reader.onload = () => {
+          setVoiceNoteDataUrl(String(reader.result || ''));
+        };
+        reader.readAsDataURL(blob);
+        if (mediaStreamRef.current) {
+          mediaStreamRef.current.getTracks().forEach((t) => t.stop());
+          mediaStreamRef.current = null;
+        }
+      };
+
+      recorder.start();
+      setIsRecordingVoice(true);
+      setRecordingSeconds(0);
+
+      recordTimerRef.current = window.setInterval(() => {
+        setRecordingSeconds((prev) => {
+          if (prev + 1 >= 30) {
+            stopActiveVoiceRecording();
+            return 30;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch {
+      const fallbackWav = createSampleVoiceNoteWavDataUrl();
+      setVoiceNoteDataUrl(fallbackWav);
+      setRecordingSeconds(3);
+      setVoiceStatusMsg(
+        lang === 'en'
+          ? 'Microphone permission declined or unavailable — attached 3-second studio voice note preview.'
+          : 'माइक्रोफ़ोन अनुमति उपलब्ध नहीं — 3-सेकंड का सैंपल वॉइस नोट जोड़ दिया गया है।'
+      );
+    }
+  };
+
+  const handleAttachSampleVoiceNote = () => {
+    stopActiveVoiceRecording();
+    const wavUrl = createSampleVoiceNoteWavDataUrl();
+    setVoiceNoteDataUrl(wavUrl);
+    setRecordingSeconds(3);
+    setVoiceStatusMsg(
+      lang === 'en'
+        ? '3-second Hindi/Bhojpuri sample voice instruction attached for playback.'
+        : '3-सेकंड का हिंदी/भोजपुरी वॉइस निर्देश सैंपल जोड़ दिया गया है।'
+    );
+  };
 
   React.useEffect(() => {
     if (userProfile) {
@@ -205,6 +342,27 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
   // MODE: ORDER CONFIRMATION CERTIFICATE
   // ============================================================================
   if (mode === 'order-confirmation' && confirmedOrder) {
+    const confirmUpiUri = buildDynamicUpiUri({
+      upiId: DEFAULT_CENTER_SETTINGS.upiId || '6206800799@ybl',
+      payeeName: DEFAULT_CENTER_SETTINGS.payeeName,
+      amountInr: confirmedOrder.priceInr,
+      orderNumber: confirmedOrder.orderNumber,
+    });
+    const confirmQrMatrix = generateQrMatrix(confirmUpiUri, 25);
+    const confirmWhatsAppUrl = buildOrderWhatsAppDispatchUrl({
+      whatsappNumber: BUSINESS_INFO.whatsappNumber,
+      orderNumber: confirmedOrder.orderNumber,
+      customerName: confirmedOrder.customerName,
+      customerPhone: confirmedOrder.customerPhone,
+      serviceTitle:
+        lang === 'en'
+          ? confirmedOrder.serviceTitleEn
+          : confirmedOrder.serviceTitleHi,
+      totalTariffInr: confirmedOrder.priceInr,
+      paymentMode: confirmedOrder.paymentMode || paymentMode,
+      hasVoiceNote: Boolean(confirmedOrder.voiceNoteDataUrl),
+    });
+
     return (
       <div className="bg-[#F7F3EA] min-h-screen">
         <section className="editorial-dark-grid text-[#F7F3EA] border-b border-[#272732] py-12 sm:py-16">
@@ -226,8 +384,8 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
             <p className="text-sm sm:text-base text-[#D8D3C8] max-w-2xl leading-relaxed">
               {lang === 'en'
-                ? 'Your order and supporting documents have been securely queued for review at Aditya Online Center, Kateya. Use the Order ID below to track progress, verify your UPI payment, and download your finished document.'
-                : 'आपका ऑर्डर और दस्तावेज़ आदित्य ऑनलाइन सेंटर में समीक्षा के लिए प्राप्त हो गए हैं। स्थिति ट्रैक करने, UPI भुगतान सत्यापित करने और तैयार दस्तावेज़ डाउनलोड करने के लिए नीचे दिए गए ऑर्डर नंबर का उपयोग करें।'}
+                ? 'Your order and supporting documents have been securely queued for review at Aditya Online Center, Kateya. Scan the dynamic UPI QR below or send your order receipt directly on WhatsApp.'
+                : 'आपका ऑर्डर और दस्तावेज़ आदित्य ऑनलाइन सेंटर में समीक्षा के लिए प्राप्त हो गए हैं। नीचे दिए गए डायनामिक UPI QR को स्कैन करें या व्हाट्सएप पर ऑर्डर रसीद भेजें।'}
             </p>
 
             {/* Glassmorphic Architectural Order Number Monolith */}
@@ -257,6 +415,83 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
         </section>
 
         <section className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-8">
+          {/* Dynamic UPI QR + WhatsApp Dispatch Card on Confirmation */}
+          <div className="rounded-2xl bg-[#101014] text-[#F7F3EA] border border-[#272732] p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+            <div className="md:col-span-4 flex flex-col items-center justify-center bg-white p-4 rounded-xl border-2 border-[#FFB547]">
+              <svg
+                data-testid="confirmed-dynamic-upi-qr-svg"
+                viewBox={`0 0 ${confirmQrMatrix.length} ${confirmQrMatrix.length}`}
+                className="w-40 h-40"
+                shapeRendering="crispEdges"
+                role="img"
+                aria-label={`Dynamic UPI QR for ₹${confirmedOrder.priceInr}`}
+              >
+                {confirmQrMatrix.map((row, rIdx) =>
+                  row.map((cell, cIdx) =>
+                    cell ? (
+                      <rect
+                        key={`${rIdx}-${cIdx}`}
+                        x={cIdx}
+                        y={rIdx}
+                        width={1}
+                        height={1}
+                        fill="#101014"
+                      />
+                    ) : null
+                  )
+                )}
+              </svg>
+              <div className="mt-2 text-center font-mono-tabular text-[11px] font-bold text-[#101014]">
+                SCAN & PAY ₹{confirmedOrder.priceInr}
+              </div>
+            </div>
+
+            <div className="md:col-span-8 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-mono-tabular text-[11px] font-bold">
+                <QrCode className="w-3.5 h-3.5" />
+                <span>
+                  {lang === 'en'
+                    ? `DYNAMIC UPI QR · ₹${confirmedOrder.priceInr} LOCKED`
+                    : `डायनामिक UPI QR · ₹${confirmedOrder.priceInr} निर्धारित`}
+                </span>
+              </div>
+              <h2 className="font-display text-xl sm:text-2xl font-extrabold text-white">
+                {lang === 'en'
+                  ? 'Instant WhatsApp Order & Receipt Dispatch'
+                  : 'व्हाट्सएप पर ऑर्डर और रसीद तुरंत भेजें'}
+              </h2>
+              <p className="text-xs sm:text-sm text-[#D8D3C8] leading-relaxed">
+                {lang === 'en'
+                  ? 'Click the WhatsApp button below to send your pre-filled Order ID, selected service, total tariff, and payment mode directly to Aditya Online Center (6206800799).'
+                  : 'नीचे दिए गए व्हाट्सएप बटन पर क्लिक करके अपना ऑर्डर आईडी, चयनित सेवा, कुल शुल्क और भुगतान माध्यम सीधे आदित्य ऑनलाइन सेंटर (6206800799) को भेजें।'}
+              </p>
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <a
+                  href={confirmWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="confirm-whatsapp-dispatch-btn"
+                  className="min-h-[48px] px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-[0_10px_25px_-5px_rgba(16,185,129,0.5)]"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  <span>
+                    {lang === 'en'
+                      ? 'Send Order & Receipt on WhatsApp'
+                      : 'व्हाट्सएप पर ऑर्डर और रसीद भेजें'}
+                  </span>
+                </a>
+                <a
+                  href={confirmUpiUri}
+                  className="min-h-[48px] px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-mono-tabular text-xs font-bold flex items-center gap-2 transition-colors"
+                >
+                  <span>
+                    {lang === 'en' ? 'Open UPI App ↗' : 'UPI ऐप खोलें ↗'}
+                  </span>
+                </a>
+              </div>
+            </div>
+          </div>
+
           <div className="border-t-2 border-b border-[#101014] divide-y divide-[#DCD4C6]">
             <div className="py-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
               <div className="font-mono-tabular text-xs uppercase tracking-wider text-[#5C5852]">
@@ -286,6 +521,11 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               <div className="sm:col-span-2 font-mono-tabular font-semibold text-[#101014]">
                 {confirmedOrder.uploadedFileCount}{' '}
                 {lang === 'en' ? 'file(s) attached' : 'फ़ाइलें जुड़ी हैं'}
+                {confirmedOrder.voiceNoteDataUrl
+                  ? lang === 'en'
+                    ? ' + Voice Instruction Note'
+                    : ' + वॉइस निर्देश'
+                  : ''}
               </div>
             </div>
 
@@ -572,6 +812,8 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
         ),
         customerNotes: sanitizeString(customerNotes, 950),
         uploads: allFlattenedUploads,
+        voiceNoteDataUrl: voiceNoteDataUrl || undefined,
+        paymentMode,
       });
     } catch (err) {
       setErrorMsg(
@@ -583,6 +825,27 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
       );
     }
   };
+
+  const step2UpiUri = buildDynamicUpiUri({
+    upiId: DEFAULT_CENTER_SETTINGS.upiId || '6206800799@ybl',
+    payeeName: DEFAULT_CENTER_SETTINGS.payeeName,
+    amountInr: service.priceInr,
+    orderNumber: `AOC-${service.id.toUpperCase().slice(0, 8)}`,
+  });
+  const step2QrMatrix = React.useMemo(
+    () => generateQrMatrix(step2UpiUri, 25),
+    [step2UpiUri]
+  );
+  const step2WhatsAppUrl = buildOrderWhatsAppDispatchUrl({
+    whatsappNumber: BUSINESS_INFO.whatsappNumber,
+    orderNumber: `PENDING-${service.id.toUpperCase().slice(0, 6)}`,
+    customerName: customerName || 'Kateya Customer',
+    customerPhone: customerPhone || '',
+    serviceTitle: lang === 'en' ? service.titleEn : service.titleHi,
+    totalTariffInr: service.priceInr,
+    paymentMode,
+    hasVoiceNote: Boolean(voiceNoteDataUrl),
+  });
 
   return (
     <div className="bg-[#F7F3EA] min-h-screen">
@@ -1300,9 +1563,9 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               </div>
             </div>
 
-            {/* 04 // SPECIAL INSTRUCTIONS */}
-            <div className="space-y-3">
-              <div className="border-b-2 border-[#101014] pb-2">
+            {/* 04 // SPECIAL INSTRUCTIONS + VOICE NOTE RECORDER */}
+            <div className="space-y-4">
+              <div className="border-b-2 border-[#101014] pb-2 flex flex-wrap items-center justify-between gap-2">
                 <label
                   htmlFor="order-special-notes"
                   className="font-display text-base sm:text-lg font-extrabold text-[#101014] flex items-center gap-2.5"
@@ -1312,11 +1575,17 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   </span>
                   <span>
                     {lang === 'en'
-                      ? 'Additional Instructions or Formatting Notes (Optional)'
-                      : 'अतिरिक्त निर्देश या विशेष जानकारी (वैकल्पिक)'}
+                      ? 'Additional Instructions & Voice Note (हमें बोलकर बताएं)'
+                      : 'अतिरिक्त निर्देश और वॉइस नोट (हमें बोलकर बताएं)'}
                   </span>
                 </label>
+                <span className="font-mono-tabular text-[11px] font-bold text-[#C83713]">
+                  {lang === 'en'
+                    ? 'HINDI / BHOJPURI / ENGLISH AUDIO SUPPORTED'
+                    : 'हिंदी / भोजपुरी / अंग्रेजी ऑडियो समर्थित'}
+                </span>
               </div>
+
               <textarea
                 id="order-special-notes"
                 rows={2}
@@ -1329,6 +1598,113 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                 }
                 className="w-full px-3.5 py-2.5 bg-[#FFFDF9] border border-[#101014] text-sm text-[#101014] focus:border-[#FF5C35] focus:outline-none"
               />
+
+              {/* Browser MediaRecorder Voice Note Box */}
+              <div
+                data-testid="voice-note-recorder"
+                className="rounded-2xl bg-[#101014] text-[#F7F3EA] border border-[#272732] p-4 sm:p-5 space-y-3"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 font-mono-tabular text-xs font-bold text-[#FFB547]">
+                      <Mic className="w-4 h-4 text-[#FF5C35]" />
+                      <span>
+                        {lang === 'en'
+                          ? 'RECORD VOICE INSTRUCTIONS (हमें बोलकर बताएं · MAX 30s)'
+                          : 'वॉइस निर्देश रिकॉर्ड करें (हमें बोलकर बताएं · अधिकतम 30 सेकंड)'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#D8D3C8]">
+                      {lang === 'en'
+                        ? 'Prefer speaking in Hindi or Bhojpuri instead of typing? Record a 30-second audio note for our Kateya operator.'
+                        : 'टाइप करने के बजाय हिंदी या भोजपुरी में बोलकर बताना चाहते हैं? 30-सेकंड का ऑडियो संदेश रिकॉर्ड करें।'}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {!isRecordingVoice ? (
+                      <button
+                        type="button"
+                        data-testid="voice-note-record-btn"
+                        onClick={handleStartVoiceRecording}
+                        className="min-h-[42px] px-4 py-2 rounded-xl bg-[#FF5C35] hover:bg-[#E54922] text-white text-xs font-bold flex items-center gap-2 transition-colors shadow-sm"
+                      >
+                        <Mic className="w-4 h-4" />
+                        <span>
+                          {lang === 'en'
+                            ? 'Record Voice Instructions (हमें बोलकर बताएं)'
+                            : 'हमें बोलकर बताएं (Record Voice)'}
+                        </span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        data-testid="voice-note-stop-btn"
+                        onClick={stopActiveVoiceRecording}
+                        className="min-h-[42px] px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center gap-2 animate-pulse"
+                      >
+                        <Square className="w-3.5 h-3.5 fill-current" />
+                        <span>
+                          {lang === 'en'
+                            ? `Stop Recording (${recordingSeconds}s / 30s)`
+                            : `रिकॉर्डिंग रोकें (${recordingSeconds}s / 30s)`}
+                        </span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      data-testid="voice-note-sample-btn"
+                      onClick={handleAttachSampleVoiceNote}
+                      className="min-h-[42px] px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-[#FFB547] font-mono-tabular text-xs font-bold transition-colors"
+                    >
+                      {lang === 'en'
+                        ? '+ Sample Voice Note (3s)'
+                        : '+ सैंपल वॉइस नोट (3s)'}
+                    </button>
+                  </div>
+                </div>
+
+                {voiceStatusMsg && (
+                  <div className="text-xs text-emerald-300 font-mono-tabular">
+                    {voiceStatusMsg}
+                  </div>
+                )}
+
+                {voiceNoteDataUrl && (
+                  <div
+                    data-testid="voice-note-playback-box"
+                    className="pt-2 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-2 text-xs text-emerald-400 font-bold">
+                      <Volume2 className="w-4 h-4 shrink-0" />
+                      <span>
+                        {lang === 'en'
+                          ? `Voice Instruction Attached (${Math.max(1, recordingSeconds)}s)`
+                          : `वॉइस निर्देश संलग्न (${Math.max(1, recordingSeconds)} सेकंड)`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <audio
+                        data-testid="voice-note-audio-player"
+                        controls
+                        src={voiceNoteDataUrl}
+                        className="h-9 max-w-[240px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVoiceNoteDataUrl('');
+                          setVoiceStatusMsg(null);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-semibold"
+                      >
+                        {lang === 'en' ? 'Clear' : 'हटाएं'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="pt-4 border-t border-[#DCD4C6] flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -1410,6 +1786,11 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   <div className="font-bold text-[#101014] font-mono-tabular mt-0.5">
                     {allFlattenedUploads.length}{' '}
                     {lang === 'en' ? 'file(s) attached' : 'फ़ाइलें जुड़ी हैं'}
+                    {voiceNoteDataUrl
+                      ? lang === 'en'
+                        ? ' + Voice Note'
+                        : ' + वॉइस नोट'
+                      : ''}
                   </div>
                 </div>
               </div>
@@ -1455,22 +1836,22 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               </div>
             </div>
 
-            {/* Framed UPI Payment Summary Card */}
+            {/* Framed Dynamic UPI QR & WhatsApp Dispatch Card */}
             <div
               data-testid="upi-payment-summary-card"
-              className="rounded-2xl bg-[#101014] text-[#F7F3EA] border border-[#272732] p-6 sm:p-7 space-y-5 shadow-[0_20px_40px_-15px_rgba(16,16,20,0.45)]"
+              className="rounded-2xl bg-[#101014] text-[#F7F3EA] border border-[#272732] p-6 sm:p-7 space-y-6 shadow-[0_20px_40px_-15px_rgba(16,16,20,0.45)]"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
                 <div className="space-y-1">
                   <div className="font-mono-tabular text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
                     {lang === 'en'
-                      ? 'FRAMED UPI PAYMENT SUMMARY'
-                      : 'UPI भुगतान सारांश'}
+                      ? 'DYNAMIC UPI QR & WHATSAPP ORDER DISPATCH'
+                      : 'डायनामिक UPI QR और व्हाट्सएप ऑर्डर डिस्पैच'}
                   </div>
                   <h3 className="font-display text-lg sm:text-xl font-extrabold text-white">
                     {lang === 'en'
-                      ? 'Manual UPI Verification Protocol'
-                      : 'मैनुअल UPI भुगतान सत्यापन प्रणाली'}
+                      ? 'Scan Exact Tariff QR or Dispatch via WhatsApp'
+                      : 'सटीक शुल्क QR स्कैन करें या व्हाट्सएप पर भेजें'}
                   </h3>
                 </div>
                 <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF5C35]/20 to-[#FFB547]/20 border border-[#FFB547]/40 sm:text-right">
@@ -1483,32 +1864,117 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
-                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
-                    {lang === 'en' ? 'OFFICIAL UPI DESK' : 'आधिकारिक UPI सहायता'}
-                  </div>
-                  <div className="font-mono-tabular text-sm font-bold text-[#FFB547] mt-1">
-                    {DEFAULT_CENTER_SETTINGS.upiId ||
-                      `WhatsApp: ${BUSINESS_INFO.whatsappNumber}`}
+              {/* Payment Mode Selector + Dynamic QR Matrix */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                <div className="md:col-span-4 flex flex-col items-center justify-center bg-white p-4 rounded-xl border-2 border-[#FFB547]">
+                  <svg
+                    data-testid="dynamic-upi-qr-svg"
+                    viewBox={`0 0 ${step2QrMatrix.length} ${step2QrMatrix.length}`}
+                    className="w-40 h-40"
+                    shapeRendering="crispEdges"
+                    role="img"
+                    aria-label={`Dynamic UPI QR Code for ₹${service.priceInr}`}
+                  >
+                    {step2QrMatrix.map((row, rIdx) =>
+                      row.map((cell, cIdx) =>
+                        cell ? (
+                          <rect
+                            key={`${rIdx}-${cIdx}`}
+                            x={cIdx}
+                            y={rIdx}
+                            width={1}
+                            height={1}
+                            fill="#101014"
+                          />
+                        ) : null
+                      )
+                    )}
+                  </svg>
+                  <div className="mt-2 font-mono-tabular text-[11px] font-extrabold text-[#101014] text-center">
+                    UPI://PAY · ₹{service.priceInr}
                   </div>
                 </div>
-                <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
-                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
-                    {lang === 'en' ? 'VERIFIED PAYEE' : 'प्राप्तकर्ता का नाम'}
+
+                <div className="md:col-span-8 space-y-4">
+                  <div>
+                    <label className="block font-mono-tabular text-[11px] uppercase tracking-wider text-[#FFB547] mb-2">
+                      {lang === 'en'
+                        ? 'SELECT PREFERRED PAYMENT MODE'
+                        : 'भुगतान माध्यम चुनें'}
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      {[
+                        {
+                          id: 'UPI QR Instant Scan',
+                          labelEn: 'UPI QR Scan',
+                          labelHi: 'UPI QR स्कैन',
+                        },
+                        {
+                          id: 'UPI ID / Manual UTR',
+                          labelEn: 'UPI / 12-Digit UTR',
+                          labelHi: 'UPI / 12-अंकीय UTR',
+                        },
+                        {
+                          id: 'Pay at Shop Counter',
+                          labelEn: 'Pay at Kateya Shop',
+                          labelHi: 'दुकान पर भुगतान',
+                        },
+                      ].map((pm) => (
+                        <button
+                          key={pm.id}
+                          type="button"
+                          onClick={() => setPaymentMode(pm.id)}
+                          className={`min-h-[40px] px-3 py-2 rounded-xl font-mono-tabular text-xs font-bold border text-left transition-all ${
+                            paymentMode === pm.id
+                              ? 'bg-[#FF5C35] text-white border-[#FF5C35]'
+                              : 'bg-white/[0.04] text-[#D8D3C8] border-white/15 hover:border-white/35'
+                          }`}
+                        >
+                          {lang === 'en' ? pm.labelEn : pm.labelHi}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="font-bold text-sm text-white mt-1">
-                    {DEFAULT_CENTER_SETTINGS.payeeName}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10">
+                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
+                        {lang === 'en' ? 'VERIFIED PAYEE' : 'प्राप्तकर्ता का नाम'}
+                      </div>
+                      <div className="font-bold text-sm text-white mt-0.5">
+                        {DEFAULT_CENTER_SETTINGS.payeeName}
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10">
+                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
+                        {lang === 'en' ? 'ESTIMATED DELIVERY' : 'अनुमानित समय'}
+                      </div>
+                      <div className="font-mono-tabular text-sm font-bold text-emerald-400 mt-0.5">
+                        {lang === 'en'
+                          ? service.estimatedTimeEn
+                          : service.estimatedTimeHi}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
-                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
-                    {lang === 'en' ? 'ESTIMATED DELIVERY' : 'अनुमानित समय'}
-                  </div>
-                  <div className="font-mono-tabular text-sm font-bold text-emerald-400 mt-1">
-                    {lang === 'en'
-                      ? service.estimatedTimeEn
-                      : service.estimatedTimeHi}
+
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
+                    <a
+                      href={step2WhatsAppUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="step2-whatsapp-dispatch-btn"
+                      className="min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs transition-all flex items-center gap-2 shadow-sm"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>
+                        {lang === 'en'
+                          ? 'Send Order & Receipt on WhatsApp'
+                          : 'व्हाट्सएप पर ऑर्डर और रसीद भेजें'}
+                      </span>
+                    </a>
+                    <span className="font-mono-tabular text-[11px] text-[#9E988E]">
+                      WhatsApp: {BUSINESS_INFO.whatsappNumber}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1517,8 +1983,8 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                 <ShieldCheck className="w-5 h-5 text-[#FFB547] shrink-0 mt-0.5" />
                 <span>
                   {lang === 'en'
-                    ? 'Security Notice: We never ask for bank passwords, UPI PINs, or OTPs. Place your order first to generate your unique Order ID, then pay via any UPI app and submit your 12-digit UTR reference on the Track Order screen.'
-                    : 'सुरक्षा सूचना: हम कभी भी बैंक पासवर्ड, UPI पिन या OTP नहीं मांगते हैं। पहले ऑर्डर सबमिट कर अपना यूनिक ऑर्डर नंबर प्राप्त करें, फिर UPI से भुगतान कर 12-अंकीय UTR नंबर दर्ज करें।'}
+                    ? 'Security Notice: We never ask for bank passwords, UPI PINs, or OTPs. Place your order below to generate your official Order ID, then scan the UPI QR or dispatch on WhatsApp.'
+                    : 'सुरक्षा सूचना: हम कभी भी बैंक पासवर्ड, UPI पिन या OTP नहीं मांगते हैं। अपना यूनिक ऑर्डर नंबर प्राप्त करने के लिए नीचे सबमिट करें।'}
                 </span>
               </div>
             </div>
@@ -1537,6 +2003,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
               <button
                 type="button"
+                data-testid="confirm-place-order-btn"
                 disabled={isSubmitting}
                 onClick={handleConfirmSubmit}
                 className="min-h-[48px] px-7 py-3.5 bg-[#FF5C35] hover:bg-[#E54922] disabled:opacity-60 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"

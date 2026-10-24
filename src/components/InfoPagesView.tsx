@@ -1,13 +1,23 @@
 import React from 'react';
-import { AppView, CenterSettings, Language } from '../types';
+import {
+  AppView,
+  CenterSettings,
+  Language,
+  ShopTimeSlotKey,
+  ShopVisitToken,
+} from '../types';
 import {
   BUSINESS_INFO,
   getActiveSocialLinks,
   SocialLinkItem,
 } from '../config/businessInfo';
 import {
+  SHOP_TIME_SLOTS,
+  buildShopTokenWhatsAppUrl,
+  generateShopVisitTokenNumber,
   sanitizeString,
   validateContactMessageInput,
+  validateShopVisitTokenInput,
 } from '../utils/rules';
 import {
   MapPin,
@@ -24,6 +34,10 @@ import {
   AlertCircle,
   Send,
   ArrowLeft,
+  Ticket,
+  Clock,
+  Download,
+  Printer,
 } from 'lucide-react';
 
 export interface ContactSubmissionPayload {
@@ -89,6 +103,135 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
   const [savedMessageId, setSavedMessageId] = React.useState<string | null>(
     null
   );
+
+  // Upgrade 5: In-Shop Priority Visit Token Booker State
+  const [tokenCustomerName, setTokenCustomerName] = React.useState(
+    'Ramesh Kumar'
+  );
+  const [tokenCustomerPhone, setTokenCustomerPhone] = React.useState(
+    '9876543210'
+  );
+  const [tokenVisitDate, setTokenVisitDate] = React.useState(() => {
+    const d = new Date();
+    return d.toISOString().slice(0, 10);
+  });
+  const [tokenTimeSlot, setTokenTimeSlot] =
+    React.useState<ShopTimeSlotKey>('morning');
+  const [tokenServiceType, setTokenServiceType] = React.useState(
+    'Bihar Post-Matric Scholarship / Online Form'
+  );
+  const [tokenSequence, setTokenSequence] = React.useState(104);
+  const [tokenError, setTokenError] = React.useState<string | null>(null);
+  const [generatedToken, setGeneratedToken] =
+    React.useState<ShopVisitToken | null>(() => {
+      try {
+        if (typeof window !== 'undefined') {
+          const saved = window.localStorage.getItem('aoc_latest_shop_token');
+          if (saved) return JSON.parse(saved) as ShopVisitToken;
+        }
+      } catch {
+        // Ignore storage errors
+      }
+      return null;
+    });
+
+  const handleBookShopToken = (e: React.FormEvent) => {
+    e.preventDefault();
+    setTokenError(null);
+    const check = validateShopVisitTokenInput({
+      customerName: tokenCustomerName,
+      customerPhone: tokenCustomerPhone,
+      visitDate: tokenVisitDate,
+      timeSlot: tokenTimeSlot,
+      serviceType: tokenServiceType,
+    });
+    if (!check.valid) {
+      setTokenError(lang === 'en' ? check.errorEn! : check.errorHi!);
+      return;
+    }
+
+    const slotMeta =
+      SHOP_TIME_SLOTS.find((s) => s.key === tokenTimeSlot) ||
+      SHOP_TIME_SLOTS[0];
+    const tokenNum = generateShopVisitTokenNumber(tokenSequence);
+    const nextToken: ShopVisitToken = {
+      tokenNumber: tokenNum,
+      customerName: sanitizeString(tokenCustomerName, 80),
+      customerPhone: sanitizeString(tokenCustomerPhone, 15),
+      visitDate: tokenVisitDate,
+      timeSlot: tokenTimeSlot,
+      timeSlotLabelEn: slotMeta.labelEn,
+      timeSlotLabelHi: slotMeta.labelHi,
+      serviceType: sanitizeString(tokenServiceType, 120),
+      createdAt: new Date().toISOString(),
+    };
+    setGeneratedToken(nextToken);
+    setTokenSequence((prev) => prev + 1);
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(
+          'aoc_latest_shop_token',
+          JSON.stringify(nextToken)
+        );
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  const handleDownloadTokenCard = (tok: ShopVisitToken) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 720;
+    canvas.height = 420;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = '#0A0D12';
+    ctx.fillRect(0, 0, 720, 420);
+    ctx.strokeStyle = '#FF5C35';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(14, 14, 692, 392);
+
+    ctx.fillStyle = '#FFB547';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('ADITYA ONLINE CENTER · KATEYA PRIORITY VISIT TOKEN', 36, 54);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 46px monospace';
+    ctx.fillText(tok.tokenNumber, 36, 112);
+
+    ctx.fillStyle = '#10B981';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(
+      `DATE: ${tok.visitDate}   |   SLOT: ${tok.timeSlotLabelEn}`,
+      36,
+      154
+    );
+
+    ctx.fillStyle = '#E2E8F0';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(`Visitor: ${tok.customerName} (${tok.customerPhone})`, 36, 206);
+    ctx.font = '18px sans-serif';
+    ctx.fillText(`Service: ${tok.serviceType}`, 36, 244);
+
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(
+      'Location: Ward No. 08, Near G.A. High School / Nagar Panchayat, Kateya (841437)',
+      36,
+      320
+    );
+    ctx.fillStyle = '#FFB547';
+    ctx.fillText('WhatsApp Support Desk: +91 6206800799', 36, 352);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = `Aditya_Online_Center_Token_${tok.tokenNumber.replace('#', '')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   React.useEffect(() => {
     setPreferredLanguage(lang);
@@ -831,6 +974,365 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                 </button>
               </form>
             )}
+          </div>
+        </div>
+
+        {/* ===================================================================== */}
+        {/* UPGRADE 5: BOOK IN-SHOP PRIORITY TOKEN (दुकान पर आने का समय बुक करें)    */}
+        {/* ===================================================================== */}
+        <div
+          id="shop-visit-token-section"
+          data-testid="shop-visit-token-widget"
+          className="mt-14 rounded-3xl bg-[#0A0D12] text-[#F7F3EA] border border-[#272732] p-6 sm:p-10 shadow-[0_24px_60px_-15px_rgba(10,13,18,0.85)]"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Left 7 Columns: Priority Token Booking Form */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="space-y-2 border-b border-white/10 pb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF5C35]/15 border border-[#FF5C35]/40 text-[#FFB547] font-mono-tabular text-[11px] font-bold uppercase tracking-wider">
+                  <Ticket className="w-3.5 h-3.5 text-[#FF5C35]" />
+                  <span>
+                    {lang === 'en'
+                      ? '03 // ZERO-WAIT COUNTER QUEUE SYSTEM'
+                      : '03 // बिना लाइन में लगे प्राथमिकता काउंटर टोकन'}
+                  </span>
+                </div>
+                <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  {lang === 'en'
+                    ? 'Book In-Shop Priority Token (दुकान पर आने का समय बुक करें)'
+                    : 'दुकान पर आने का समय बुक करें (Book In-Shop Priority Token)'}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  {lang === 'en'
+                    ? 'Visiting our studio at Ward No. 08, Near G.A. High School, Kateya? Reserve a priority time slot and get an instant Digital Token Card (#KTY-104) to skip the queue.'
+                    : 'वार्ड नं. 08, जी.ए. हाई स्कूल के पास, कटेया स्थित हमारे सेंटर पर आ रहे हैं? भीड़ से बचने के लिए अपना समय स्लॉट चुनें और तुरंत डिजिटल टोकन कार्ड (#KTY-104) प्राप्त करें।'}
+                </p>
+              </div>
+
+              {tokenError && (
+                <div
+                  role="alert"
+                  className="p-3.5 rounded-xl bg-red-500/15 border border-red-500/40 text-xs text-red-200 flex items-center gap-2"
+                >
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>{tokenError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleBookShopToken} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="token-visitor-name"
+                      className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5"
+                    >
+                      {lang === 'en' ? 'Visitor Full Name *' : 'आपका पूरा नाम *'}
+                    </label>
+                    <input
+                      id="token-visitor-name"
+                      data-testid="token-visitor-name-input"
+                      type="text"
+                      value={tokenCustomerName}
+                      onChange={(e) => setTokenCustomerName(e.target.value)}
+                      placeholder={
+                        lang === 'en' ? 'Enter your name' : 'अपना नाम लिखें'
+                      }
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-[#121721] border border-white/15 text-sm text-white focus:border-[#FF5C35] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="token-visitor-phone"
+                      className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5"
+                    >
+                      {lang === 'en'
+                        ? '10-Digit Mobile Number *'
+                        : '10-अंकीय मोबाइल नंबर *'}
+                    </label>
+                    <input
+                      id="token-visitor-phone"
+                      data-testid="token-visitor-phone-input"
+                      type="tel"
+                      value={tokenCustomerPhone}
+                      onChange={(e) => setTokenCustomerPhone(e.target.value)}
+                      placeholder="9876543210"
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-[#121721] border border-white/15 text-sm font-mono-tabular text-white focus:border-[#FF5C35] focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      htmlFor="token-visit-date"
+                      className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5"
+                    >
+                      {lang === 'en' ? 'Preferred Visit Date *' : 'आने की तिथि *'}
+                    </label>
+                    <input
+                      id="token-visit-date"
+                      data-testid="token-visit-date-input"
+                      type="date"
+                      value={tokenVisitDate}
+                      onChange={(e) => setTokenVisitDate(e.target.value)}
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-[#121721] border border-white/15 text-sm font-mono-tabular text-white focus:border-[#FF5C35] focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="token-service-select"
+                      className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5"
+                    >
+                      {lang === 'en' ? 'Service Type *' : 'सेवा का प्रकार *'}
+                    </label>
+                    <select
+                      id="token-service-select"
+                      data-testid="token-service-select"
+                      value={tokenServiceType}
+                      onChange={(e) => setTokenServiceType(e.target.value)}
+                      className="w-full min-h-[44px] px-3.5 py-2 rounded-xl bg-[#121721] border border-white/15 text-sm text-white focus:border-[#FF5C35] focus:outline-none"
+                    >
+                      <option value="Bihar Post-Matric Scholarship / Online Form">
+                        {lang === 'en'
+                          ? 'Bihar Post-Matric Scholarship / Online Form'
+                          : 'बिहार पोस्ट-मैट्रिक छात्रवृत्ति / ऑनलाइन फॉर्म'}
+                      </option>
+                      <option value="SSC / Bihar Police / BPSC Exam Form Filling">
+                        {lang === 'en'
+                          ? 'SSC / Bihar Police / BPSC Exam Form Filling'
+                          : 'SSC / बिहार पुलिस / BPSC परीक्षा फॉर्म'}
+                      </option>
+                      <option value="Professional Job Resume / Marriage Biodata">
+                        {lang === 'en'
+                          ? 'Professional Job Resume / Marriage Biodata'
+                          : 'प्रोफेशनल जॉब रिज्यूमे / शादी बायोडाटा'}
+                      </option>
+                      <option value="RTPS Caste / Income / Residence Certificate">
+                        {lang === 'en'
+                          ? 'RTPS Caste / Income / Residence Certificate'
+                          : 'RTPS जाति / आय / निवास प्रमाण पत्र'}
+                      </option>
+                      <option value="Aadhaar / PAN / Document Scanning & PDF">
+                        {lang === 'en'
+                          ? 'Aadhaar / PAN / Document Scanning & PDF'
+                          : 'आधार / पैन / दस्तावेज़ स्कैनिंग और PDF'}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Time Slot Selector */}
+                <div>
+                  <span className="block font-mono-tabular text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
+                    {lang === 'en'
+                      ? 'Select Shop Time Slot (Mon–Sat) *'
+                      : 'समय स्लॉट चुनें (सोमवार–शनिवार) *'}
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {SHOP_TIME_SLOTS.map((slot) => {
+                      const active = tokenTimeSlot === slot.key;
+                      return (
+                        <button
+                          key={slot.key}
+                          type="button"
+                          data-testid={`token-slot-${slot.key}`}
+                          onClick={() => setTokenTimeSlot(slot.key)}
+                          className={`p-3 rounded-xl border text-left transition-all ${
+                            active
+                              ? 'bg-[#FF5C35] text-white border-[#FF5C35] shadow-[0_8px_20px_-6px_rgba(255,92,53,0.6)]'
+                              : 'bg-[#121721] text-slate-300 border-white/15 hover:border-white/35'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 font-mono-tabular text-xs font-extrabold">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            <span>
+                              {lang === 'en' ? slot.labelEn : slot.labelHi}
+                            </span>
+                          </div>
+                          <div className="text-[11px] opacity-85 mt-1">
+                            {lang === 'en' ? slot.windowEn : slot.windowHi}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  data-testid="generate-shop-token-btn"
+                  className="w-full sm:w-auto min-h-[48px] px-7 py-3 rounded-xl bg-gradient-to-r from-[#FF5C35] to-[#E54922] hover:from-[#FF6B47] hover:to-[#FF5C35] text-white font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-[0_12px_28px_-6px_rgba(255,92,53,0.55)]"
+                >
+                  <Ticket className="w-4 h-4" />
+                  <span>
+                    {lang === 'en'
+                      ? 'Generate Priority Digital Token Card →'
+                      : 'डिजिटल टोकन कार्ड जनरेट करें →'}
+                  </span>
+                </button>
+              </form>
+            </div>
+
+            {/* Right 5 Columns: Live Printable / Downloadable Digital Token Card */}
+            <div className="lg:col-span-5">
+              {(() => {
+                const activeTok: ShopVisitToken = generatedToken || {
+                  tokenNumber: '#KTY-104',
+                  customerName: tokenCustomerName || 'Ramesh Kumar',
+                  customerPhone: tokenCustomerPhone || '9876543210',
+                  visitDate: tokenVisitDate,
+                  timeSlot: tokenTimeSlot,
+                  timeSlotLabelEn:
+                    SHOP_TIME_SLOTS.find((s) => s.key === tokenTimeSlot)
+                      ?.labelEn || 'Morning (8:00 AM – 12:00 PM)',
+                  timeSlotLabelHi:
+                    SHOP_TIME_SLOTS.find((s) => s.key === tokenTimeSlot)
+                      ?.labelHi || 'सुबह (8:00 AM – 12:00 PM)',
+                  serviceType: tokenServiceType,
+                  createdAt: new Date().toISOString(),
+                };
+
+                const tokenWhatsAppUrl = buildShopTokenWhatsAppUrl({
+                  whatsappNumber: BUSINESS_INFO.whatsappNumber,
+                  tokenNumber: activeTok.tokenNumber,
+                  customerName: activeTok.customerName,
+                  visitDate: activeTok.visitDate,
+                  timeSlotLabel:
+                    lang === 'en'
+                      ? activeTok.timeSlotLabelEn
+                      : activeTok.timeSlotLabelHi,
+                  serviceType: activeTok.serviceType,
+                });
+
+                return (
+                  <div
+                    data-testid="digital-token-card"
+                    className="rounded-2xl bg-gradient-to-br from-[#121721] via-[#161E2E] to-[#0A0D12] border-2 border-[#FFB547]/60 p-6 space-y-5 shadow-[0_16px_40px_-10px_rgba(255,181,71,0.25)]"
+                  >
+                    <div className="flex items-center justify-between border-b border-white/15 pb-3.5">
+                      <div>
+                        <div className="font-mono-tabular text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+                          {lang === 'en'
+                            ? 'OFFICIAL DIGITAL APPOINTMENT PASS'
+                            : 'आधिकारिक डिजिटल अपॉइंटमेंट पास'}
+                        </div>
+                        <div className="font-display text-sm font-extrabold text-white mt-0.5">
+                          Aditya Online Center · Kateya
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono-tabular text-[10px] font-bold">
+                        {generatedToken
+                          ? lang === 'en'
+                            ? 'CONFIRMED PASS'
+                            : 'कन्फर्म पास'
+                          : lang === 'en'
+                          ? 'LIVE PREVIEW'
+                          : 'लाइव प्रीव्यू'}
+                      </span>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between">
+                      <div>
+                        <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-slate-400">
+                          {lang === 'en' ? 'TOKEN NUMBER' : 'टोकन नंबर'}
+                        </div>
+                        <div
+                          data-testid="generated-token-number"
+                          className="font-mono-tabular text-3xl sm:text-4xl font-extrabold text-[#FFB547] tracking-wider mt-0.5"
+                        >
+                          {activeTok.tokenNumber}
+                        </div>
+                      </div>
+                      <div className="text-right font-mono-tabular text-xs">
+                        <div className="text-slate-400">
+                          {lang === 'en' ? 'DATE' : 'तिथि'}
+                        </div>
+                        <div className="text-white font-bold mt-0.5">
+                          {activeTok.visitDate}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between py-1.5 border-b border-white/10">
+                        <span className="text-slate-400 font-mono-tabular">
+                          {lang === 'en' ? 'VISITOR' : 'आगंतुक'}
+                        </span>
+                        <span className="font-bold text-white">
+                          {activeTok.customerName} ({activeTok.customerPhone})
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5 border-b border-white/10">
+                        <span className="text-slate-400 font-mono-tabular">
+                          {lang === 'en' ? 'TIME SLOT' : 'समय स्लॉट'}
+                        </span>
+                        <span className="font-bold text-emerald-300">
+                          {lang === 'en'
+                            ? activeTok.timeSlotLabelEn
+                            : activeTok.timeSlotLabelHi}
+                        </span>
+                      </div>
+                      <div className="py-1.5 border-b border-white/10">
+                        <div className="text-slate-400 font-mono-tabular">
+                          {lang === 'en' ? 'SERVICE DESK' : 'सेवा डेस्क'}
+                        </div>
+                        <div className="font-bold text-white mt-0.5">
+                          {activeTok.serviceType}
+                        </div>
+                      </div>
+                      <div className="text-[11px] text-slate-300 pt-1">
+                        📍 Ward No. 08, Near G.A. High School / Nagar Panchayat,
+                        Kateya, Gopalganj (841437)
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+                      <button
+                        type="button"
+                        data-testid="download-token-card-btn"
+                        onClick={() => handleDownloadTokenCard(activeTok)}
+                        className="min-h-[42px] px-3.5 py-2 rounded-xl bg-[#FFB547] hover:bg-[#FFA726] text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>
+                          {lang === 'en'
+                            ? 'Download Token Card'
+                            : 'टोकन कार्ड डाउनलोड करें'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => window.print()}
+                        className="min-h-[42px] px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        <span>
+                          {lang === 'en' ? 'Print Pass' : 'प्रिंट करें'}
+                        </span>
+                      </button>
+                    </div>
+
+                    <a
+                      href={tokenWhatsAppUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-testid="whatsapp-token-confirm-btn"
+                      className="w-full min-h-[42px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>
+                        {lang === 'en'
+                          ? 'Confirm Token Slot on WhatsApp (6206800799)'
+                          : 'व्हाट्सएप पर टोकन स्लॉट कन्फर्म करें'}
+                      </span>
+                    </a>
+                  </div>
+                );
+              })()}
+            </div>
           </div>
         </div>
       </section>

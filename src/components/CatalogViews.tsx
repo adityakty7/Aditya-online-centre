@@ -15,13 +15,19 @@ import { BUSINESS_INFO } from '../config/businessInfo';
 import {
   BEFORE_AFTER_SHOWCASE_TABS,
   CUSTOMER_TESTIMONIALS,
+  ExamRadarItemConfig,
   HERO_CINEMATIC_MEDIA,
+  INITIAL_EXAM_RADAR_ITEMS,
+  LiveDraftTemplateId,
   buildServiceWhatsAppUrl,
   calculateBundleEstimate,
   clampComparisonSlider,
   cleanDocumentLabel,
   getServiceDocumentRequirements,
 } from '../utils/rules';
+import { ExamRadarSection } from './ExamRadarSection';
+import { StudentUtilityLab } from './StudentUtilityLab';
+import { LiveDraftPreviewModal } from './LiveDraftPreviewModal';
 import {
   Search,
   Clock,
@@ -74,6 +80,7 @@ interface CatalogViewsProps {
   settings: CenterSettings;
   categories?: CategoryMeta[];
   documentLibrary?: DocumentLibraryItem[];
+  examRadarItems?: ExamRadarItemConfig[];
 }
 
 function formatCatalogDocLabel(raw: string): string {
@@ -1394,11 +1401,15 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
   onQuickTrackOrder,
   categories = SERVICE_CATEGORIES,
   documentLibrary = [],
+  examRadarItems = INITIAL_EXAM_RADAR_ITEMS,
 }) => {
   const [heroTrackId, setHeroTrackId] = React.useState('AOC-20261018-D101');
   const [isPageHidden, setIsPageHidden] = React.useState(false);
   const [openFaqIndex, setOpenFaqIndex] = React.useState<number | null>(0);
   const [activeTestimonialIdx, setActiveTestimonialIdx] = React.useState(0);
+  const [livePreviewOpen, setLivePreviewOpen] = React.useState(false);
+  const [livePreviewTemplateId, setLivePreviewTemplateId] =
+    React.useState<LiveDraftTemplateId>('bank-unfreeze');
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -2410,6 +2421,34 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                           : 'WhatsApp पर ऑर्डर करें'}
                       </span>
                     </a>
+                    {(srv.id === 'srv-hindi-english-typing' ||
+                      srv.id === 'srv-application-typing' ||
+                      srv.id === 'srv-marriage-biodata') && (
+                      <button
+                        type="button"
+                        data-testid={`live-preview-btn-${srv.id}`}
+                        onClick={() => {
+                          setLivePreviewTemplateId(
+                            srv.id === 'srv-marriage-biodata'
+                              ? 'marriage-biodata'
+                              : 'bank-unfreeze'
+                          );
+                          setLivePreviewOpen(true);
+                        }}
+                        className={`w-full min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-extrabold border transition-all flex items-center justify-center gap-1.5 ${
+                          isDarkTile
+                            ? 'bg-[#FFB547]/15 hover:bg-[#FFB547]/30 border-[#FFB547]/50 text-[#FFB547] hover:text-white'
+                            : 'bg-[#FFF3E0] hover:bg-[#101014] border-[#C83713]/40 text-[#C83713] hover:text-white'
+                        }`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                        <span>
+                          {lang === 'en'
+                            ? 'Try Live Draft Preview'
+                            : 'लाइव ड्राफ्ट प्रीव्यू देखें'}
+                        </span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => onInspectService(srv)}
@@ -2436,6 +2475,14 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
       {/* ===================================================================== */}
       {mode === 'home' && (
         <>
+          {/* 01.B — LIVE BIHAR EXAM, SCHOLARSHIP & JOB FORM RADAR */}
+          <ExamRadarSection
+            lang={lang}
+            items={examRadarItems}
+            services={activeServices}
+            onBookSlot={onStartOrder}
+          />
+
           {/* 01.C — INTERACTIVE BEFORE & AFTER DOCUMENT TRANSFORMATION STUDIO */}
           <BeforeAfterTransformationStudio
             lang={lang}
@@ -2446,6 +2493,13 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
 
           {/* 01.D — INTERACTIVE MULTI-SERVICE FEE & CHECKLIST ESTIMATOR */}
           <InteractiveBundleEstimator
+            lang={lang}
+            services={activeServices}
+            onStartOrder={onStartOrder}
+          />
+
+          {/* 01.F — SELF-SERVICE STUDENT UTILITY LAB (PHOTO RESIZER + AGE CALCULATOR) */}
+          <StudentUtilityLab
             lang={lang}
             services={activeServices}
             onStartOrder={onStartOrder}
@@ -3021,6 +3075,16 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
           </section>
         </>
       )}
+
+      {/* AI Live Previewer Modal for Application Letters (₹50) & Marriage Biodata (₹70) */}
+      <LiveDraftPreviewModal
+        isOpen={livePreviewOpen}
+        initialTemplateId={livePreviewTemplateId}
+        lang={lang}
+        services={activeServices}
+        onClose={() => setLivePreviewOpen(false)}
+        onOrderService={onStartOrder}
+      />
     </div>
   );
 };

@@ -17,6 +17,10 @@ import {
   ServiceOrder,
 } from '../types';
 import {
+  EXAM_RADAR_CATEGORY_PILLS,
+  ExamRadarCategoryKey,
+  ExamRadarItemConfig,
+  INITIAL_EXAM_RADAR_ITEMS,
   ORDER_WORKFLOW_STEPS,
   AllowedDocFormat,
   ServiceSortField,
@@ -132,6 +136,8 @@ interface AdminDashboardViewProps {
     nextStatus: 'New' | 'Replied'
   ) => Promise<void>;
   onAdminDeleteContactMessage: (messageId: string) => Promise<void>;
+  examRadarItems?: ExamRadarItemConfig[];
+  onSaveExamRadarItems?: (items: ExamRadarItemConfig[]) => void;
 }
 
 const SERVICES_PER_PAGE = 6;
@@ -163,6 +169,8 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   contactMessages,
   onAdminUpdateContactMessageStatus,
   onAdminDeleteContactMessage,
+  examRadarItems = INITIAL_EXAM_RADAR_ITEMS,
+  onSaveExamRadarItems,
 }) => {
   const [activeSection, setActiveSection] =
     React.useState<AdminSection>('dashboard');
@@ -944,6 +952,87 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
   const [editMissingPrompt, setEditMissingPrompt] = React.useState<string>(
     selectedOrder?.missingInfoRequest || ''
   );
+  const [deliverableUrlInput, setDeliverableUrlInput] =
+    React.useState<string>('');
+
+  // Exam Radar Admin Editor State (Upgrade 6c)
+  const [radarEditId, setRadarEditId] = React.useState<string>('');
+  const [radarTitleEn, setRadarTitleEn] = React.useState<string>('');
+  const [radarTitleHi, setRadarTitleHi] = React.useState<string>('');
+  const [radarAuthorityEn, setRadarAuthorityEn] = React.useState<string>(
+    'Bihar Government Portal'
+  );
+  const [radarAuthorityHi, setRadarAuthorityHi] = React.useState<string>(
+    'बिहार सरकार पोर्टल'
+  );
+  const [radarCategory, setRadarCategory] =
+    React.useState<Exclude<ExamRadarCategoryKey, 'all'>>('job_exam');
+  const [radarStartDate, setRadarStartDate] =
+    React.useState<string>('2026-10-01');
+  const [radarLastDate, setRadarLastDate] =
+    React.useState<string>('2026-12-15');
+  const [radarFeeInr, setRadarFeeInr] = React.useState<number>(80);
+  const [radarServiceId, setRadarServiceId] = React.useState<string>(
+    services[0]?.id || 'srv-job-exam-form'
+  );
+  const [radarDocsInput, setRadarDocsInput] = React.useState<string>(
+    'Aadhaar Card, 10th/12th Marksheet, Passport Photo & Signature'
+  );
+  const [radarBadgeEn, setRadarBadgeEn] =
+    React.useState<string>('LIVE PORTAL OPEN');
+
+  const handleSaveRadarItemForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!radarTitleEn.trim()) return;
+    const docsEn = radarDocsInput
+      .split(',')
+      .map((d) => d.trim())
+      .filter(Boolean);
+    const id =
+      radarEditId ||
+      `radar-${radarTitleEn
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .slice(0, 24)}-${Date.now().toString().slice(-4)}`;
+    const newItem: ExamRadarItemConfig = {
+      id,
+      category: radarCategory,
+      portalBadgeEn: sanitizeString(radarBadgeEn || radarAuthorityEn || 'LIVE PORTAL', 60),
+      portalBadgeHi: sanitizeString(radarAuthorityHi || radarBadgeEn || 'लाइव पोर्टल', 60),
+      titleEn: sanitizeString(radarTitleEn, 120),
+      titleHi: sanitizeString(radarTitleHi || radarTitleEn, 120),
+      authorityEn: sanitizeString(radarAuthorityEn, 100),
+      authorityHi: sanitizeString(radarAuthorityHi || radarAuthorityEn, 100),
+      startDate: radarStartDate || '2026-10-01',
+      lastDate: radarLastDate || '2026-12-15',
+      requiredDocsEn: docsEn.length > 0 ? docsEn : ['Aadhaar Card', 'Photo'],
+      requiredDocsHi: docsEn.length > 0 ? docsEn : ['आधार कार्ड', 'फोटो'],
+      feeInr: Math.max(0, Number(radarFeeInr) || 60),
+      linkedServiceId: radarServiceId || 'srv-govt-job-form',
+      matchedServiceId: radarServiceId || 'srv-govt-job-form',
+      badgeEn: sanitizeString(radarBadgeEn || 'LIVE PORTAL', 40),
+      badgeHi: sanitizeString(radarBadgeEn || 'लाइव पोर्टल', 40),
+      isActive: true,
+    };
+
+    const nextList = radarEditId
+      ? examRadarItems.map((it) => (it.id === radarEditId ? newItem : it))
+      : [newItem, ...examRadarItems];
+
+    if (onSaveExamRadarItems) {
+      onSaveExamRadarItems(nextList);
+    }
+    setRadarEditId('');
+    setRadarTitleEn('');
+    setRadarTitleHi('');
+    setStatusMessage({
+      type: 'success',
+      text:
+        lang === 'en'
+          ? `Saved "${newItem.titleEn}" to Section 01.B Live Exam & Scholarship Radar.`
+          : `"${newItem.titleHi}" को सेक्शन 01.B लाइव परीक्षा रडार में सहेजा गया।`,
+    });
+  };
 
   React.useEffect(() => {
     if (selectedOrder) {
@@ -1276,6 +1365,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       icon: <ClipboardList className="w-4 h-4 shrink-0" />,
     },
     {
+      id: 'exam_radar',
+      labelEn: 'Exam Radar (01.B)',
+      labelHi: 'परीक्षा रडार (01.B)',
+      count: examRadarItems.length,
+      icon: <Star className="w-4 h-4 shrink-0" />,
+    },
+    {
       id: 'customers',
       labelEn: 'Customers',
       labelHi: 'ग्राहक',
@@ -1315,7 +1411,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
         {/* =================================================================== */}
         <aside
           aria-label="Admin Workspace Navigation"
-          className="w-full lg:w-64 shrink-0 glass-obsidian-panel text-[#F7F3EA] p-4 lg:sticky lg:top-20 space-y-4"
+          className="w-full lg:w-64 shrink-0 bg-[#101014] border border-[#272732] rounded-2xl shadow-xl text-[#F7F3EA] p-4 lg:sticky lg:top-20 space-y-4"
         >
           <div className="pb-3.5 border-b border-white/10 flex items-center justify-between lg:block">
             <div>
@@ -1354,6 +1450,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 <button
                   key={item.id}
                   type="button"
+                  data-testid={`admin-tab-${item.id}`}
                   onClick={() => setActiveSection(item.id)}
                   aria-current={isActive ? 'page' : undefined}
                   className={`min-h-[42px] px-3 py-2 text-xs sm:text-sm font-semibold transition-all flex items-center justify-between gap-2 whitespace-nowrap border-l-2 ${
@@ -2937,15 +3034,16 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                             </div>
                           </div>
 
-                          <div>
+                           <div>
                             <label
                               htmlFor="admin-edit-status"
                               className="block text-[11px] font-semibold text-[#4A463E] mb-1"
                             >
-                              Workflow Status
+                              8-Stage Workflow Status (Real-Time Sync to Section 02)
                             </label>
                             <select
                               id="admin-edit-status"
+                              data-testid="admin-edit-status-select"
                               value={editStatus}
                               onChange={(e) =>
                                 setEditStatus(e.target.value as OrderStatus)
@@ -2960,6 +3058,36 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                 )
                               )}
                             </select>
+
+                            {/* 1-Click 8-Stage Instant Switcher Pills */}
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {ORDER_WORKFLOW_STEPS.map((st, sIdx) => (
+                                <button
+                                  key={st}
+                                  type="button"
+                                  data-testid={`admin-quick-stage-${sIdx + 1}`}
+                                  onClick={async () => {
+                                    setEditStatus(st);
+                                    await onAdminUpdateOrder(
+                                      selectedOrder,
+                                      { status: st },
+                                      `Admin updated workflow stage to ${st}`
+                                    );
+                                    setStatusMessage({
+                                      type: 'success',
+                                      text: `Order ${selectedOrder.orderNumber} stage updated to "${st}" (Live in Section 02).`,
+                                    });
+                                  }}
+                                  className={`px-2 py-1 rounded text-[10px] font-mono-tabular font-bold border transition-colors ${
+                                    selectedOrder.status === st
+                                      ? 'bg-[#FF5C35] text-white border-[#FF5C35]'
+                                      : 'bg-[#F7F3EA] text-[#4A463E] border-[#D4CCBE] hover:border-[#101014]'
+                                  }`}
+                                >
+                                  0{sIdx + 1}. {st}
+                                </button>
+                              ))}
+                            </div>
                           </div>
 
                           {editStatus === 'Needs Customer Information' && (
@@ -3003,6 +3131,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                           <button
                             type="button"
+                            data-testid="admin-save-order-status-btn"
                             onClick={async () => {
                               await onAdminUpdateOrder(
                                 selectedOrder,
@@ -3032,10 +3161,10 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                           </button>
                         </div>
 
-                        {/* 3. Authorized Customer Files & Final Deliverable Upload */}
+                        {/* 3. Authorized Customer Files & Final Deliverable Upload / URL */}
                         <div className="bg-[#FFFDF9] p-4 rounded-xl border border-[#E6DFD3] space-y-3">
                           <div className="text-xs font-bold text-[#101014]">
-                            Order Files & Final Deliverable Delivery
+                            Order Files & Final Deliverable PDF (File or URL)
                           </div>
 
                           <ul className="space-y-1.5 text-xs">
@@ -3057,10 +3186,14 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                                     ({f.fileCategory})
                                   </span>
                                 </div>
-                                {isSafeDataUrl(f.dataUrl) && (
+                                {(isSafeDataUrl(f.dataUrl) ||
+                                  /^https?:\/\//i.test(f.dataUrl) ||
+                                  f.dataUrl.startsWith('/')) && (
                                   <a
                                     href={f.dataUrl}
                                     download={f.fileName}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="text-[#C83E1B] font-semibold hover:underline flex items-center gap-1 shrink-0"
                                   >
                                     <Download className="w-3 h-3" />
@@ -3070,6 +3203,52 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                               </li>
                             ))}
                           </ul>
+
+                          {/* Attach Deliverable PDF URL */}
+                          <div className="pt-1 space-y-2">
+                            <label
+                              htmlFor="admin-deliverable-url-input"
+                              className="block text-[11px] font-semibold text-[#4A463E]"
+                            >
+                              Attach / Update Final Deliverable PDF URL
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                id="admin-deliverable-url-input"
+                                data-testid="admin-deliverable-url-input"
+                                type="url"
+                                value={deliverableUrlInput}
+                                onChange={(e) =>
+                                  setDeliverableUrlInput(e.target.value)
+                                }
+                                placeholder="https://example.com/completed-receipt.pdf"
+                                className="flex-1 min-h-[38px] px-3 py-1.5 bg-[#F7F3EA] border border-[#D4CCBE] rounded-lg text-xs font-mono-tabular text-[#101014]"
+                              />
+                              <button
+                                type="button"
+                                data-testid="admin-attach-deliverable-url-btn"
+                                onClick={async () => {
+                                  const cleanUrl = deliverableUrlInput.trim();
+                                  if (!cleanUrl) return;
+                                  const fileName = `${selectedOrder.orderNumber}_Final_Deliverable.pdf`;
+                                  await onAdminUploadDeliverable(selectedOrder, {
+                                    fileName,
+                                    mimeType: 'application/pdf',
+                                    sizeBytes: 102400,
+                                    dataUrl: cleanUrl,
+                                  });
+                                  setDeliverableUrlInput('');
+                                  setStatusMessage({
+                                    type: 'success',
+                                    text: `Attached deliverable PDF URL for ${selectedOrder.orderNumber} and marked Completed.`,
+                                  });
+                                }}
+                                className="min-h-[38px] px-3 py-1.5 bg-[#101014] hover:bg-[#FF5C35] text-white text-xs font-bold rounded-lg whitespace-nowrap transition-colors"
+                              >
+                                Attach URL
+                              </button>
+                            </div>
+                          </div>
 
                           <div className="pt-2 flex flex-wrap gap-2">
                             <label className="min-h-[40px] px-3 py-2 bg-[#F7F3EA] hover:bg-[#EFE9DC] border border-[#D4CCBE] text-[#101014] text-xs font-semibold rounded-lg cursor-pointer flex items-center gap-1.5">
@@ -3085,6 +3264,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                             <button
                               type="button"
+                              data-testid="admin-quick-deliver-pdf-btn"
                               onClick={handleQuickDeliverSamplePdf}
                               className="min-h-[40px] px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-lg transition-colors"
                             >
@@ -3100,6 +3280,311 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* SECTION 3.B: LIVE BIHAR EXAM, SCHOLARSHIP & JOB FORM RADAR ADMIN  */}
+          {/* ================================================================= */}
+          {activeSection === 'exam_radar' && (
+            <div
+              data-testid="admin-exam-radar-section"
+              className="bg-[#FFFDF9] border border-[#101014] p-5 sm:p-6 space-y-6"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DCD4C6]">
+                <div>
+                  <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.18em] text-[#C83713]">
+                    {lang === 'en'
+                      ? '05.B // SECTION 01.B LIVE EXAM & SCHOLARSHIP RADAR MANAGER'
+                      : '05.B // सेक्शन 01.B लाइव परीक्षा और छात्रवृत्ति रडार प्रबंधन'}
+                  </div>
+                  <h2 className="text-xl font-extrabold text-[#101014] font-display mt-0.5">
+                    {lang === 'en'
+                      ? `Manage Active Exams, Scholarships & Portal Deadlines (${examRadarItems.length})`
+                      : `सक्रिय परीक्षा, छात्रवृत्ति और अंतिम तिथि प्रबंधन (${examRadarItems.length})`}
+                  </h2>
+                  <p className="text-xs text-[#787166] mt-0.5">
+                    {lang === 'en'
+                      ? 'Add or edit active Bihar & Central portals shown in Section 01.B on the homepage.'
+                      : 'होमपेज के सेक्शन 01.B में दिखने वाले सक्रिय बिहार और केंद्रीय फॉर्म जोड़ें या संपादित करें।'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Add / Edit Exam Radar Form */}
+              <form
+                onSubmit={handleSaveRadarItemForm}
+                className="p-5 bg-[#F7F3EA] border border-[#101014] space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-sm font-extrabold text-[#101014]">
+                    {radarEditId
+                      ? lang === 'en'
+                        ? 'Edit Exam / Scholarship Radar Card'
+                        : 'परीक्षा / छात्रवृत्ति कार्ड संपादित करें'
+                      : lang === 'en'
+                      ? '+ Add New Active Exam / Scholarship to Section 01.B'
+                      : '+ सेक्शन 01.B में नया परीक्षा / छात्रवृत्ति फॉर्म जोड़ें'}
+                  </h3>
+                  {radarEditId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRadarEditId('');
+                        setRadarTitleEn('');
+                        setRadarTitleHi('');
+                      }}
+                      className="text-xs font-bold text-[#C83713] underline"
+                    >
+                      {lang === 'en' ? 'Cancel Edit' : 'संपादन रद्द करें'}
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label
+                      htmlFor="radar-title-en"
+                      className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                    >
+                      Exam / Portal Title (English) *
+                    </label>
+                    <input
+                      id="radar-title-en"
+                      data-testid="admin-radar-title-en-input"
+                      type="text"
+                      required
+                      value={radarTitleEn}
+                      onChange={(e) => setRadarTitleEn(e.target.value)}
+                      placeholder="e.g., Bihar Police Sub-Inspector (SI) Form"
+                      className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs text-[#101014]"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="radar-title-hi"
+                      className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                    >
+                      Title (Hindi / हिन्दी)
+                    </label>
+                    <input
+                      id="radar-title-hi"
+                      data-testid="admin-radar-title-hi-input"
+                      type="text"
+                      value={radarTitleHi}
+                      onChange={(e) => setRadarTitleHi(e.target.value)}
+                      placeholder="जैसे: बिहार पुलिस दारोगा भर्ती फॉर्म"
+                      className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs text-[#101014]"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="radar-category-select"
+                      className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                    >
+                      Portal Category
+                    </label>
+                    <select
+                      id="radar-category-select"
+                      value={radarCategory}
+                      onChange={(e) =>
+                        setRadarCategory(
+                          e.target.value as Exclude<ExamRadarCategoryKey, 'all'>
+                        )
+                      }
+                      className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs text-[#101014]"
+                    >
+                      {EXAM_RADAR_CATEGORY_PILLS.filter(
+                        (c) => c.key !== 'all'
+                      ).map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {c.labelEn}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label
+                      htmlFor="radar-start-date"
+                      className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                    >
+                      Official Start Date
+                    </label>
+                    <input
+                      id="radar-start-date"
+                      type="date"
+                      value={radarStartDate}
+                      onChange={(e) => setRadarStartDate(e.target.value)}
+                      className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs font-mono-tabular text-[#101014]"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="radar-last-date"
+                      className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                    >
+                      Last Date (Countdown)
+                    </label>
+                    <input
+                      id="radar-last-date"
+                      data-testid="admin-radar-last-date-input"
+                      type="date"
+                      value={radarLastDate}
+                      onChange={(e) => setRadarLastDate(e.target.value)}
+                      className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs font-mono-tabular text-[#101014]"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="radar-fee-input"
+                      className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                    >
+                      Center Assistance Fee (₹)
+                    </label>
+                    <input
+                      id="radar-fee-input"
+                      data-testid="admin-radar-fee-input"
+                      type="number"
+                      value={radarFeeInr}
+                      onChange={(e) => setRadarFeeInr(Number(e.target.value))}
+                      className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs font-mono-tabular text-[#101014]"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="radar-service-link"
+                      className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                    >
+                      Pre-Selected Order Service
+                    </label>
+                    <select
+                      id="radar-service-link"
+                      value={radarServiceId}
+                      onChange={(e) => setRadarServiceId(e.target.value)}
+                      className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs text-[#101014]"
+                    >
+                      {services.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.titleEn} (₹{s.priceInr})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="radar-docs-input"
+                    className="block font-mono-tabular text-xs font-bold text-[#101014] mb-1"
+                  >
+                    Required Documents (Comma-separated)
+                  </label>
+                  <input
+                    id="radar-docs-input"
+                    type="text"
+                    value={radarDocsInput}
+                    onChange={(e) => setRadarDocsInput(e.target.value)}
+                    className="w-full min-h-[40px] px-3 py-1.5 bg-[#FFFDF9] border border-[#101014] text-xs text-[#101014]"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  data-testid="admin-save-radar-item-btn"
+                  className="min-h-[42px] px-5 py-2 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs font-bold transition-colors flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {radarEditId
+                      ? lang === 'en'
+                        ? 'Update Radar Item'
+                        : 'रडार आइटम अपडेट करें'
+                      : lang === 'en'
+                      ? 'Publish to Section 01.B Exam Radar'
+                      : 'सेक्शन 01.B परीक्षा रडार में जोड़ें'}
+                  </span>
+                </button>
+              </form>
+
+              {/* Existing Exam Radar Items Table */}
+              <div className="overflow-x-auto border border-[#101014]">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-[#101014] text-[#F7F3EA] font-mono-tabular text-[11px] uppercase tracking-wider">
+                      <th className="py-3 px-4">Exam / Scholarship Title</th>
+                      <th className="py-3 px-3">Category</th>
+                      <th className="py-3 px-3">Dates (Start → Last)</th>
+                      <th className="py-3 px-3 text-right">Center Fee</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#DCD4C6]">
+                    {examRadarItems.map((item) => (
+                      <tr key={item.id} className="hover:bg-[#F7F3EA]/70">
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-[#101014]">
+                            {lang === 'en' ? item.titleEn : item.titleHi}
+                          </div>
+                          <div className="text-[11px] text-[#787166]">
+                            {item.authorityEn || item.portalBadgeEn}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 font-mono-tabular uppercase text-[11px] text-[#C83713] font-bold">
+                          {item.category}
+                        </td>
+                        <td className="py-3 px-3 font-mono-tabular">
+                          {item.startDate} → <strong>{item.lastDate}</strong>
+                        </td>
+                        <td className="py-3 px-3 text-right font-mono-tabular font-bold text-[#101014]">
+                          ₹{item.feeInr}
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRadarEditId(item.id);
+                              setRadarTitleEn(item.titleEn);
+                              setRadarTitleHi(item.titleHi);
+                              setRadarAuthorityEn(item.authorityEn || item.portalBadgeEn);
+                              setRadarAuthorityHi(item.authorityHi || item.portalBadgeHi);
+                              setRadarCategory(item.category);
+                              setRadarStartDate(item.startDate);
+                              setRadarLastDate(item.lastDate);
+                              setRadarFeeInr(item.feeInr);
+                              setRadarServiceId(item.linkedServiceId || item.matchedServiceId || 'srv-govt-job-form');
+                              setRadarDocsInput(item.requiredDocsEn.join(', '));
+                              setRadarBadgeEn(item.badgeEn || item.portalBadgeEn);
+                            }}
+                            className="px-2.5 py-1 bg-[#F7F3EA] hover:bg-[#EFE9DC] border border-[#101014] text-xs font-bold"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!onSaveExamRadarItems) return;
+                              onSaveExamRadarItems(
+                                examRadarItems.filter((x) => x.id !== item.id)
+                              );
+                            }}
+                            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 text-xs font-bold"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

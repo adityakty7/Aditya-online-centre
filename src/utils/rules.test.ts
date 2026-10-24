@@ -52,6 +52,24 @@ import {
   clampComparisonSlider,
   buildServiceWhatsAppUrl,
   CUSTOMER_TESTIMONIALS,
+  INITIAL_EXAM_RADAR_ITEMS,
+  calculateExamDaysLeft,
+  filterExamRadarItems,
+  EXAM_PHOTO_PRESETS,
+  estimateDataUrlSizeKb,
+  calculateExactAgeAndEligibility,
+  LIVE_DRAFT_TEMPLATES,
+  generateLiveDraftPreviewContent,
+  buildDynamicUpiUri,
+  generateQrMatrix,
+  buildOrderWhatsAppDispatchUrl,
+  createSampleVoiceNoteWavDataUrl,
+  SHOP_TIME_SLOTS,
+  generateShopVisitTokenNumber,
+  validateShopVisitTokenInput,
+  buildShopTokenWhatsAppUrl,
+  DEFAULT_STAFF_PIN,
+  verifyStaffAdminPin,
 } from './rules.ts';
 import {
   BUSINESS_INFO,
@@ -855,4 +873,118 @@ test('Visual Enhancements: Cyber Obsidian 3D default theme with Royal Blue toggl
   assert.equal(clampComparisonSlider(50), 50);
   assert.equal(clampComparisonSlider('invalid', 62), 62);
 });
+
+test('6 Functional Upgrades: Exam Radar, Student Utility Lab, Live Draft Preview, Dynamic UPI QR, Shop Token & Staff PIN', () => {
+  // 1. Live Bihar Exam, Scholarship & Job Form Radar
+  assert.equal(INITIAL_EXAM_RADAR_ITEMS.length >= 4, true);
+  const daysCheck = calculateExamDaysLeft('2026-11-30', new Date('2026-10-30T12:00:00Z'));
+  assert.equal(daysCheck.daysLeft, 32);
+  assert.equal(daysCheck.status, 'active');
+  assert.match(daysCheck.badgeEn, /32 DAYS LEFT/);
+
+  const scholarshipItems = filterExamRadarItems(INITIAL_EXAM_RADAR_ITEMS, 'scholarship');
+  assert.equal(scholarshipItems.length >= 1, true);
+  assert.equal(scholarshipItems[0].linkedServiceId, 'srv-bihar-scholarship');
+
+  // 2. Self-Service Student Utility Lab (Photo Presets & Exact Age Calculator)
+  assert.equal(EXAM_PHOTO_PRESETS.length >= 5, true);
+  const sampleWav = createSampleVoiceNoteWavDataUrl();
+  assert.equal(sampleWav.startsWith('data:audio/wav;base64,'), true);
+  assert.equal(estimateDataUrlSizeKb(sampleWav) > 0, true);
+
+  const ageCheck = calculateExactAgeAndEligibility('2004-05-10', '2026-08-01');
+  assert.equal(ageCheck.valid, true);
+  assert.equal(ageCheck.years, 22);
+  assert.equal(ageCheck.months, 2);
+  assert.equal(ageCheck.days, 22);
+  assert.equal(ageCheck.categories.length, 4);
+  assert.equal(ageCheck.categories[0].eligible, true);
+
+  // 3. AI Live Draft Previewer for Application Letters & Marriage Biodata
+  assert.equal(LIVE_DRAFT_TEMPLATES.length, 4);
+  const bankDraft = generateLiveDraftPreviewContent(
+    'bank-unfreeze',
+    {
+      applicantName: 'Ramesh Kumar',
+      guardianOrTo: 'State Bank of India, Kateya Branch',
+      addressOrVillage: 'Ward No. 08, Kateya, Gopalganj',
+      subjectOrEducation: 'A/c 30981234567 — e-KYC Re-activation',
+      extraDetails: 'Aadhaar & PAN enclosed',
+    },
+    'en'
+  );
+  assert.match(bankDraft.bodyParagraphs.join('\n'), /Ramesh Kumar/);
+  assert.equal(bankDraft.applicantSignatureName, 'Ramesh Kumar');
+
+  const biodataDraft = generateLiveDraftPreviewContent(
+    'marriage-biodata',
+    {
+      applicantName: 'Ankit Kumar Verma',
+      guardianOrTo: 'Father: Rajendra Verma',
+      addressOrVillage: 'Kateya Bazar, Gopalganj',
+      subjectOrEducation: 'B.Tech Civil Engineer',
+      extraDetails: 'Kashyap Gotra, 5 ft 9 in',
+    },
+    'hi'
+  );
+  assert.equal(Array.isArray(biodataDraft.structuredRows), true);
+  assert.equal(biodataDraft.applicantSignatureName, 'Ankit Kumar Verma');
+
+  // 4. Dynamic UPI QR & WhatsApp Order Dispatch
+  const upiUri = buildDynamicUpiUri({
+    upiId: '6206800799@ybl',
+    payeeName: 'Aditya Online Center',
+    amountInr: 80,
+    orderNumber: 'AOC-20261018-D101',
+  });
+  assert.equal(upiUri.startsWith('upi://pay?'), true);
+  assert.match(upiUri, /am=80\.00/);
+  assert.match(upiUri, /AOC-20261018-D101/);
+
+  const qrMatrix = generateQrMatrix(upiUri, 25);
+  assert.equal(qrMatrix.length, 25);
+  assert.equal(qrMatrix[0].length, 25);
+
+  const waDispatch = buildOrderWhatsAppDispatchUrl({
+    orderNumber: 'AOC-20261018-D101',
+    customerName: 'Ramesh Kumar',
+    customerPhone: '9876543210',
+    serviceTitle: 'Professional Job Resume / CV',
+    amountInr: 80,
+    paymentMode: 'Dynamic UPI QR / Instant Transfer',
+  });
+  assert.equal(waDispatch.startsWith('https://wa.me/916206800799?text='), true);
+  assert.match(decodeURIComponent(waDispatch), /AOC-20261018-D101/);
+
+  // 5. Shop Visit Token / Appointment Booker
+  assert.equal(SHOP_TIME_SLOTS.length, 3);
+  const tokenNum = generateShopVisitTokenNumber(104);
+  assert.equal(tokenNum, '#KTY-104');
+
+  const tokenValid = validateShopVisitTokenInput({
+    customerName: 'Ramesh Kumar',
+    customerPhone: '9876543210',
+    visitDate: '2026-10-25',
+    timeSlot: 'morning',
+    serviceTitle: 'Bihar Post-Matric Scholarship',
+  });
+  assert.equal(tokenValid.valid, true);
+
+  const tokenWaUrl = buildShopTokenWhatsAppUrl({
+    tokenNumber: '#KTY-104',
+    customerName: 'Ramesh Kumar',
+    customerPhone: '9876543210',
+    visitDate: '2026-10-25',
+    timeSlotLabel: 'Morning Slot (8:00 AM – 12:00 PM)',
+    serviceTitle: 'Bihar Post-Matric Scholarship',
+  });
+  assert.match(decodeURIComponent(tokenWaUrl), /#KTY-104/);
+
+  // 6. Staff / Admin PIN Verification
+  assert.equal(DEFAULT_STAFF_PIN, '841437');
+  assert.equal(verifyStaffAdminPin('841437'), true);
+  assert.equal(verifyStaffAdminPin('000000'), false);
+});
+
+
 

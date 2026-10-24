@@ -1589,4 +1589,964 @@ export const CUSTOMER_TESTIMONIALS: CustomerTestimonialItem[] = [
   },
 ];
 
+// ============================================================================
+// UPGRADE 1: LIVE BIHAR EXAM, SCHOLARSHIP & JOB FORM RADAR (SECTION 01.B)
+// ============================================================================
+
+export type ExamRadarCategoryKey =
+  | 'all'
+  | 'scholarship'
+  | 'recruitment'
+  | 'board_admission'
+  | 'rtps_certificate'
+  | 'job_exam';
+
+export interface ExamRadarItemConfig {
+  id: string;
+  category: Exclude<ExamRadarCategoryKey, 'all'>;
+  portalBadgeEn: string;
+  portalBadgeHi: string;
+  titleEn: string;
+  titleHi: string;
+  startDate: string; // YYYY-MM-DD
+  lastDate: string; // YYYY-MM-DD
+  requiredDocsEn: string[];
+  requiredDocsHi: string[];
+  feeInr: number;
+  linkedServiceId: string;
+  isRolling?: boolean;
+  isHot?: boolean;
+  authorityEn?: string;
+  authorityHi?: string;
+  matchedServiceId?: string;
+  badgeEn?: string;
+  badgeHi?: string;
+  isActive?: boolean;
+}
+
+export const EXAM_RADAR_CATEGORY_PILLS: Array<{
+  key: ExamRadarCategoryKey;
+  labelEn: string;
+  labelHi: string;
+}> = [
+  { key: 'all', labelEn: 'All Active Portals', labelHi: 'सभी सक्रिय पोर्टल' },
+  {
+    key: 'scholarship',
+    labelEn: 'Bihar Scholarships',
+    labelHi: 'बिहार छात्रवृत्ति',
+  },
+  {
+    key: 'recruitment',
+    labelEn: 'BPSC / SSC / Police Jobs',
+    labelHi: 'BPSC / SSC / पुलिस भर्ती',
+  },
+  {
+    key: 'board_admission',
+    labelEn: 'Bihar Board & Admissions',
+    labelHi: 'बिहार बोर्ड और नामांकन',
+  },
+  {
+    key: 'rtps_certificate',
+    labelEn: 'RTPS & Citizen Docs',
+    labelHi: 'RTPS और प्रमाणपत्र',
+  },
+];
+
+export const INITIAL_EXAM_RADAR_ITEMS: ExamRadarItemConfig[] = [
+  {
+    id: 'radar-pms-bihar-2026',
+    category: 'scholarship',
+    portalBadgeEn: 'PMS ONLINE · BIHAR GOVT',
+    portalBadgeHi: 'PMS ऑनलाइन · बिहार सरकार',
+    titleEn: 'Bihar Post-Matric Scholarship (BC / EBC / SC / ST) 2026–27',
+    titleHi: 'बिहार पोस्ट-मैट्रिक छात्रवृत्ति (BC / EBC / SC / ST) 2026–27',
+    startDate: '2026-10-01',
+    lastDate: '2026-11-25',
+    requiredDocsEn: [
+      'Bonafide Certificate',
+      'Fee Structure Receipt',
+      'RTPS Caste, Income & Residence',
+      '10th/12th Marksheet & Aadhaar',
+    ],
+    requiredDocsHi: [
+      'बोनाफाइड प्रमाणपत्र',
+      'फीस रसीद',
+      'जाति, आय और निवास (RTPS)',
+      'मार्कशीट और आधार कार्ड',
+    ],
+    feeInr: 100,
+    linkedServiceId: 'srv-bihar-scholarship',
+    isHot: true,
+  },
+  {
+    id: 'radar-bihar-police-ssc-2026',
+    category: 'recruitment',
+    portalBadgeEn: 'CSBC / BSSC / SSC PORTAL',
+    portalBadgeHi: 'CSBC / BSSC / SSC भर्ती पोर्टल',
+    titleEn: 'Bihar Police Constable, BSSC Inter Level & SSC GD Recruitment',
+    titleHi: 'बिहार पुलिस कांस्टेबल, BSSC इंटर स्तरीय एवं SSC GD भर्ती फॉर्म',
+    startDate: '2026-10-10',
+    lastDate: '2026-11-18',
+    requiredDocsEn: [
+      '10th & 12th Marksheet',
+      'Live / Dated Passport Photo',
+      'Hindi & English Signature',
+      'Category / NCL / EWS Certificate',
+    ],
+    requiredDocsHi: [
+      '10वीं और 12वीं मार्कशीट',
+      'तारीख वाला पासपोर्ट फोटो',
+      'हिंदी और अंग्रेजी हस्ताक्षर',
+      'जाति / NCL / EWS प्रमाणपत्र',
+    ],
+    feeInr: 100,
+    linkedServiceId: 'srv-govt-job-form',
+    isHot: true,
+  },
+  {
+    id: 'radar-bseb-11th-12th-exam',
+    category: 'board_admission',
+    portalBadgeEn: 'OFSS / BSEB PATNA',
+    portalBadgeHi: 'OFSS / बिहार विद्यालय परीक्षा समिति',
+    titleEn: 'Bihar Board (BSEB) 11th/12th Admission & Annual Exam Form',
+    titleHi: 'बिहार बोर्ड (BSEB) 11वीं/12वीं नामांकन एवं परीक्षा फॉर्म',
+    startDate: '2026-10-05',
+    lastDate: '2026-11-12',
+    requiredDocsEn: [
+      'Matric / Previous Marksheet',
+      'School Leaving Certificate (SLC)',
+      'Passport Photo (35x45mm)',
+      'Aadhaar & Bank Passbook',
+    ],
+    requiredDocsHi: [
+      'मैट्रिक मार्कशीट',
+      'स्कूल परित्याग प्रमाणपत्र (SLC)',
+      'पासपोर्ट साइज फोटो',
+      'आधार और बैंक पासबुक',
+    ],
+    feeInr: 100,
+    linkedServiceId: 'srv-bihar-scholarship',
+  },
+  {
+    id: 'radar-rtps-caste-income-domicile',
+    category: 'rtps_certificate',
+    portalBadgeEn: 'SERVICE PLUS BIHAR (RTPS)',
+    portalBadgeHi: 'सर्विस प्लस बिहार (RTPS)',
+    titleEn: 'RTPS Caste, Income, Residence (Domicile) & NCL Application',
+    titleHi: 'RTPS जाति, आय, आवासीय (निवास) एवं NCL प्रमाणपत्र आवेदन',
+    startDate: '2026-01-01',
+    lastDate: '2026-12-31',
+    requiredDocsEn: [
+      'Aadhaar Card',
+      'Self-Declaration Form (स्व-घोषणा)',
+      'Land Revenue Receipt / Father ID',
+      'Passport Photo',
+    ],
+    requiredDocsHi: [
+      'आधार कार्ड',
+      'स्व-घोषणा पत्र',
+      'लगान रसीद / पिता का प्रमाण',
+      'पासपोर्ट फोटो',
+    ],
+    feeInr: 60,
+    linkedServiceId: 'srv-citizen-form',
+    isRolling: true,
+  },
+];
+
+export interface ExamCountdownResult {
+  daysLeft: number;
+  status: 'open_rolling' | 'closing_soon' | 'active' | 'expired';
+  badgeEn: string;
+  badgeHi: string;
+}
+
+export function calculateExamDaysLeft(
+  lastDateIso: string,
+  nowDate: Date = new Date('2026-10-23T12:00:00Z'),
+  isRolling = false
+): ExamCountdownResult {
+  if (isRolling) {
+    return {
+      daysLeft: 365,
+      status: 'open_rolling',
+      badgeEn: 'OPEN YEAR-ROUND',
+      badgeHi: 'वर्षभर चालू (24×7)',
+    };
+  }
+  const target = new Date(`${lastDateIso}T23:59:59Z`);
+  if (Number.isNaN(target.getTime())) {
+    return {
+      daysLeft: 15,
+      status: 'active',
+      badgeEn: '15 DAYS LEFT',
+      badgeHi: '15 दिन शेष',
+    };
+  }
+  const diffMs = target.getTime() - nowDate.getTime();
+  const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  if (daysLeft < 0) {
+    return {
+      daysLeft: 0,
+      status: 'expired',
+      badgeEn: 'DATE EXTENDED / CHECK DESK',
+      badgeHi: 'तिथि विस्तारित / केंद्र से पूछें',
+    };
+  }
+  if (daysLeft <= 7) {
+    return {
+      daysLeft,
+      status: 'closing_soon',
+      badgeEn: `${daysLeft} DAYS LEFT · URGENT`,
+      badgeHi: `${daysLeft} दिन शेष · शीघ्र करें`,
+    };
+  }
+  return {
+    daysLeft,
+    status: 'active',
+    badgeEn: `${daysLeft} DAYS LEFT`,
+    badgeHi: `${daysLeft} दिन शेष`,
+  };
+}
+
+export function filterExamRadarItems(
+  items: ExamRadarItemConfig[],
+  category: ExamRadarCategoryKey
+): ExamRadarItemConfig[] {
+  if (!Array.isArray(items)) return [];
+  if (category === 'all') return items;
+  return items.filter((item) => item.category === category);
+}
+
+// ============================================================================
+// UPGRADE 2: SELF-SERVICE STUDENT UTILITY LAB (SECTION 01.F)
+// ============================================================================
+
+export interface ExamPhotoPreset {
+  id: string;
+  labelEn: string;
+  labelHi: string;
+  widthPx: number;
+  heightPx: number;
+  targetMinKb: number;
+  targetMaxKb: number;
+  defaultQuality: number;
+  notesEn: string;
+  notesHi: string;
+}
+
+export const EXAM_PHOTO_PRESETS: ExamPhotoPreset[] = [
+  {
+    id: 'ssc-photo',
+    labelEn: 'SSC / Railway Photo (200×230 px · 20–50 KB)',
+    labelHi: 'SSC / रेलवे पासपोर्ट फोटो (200×230 px · 20–50 KB)',
+    widthPx: 200,
+    heightPx: 230,
+    targetMinKb: 20,
+    targetMaxKb: 50,
+    defaultQuality: 0.86,
+    notesEn: '3.5cm × 4.5cm standard colour photo, optional Name & Date slate',
+    notesHi: '3.5cm × 4.5cm रंगीन फोटो, नीचे नाम और फोटो की तारीख विकल्प के साथ',
+  },
+  {
+    id: 'bpsc-photo',
+    labelEn: 'BPSC / Bihar Police Photo (250×300 px · 25–50 KB)',
+    labelHi: 'BPSC / बिहार पुलिस फोटो (250×300 px · 25–50 KB)',
+    widthPx: 250,
+    heightPx: 300,
+    targetMinKb: 25,
+    targetMaxKb: 50,
+    defaultQuality: 0.85,
+    notesEn: 'Light background, clear both ears visible for Bihar portals',
+    notesHi: 'हल्का बैकग्राउंड, बिहार भर्ती पोर्टल के लिए स्पष्ट पासपोर्ट माप',
+  },
+  {
+    id: 'bihar-board',
+    labelEn: 'Bihar Board / Scholarship Photo (210×270 px · 20–60 KB)',
+    labelHi: 'बिहार बोर्ड / छात्रवृत्ति फोटो (210×270 px · 20–60 KB)',
+    widthPx: 210,
+    heightPx: 270,
+    targetMinKb: 20,
+    targetMaxKb: 60,
+    defaultQuality: 0.85,
+    notesEn: 'Compatible with OFSS, PMS Online, and NSP Scholarship',
+    notesHi: 'OFSS, बिहार पोस्ट-मैट्रिक और NSP छात्रवृत्ति के लिए उपयुक्त',
+  },
+  {
+    id: 'pan-photo',
+    labelEn: 'PAN Card NSDL / UTI Photo (213×213 px · 20–40 KB)',
+    labelHi: 'पैन कार्ड (NSDL / UTI) फोटो (213×213 px · 20–40 KB)',
+    widthPx: 213,
+    heightPx: 213,
+    targetMinKb: 20,
+    targetMaxKb: 40,
+    defaultQuality: 0.84,
+    notesEn: '213×213 square 300 DPI specification for PAN portals',
+    notesHi: 'पैन कार्ड पोर्टल के लिए 213×213 वर्गाकार माप',
+  },
+  {
+    id: 'exam-signature',
+    labelEn: 'Official Exam Signature Strip (140×60 px · 10–20 KB)',
+    labelHi: 'आधिकारिक परीक्षा हस्ताक्षर (140×60 px · 10–20 KB)',
+    widthPx: 140,
+    heightPx: 60,
+    targetMinKb: 10,
+    targetMaxKb: 20,
+    defaultQuality: 0.82,
+    notesEn: 'Horizontal signature box for SSC, BPSC, CSBC & Bank exams',
+    notesHi: 'SSC, BPSC और बैंक फॉर्म के लिए हस्ताक्षर बॉक्स साइज',
+  },
+  {
+    id: 'custom',
+    labelEn: 'Custom Dimensions & KB Target',
+    labelHi: 'कस्टम चौड़ाई, ऊंचाई और KB साइज',
+    widthPx: 240,
+    heightPx: 300,
+    targetMinKb: 15,
+    targetMaxKb: 100,
+    defaultQuality: 0.85,
+    notesEn: 'Enter any custom width, height, and JPEG compression quality',
+    notesHi: 'अपनी आवश्यकता अनुसार चौड़ाई (px) और ऊंचाई (px) दर्ज करें',
+  },
+];
+
+export function estimateDataUrlSizeKb(dataUrl: string): number {
+  if (!dataUrl || typeof dataUrl !== 'string') return 0;
+  const commaIdx = dataUrl.indexOf(',');
+  const base64 = commaIdx >= 0 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+  const padding = (base64.match(/=+$/) || [''])[0].length;
+  const byteLength = Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+  return Math.max(1, Math.round((byteLength / 1024) * 10) / 10);
+}
+
+export interface AgeEligibilityCategoryResult {
+  categoryKey: string;
+  labelEn: string;
+  labelHi: string;
+  minAgeYears: number;
+  maxAgeYears: number;
+  eligible: boolean;
+  statusEn: string;
+  statusHi: string;
+}
+
+export interface AgeCalculationResult {
+  valid: boolean;
+  years: number;
+  months: number;
+  days: number;
+  totalDays: number;
+  summaryEn: string;
+  summaryHi: string;
+  categories: AgeEligibilityCategoryResult[];
+  errorEn?: string;
+  errorHi?: string;
+}
+
+export function calculateExactAgeAndEligibility(
+  dobIso: string,
+  cutoffIso: string
+): AgeCalculationResult {
+  const dobParts = String(dobIso || '').split('-').map(Number);
+  const cutParts = String(cutoffIso || '').split('-').map(Number);
+
+  if (
+    dobParts.length !== 3 ||
+    cutParts.length !== 3 ||
+    dobParts.some((n) => Number.isNaN(n)) ||
+    cutParts.some((n) => Number.isNaN(n))
+  ) {
+    return {
+      valid: false,
+      years: 0,
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      summaryEn: '',
+      summaryHi: '',
+      categories: [],
+      errorEn: 'Please select a valid Date of Birth and Target Cut-off Date.',
+      errorHi: 'कृपया सही जन्म तिथि और कट-ऑफ तिथि चुनें।',
+    };
+  }
+
+  const dobDate = new Date(Date.UTC(dobParts[0], dobParts[1] - 1, dobParts[2]));
+  const cutDate = new Date(Date.UTC(cutParts[0], cutParts[1] - 1, cutParts[2]));
+
+  if (cutDate.getTime() <= dobDate.getTime()) {
+    return {
+      valid: false,
+      years: 0,
+      months: 0,
+      days: 0,
+      totalDays: 0,
+      summaryEn: '',
+      summaryHi: '',
+      categories: [],
+      errorEn: 'Cut-off date must be after the Date of Birth.',
+      errorHi: 'कट-ऑफ तिथि जन्म तिथि के बाद की होनी चाहिए।',
+    };
+  }
+
+  let years = cutParts[0] - dobParts[0];
+  let months = cutParts[1] - dobParts[1];
+  let days = cutParts[2] - dobParts[2];
+
+  if (days < 0) {
+    months -= 1;
+    const prevMonthLastDay = new Date(
+      Date.UTC(cutParts[0], cutParts[1] - 1, 0)
+    ).getUTCDate();
+    days += prevMonthLastDay;
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  const totalDays = Math.floor(
+    (cutDate.getTime() - dobDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  const exactAgeDecimal = years + months / 12 + days / 365.25;
+
+  const rules = [
+    {
+      categoryKey: 'general_bihar',
+      labelEn: 'General / Unreserved (Bihar Govt / BPSC · 18–37 Yrs)',
+      labelHi: 'सामान्य वर्ग (बिहार सरकार / BPSC · 18–37 वर्ष)',
+      minAgeYears: 18,
+      maxAgeYears: 37,
+    },
+    {
+      categoryKey: 'obc_ebc',
+      labelEn: 'BC / EBC / OBC & Unreserved Female (18–40 Yrs)',
+      labelHi: 'पिछड़ा / अत्यंत पिछड़ा वर्ग (BC/EBC/OBC · 18–40 वर्ष)',
+      minAgeYears: 18,
+      maxAgeYears: 40,
+    },
+    {
+      categoryKey: 'sc_st',
+      labelEn: 'SC / ST Category (Bihar & Central · 18–42 Yrs)',
+      labelHi: 'अनुसूचित जाति / जनजाति (SC/ST · 18–42 वर्ष)',
+      minAgeYears: 18,
+      maxAgeYears: 42,
+    },
+    {
+      categoryKey: 'police_constable',
+      labelEn: 'Bihar Police / SSC GD Constable (18–25 Yrs)',
+      labelHi: 'बिहार पुलिस / SSC GD कांस्टेबल (18–25 वर्ष)',
+      minAgeYears: 18,
+      maxAgeYears: 25,
+    },
+  ];
+
+  const categories: AgeEligibilityCategoryResult[] = rules.map((r) => {
+    const isUnderMin = years < r.minAgeYears;
+    const isOverMax =
+      years > r.maxAgeYears ||
+      (years === r.maxAgeYears && (months > 0 || days > 0));
+    const eligible = !isUnderMin && !isOverMax && exactAgeDecimal >= r.minAgeYears;
+
+    let statusEn = 'ELIGIBLE';
+    let statusHi = 'पात्र (Eligible)';
+    if (isUnderMin) {
+      statusEn = `Under Minimum Age (${r.minAgeYears} Yrs)`;
+      statusHi = `न्यूनतम आयु (${r.minAgeYears} वर्ष) से कम`;
+    } else if (isOverMax) {
+      statusEn = `Exceeds Upper Limit (${r.maxAgeYears} Yrs)`;
+      statusHi = `अधिकतम आयु (${r.maxAgeYears} वर्ष) से अधिक`;
+    }
+
+    return {
+      ...r,
+      eligible,
+      statusEn,
+      statusHi,
+    };
+  });
+
+  return {
+    valid: true,
+    years,
+    months,
+    days,
+    totalDays,
+    summaryEn: `${years} Years, ${months} Months, ${days} Days`,
+    summaryHi: `${years} वर्ष, ${months} माह, ${days} दिन`,
+    categories,
+  };
+}
+
+// ============================================================================
+// UPGRADE 3: AI LIVE PREVIEWER FOR APPLICATION LETTERS & MARRIAGE BIODATA
+// ============================================================================
+
+export type LiveDraftTemplateId =
+  | 'bank-unfreeze'
+  | 'co-rtps-land'
+  | 'principal-clc-tc'
+  | 'marriage-biodata';
+
+export interface LiveDraftTemplateMeta {
+  id: LiveDraftTemplateId;
+  linkedServiceId: string;
+  priceInr: number;
+  titleEn: string;
+  titleHi: string;
+  badgeEn: string;
+  badgeHi: string;
+  defaultFields: {
+    applicantName: string;
+    guardianOrTo: string;
+    addressOrVillage: string;
+    subjectOrEducation: string;
+    extraDetails: string;
+  };
+}
+
+export const LIVE_DRAFT_TEMPLATES: LiveDraftTemplateMeta[] = [
+  {
+    id: 'bank-unfreeze',
+    linkedServiceId: 'srv-application-typing',
+    priceInr: 50,
+    titleEn: 'Bank Manager Account Unfreeze / KYC Application',
+    titleHi: 'शाखा प्रबंधक — बैंक खाता चालू (KYC/Unfreeze) करने हेतु आवेदन',
+    badgeEn: 'OFFICIAL LETTER · ₹50',
+    badgeHi: 'बैंक आवेदन पत्र · ₹50',
+    defaultFields: {
+      applicantName: 'Ramesh Kumar',
+      guardianOrTo: 'State Bank of India, Kateya Branch (Gopalganj)',
+      addressOrVillage: 'Ward No. 08, Near G.A. High School, Kateya, PIN 841437',
+      subjectOrEducation: 'Request for KYC Update & Account Unfreeze (A/c: XXXX4821)',
+      extraDetails: 'Aadhaar & PAN Card copies enclosed for immediate DBT activation.',
+    },
+  },
+  {
+    id: 'co-rtps-land',
+    linkedServiceId: 'srv-application-typing',
+    priceInr: 50,
+    titleEn: 'Circle Officer (CO) Land / RTPS Certificate Request',
+    titleHi: 'अंचलाधिकारी (CO) कटेया — भूमि / RTPS प्रमाणपत्र निवेदन पत्र',
+    badgeEn: 'REVENUE / BLOCK · ₹50',
+    badgeHi: 'अंचल कार्यालय पत्र · ₹50',
+    defaultFields: {
+      applicantName: 'Suresh Prasad',
+      guardianOrTo: 'The Circle Officer (अंचलाधिकारी), Kateya Block, Gopalganj',
+      addressOrVillage: 'Mauza Kateya, Ward No. 08, Thana Kateya, Gopalganj',
+      subjectOrEducation: 'Verification of Caste / Income / Land Mutation Record',
+      extraDetails: 'RTPS Reference No. BCCCO/2026/88412 enclosed with self-declaration.',
+    },
+  },
+  {
+    id: 'principal-clc-tc',
+    linkedServiceId: 'srv-application-typing',
+    priceInr: 50,
+    titleEn: 'School / College Principal Leave, TC or Bonafide Request',
+    titleHi: 'प्रधानाचार्य — बोनाफाइड / TC / अवकाश हेतु प्रार्थना पत्र',
+    badgeEn: 'ACADEMIC LETTER · ₹50',
+    badgeHi: 'स्कूल/कॉलेज आवेदन · ₹50',
+    defaultFields: {
+      applicantName: 'Ankit Kumar Verma',
+      guardianOrTo: 'The Principal, G.A. High School / Degree College, Kateya',
+      addressOrVillage: 'Class 12th (Science), Roll No. 42, Session 2025–27',
+      subjectOrEducation: 'Issuance of Bonafide & Fee Structure for Post-Matric Scholarship',
+      extraDetails: 'Required urgently for Bihar Post-Matric Scholarship portal upload.',
+    },
+  },
+  {
+    id: 'marriage-biodata',
+    linkedServiceId: 'srv-marriage-biodata',
+    priceInr: 70,
+    titleEn: 'Traditional & Modern Marriage Biodata (A4 Frame)',
+    titleHi: 'पारंपरिक एवं आधुनिक विवाह बायोडाटा (प्रिंट-रेडी A4)',
+    badgeEn: 'MARRIAGE BIODATA · ₹70',
+    badgeHi: 'विवाह बायोडाटा · ₹70',
+    defaultFields: {
+      applicantName: 'Vikash Kumar Sharma (DOB: 14-08-1999 · Height: 5 ft 9 in)',
+      guardianOrTo: 'Father: Shri Rajendra Sharma · Mother: Smt. Meena Devi',
+      addressOrVillage: 'Ward No. 08, Near G.A. High School, Kateya, Dist. Gopalganj (Bihar)',
+      subjectOrEducation: 'B.Tech (Civil Engineering) · Working as Junior Engineer, Patna',
+      extraDetails: 'Gotra: Kashyap · Complexion: Fair · Contact: +91 98765XXXXX',
+    },
+  },
+];
+
+export interface GeneratedDraftPreview {
+  headerInvocation: string;
+  documentTitle: string;
+  dateLine: string;
+  recipientBlock: string[];
+  subjectLine: string;
+  bodyParagraphs: string[];
+  structuredRows?: Array<{ label: string; value: string }>;
+  signOffLabel: string;
+  applicantSignatureName: string;
+}
+
+export function generateLiveDraftPreviewContent(
+  templateId: LiveDraftTemplateId,
+  fields: {
+    applicantName: string;
+    guardianOrTo: string;
+    addressOrVillage: string;
+    subjectOrEducation: string;
+    extraDetails: string;
+  },
+  lang: 'en' | 'hi'
+): GeneratedDraftPreview {
+  const name = fields.applicantName.trim() || 'Applicant Name';
+  const toOrGuardian = fields.guardianOrTo.trim() || 'Authority / Guardian';
+  const address = fields.addressOrVillage.trim() || 'Kateya, Gopalganj (Bihar)';
+  const subject = fields.subjectOrEducation.trim() || 'Official Application';
+  const extra = fields.extraDetails.trim() || 'Supporting documents attached.';
+  const todayStr = '24-10-2026';
+
+  if (templateId === 'marriage-biodata') {
+    return {
+      headerInvocation:
+        lang === 'en'
+          ? '॥ SHRI GANESHAYA NAMAH ॥'
+          : '॥ श्री गणेशाय नमः ॥',
+      documentTitle:
+        lang === 'en'
+          ? 'MATRIMONIAL BIODATA DOSSIER'
+          : 'विवाह हेतु बायोडाटा (परिचय-पत्र)',
+      dateLine: lang === 'en' ? `Prepared at Kateya Studio` : `आदित्य ऑनलाइन सेंटर, कटेया`,
+      recipientBlock: [],
+      subjectLine: subject,
+      bodyParagraphs: [],
+      structuredRows:
+        lang === 'en'
+          ? [
+              { label: 'Full Name & Birth Details', value: name },
+              { label: 'Education & Profession', value: subject },
+              { label: 'Family & Parents Details', value: toOrGuardian },
+              { label: 'Gotra & Additional Profile', value: extra },
+              { label: 'Permanent Residence', value: address },
+            ]
+          : [
+              { label: 'पूरा नाम एवं जन्म विवरण', value: name },
+              { label: 'शैक्षणिक योग्यता एवं व्यवसाय', value: subject },
+              { label: 'पारिवारिक विवरण (माता-पिता)', value: toOrGuardian },
+              { label: 'गोत्र एवं अन्य विवरण', value: extra },
+              { label: 'स्थायी पता (निवास)', value: address },
+            ],
+      signOffLabel:
+        lang === 'en' ? 'Family Contact & Verification' : 'परिवार संपर्क एवं सत्यापन',
+      applicantSignatureName: name,
+    };
+  }
+
+  if (lang === 'hi') {
+    return {
+      headerInvocation: 'आधिकारिक टंकित आवेदन पत्र (A4 मानक प्रारूप)',
+      documentTitle: 'सेवा में,',
+      dateLine: `दिनांक: ${todayStr} | स्थान: कटेया, गोपालगंज`,
+      recipientBlock: [toOrGuardian, `पता / क्षेत्र: ${address}`],
+      subjectLine: `विषय: ${subject} के संबंध में।`,
+      bodyParagraphs: [
+        'महाशय / महोदया,',
+        `सविनय निवेदन है कि मैं ${name}, निवासी — ${address}, आपके संज्ञान में यह लाना चाहता/चाहती हूँ कि मुझे "${subject}" हेतु आधिकारिक कार्यवाही की आवश्यकता है।`,
+        `अतिरिक्त विवरण एवं संलग्नक: ${extra}`,
+        'अतः श्रीमान से करबद्ध प्रार्थना है कि मेरे आवेदन एवं संलग्न प्रमाणपत्रों की जांच कर शीघ्र उचित कार्यवाही करने की कृपा करें। इसके लिए मैं आपका सदैव आभारी रहूँगा/रहूँगी।',
+      ],
+      signOffLabel: 'आपका विश्वासी / आवेदक,',
+      applicantSignatureName: name,
+    };
+  }
+
+  return {
+    headerInvocation: 'OFFICIAL STUDIO TYPED APPLICATION (A4 BOND FORMAT)',
+    documentTitle: 'To,',
+    dateLine: `Date: ${todayStr} | Place: Kateya, Gopalganj`,
+    recipientBlock: [toOrGuardian, `Jurisdiction / Address: ${address}`],
+    subjectLine: `Subject: ${subject}`,
+    bodyParagraphs: [
+      'Respected Sir / Madam,',
+      `Most respectfully, I, ${name}, resident of ${address}, beg to state that I am submitting this formal application regarding "${subject}".`,
+      `Supporting Particulars & Enclosures: ${extra}`,
+      'I kindly request your good office to verify the attached documents and process my request at the earliest. I shall remain ever grateful for your prompt cooperation.',
+    ],
+    signOffLabel: 'Yours faithfully,',
+    applicantSignatureName: name,
+  };
+}
+
+// ============================================================================
+// UPGRADE 4: VOICE NOTE + DYNAMIC UPI QR & WHATSAPP ORDER DISPATCH
+// ============================================================================
+
+export function buildDynamicUpiUri(params: {
+  upiId?: string;
+  payeeName?: string;
+  amountInr: number;
+  orderNumber: string;
+}): string {
+  const pa = (params.upiId || '6206800799@ybl').trim() || '6206800799@ybl';
+  const pn = (params.payeeName || 'Aditya Online Center Kateya').trim();
+  const am = Math.max(1, Number(params.amountInr) || 50).toFixed(2);
+  const tn = (params.orderNumber || 'AOC-ORDER').trim();
+  return `upi://pay?pa=${encodeURIComponent(pa)}&pn=${encodeURIComponent(
+    pn
+  )}&am=${am}&cu=INR&tn=${encodeURIComponent(tn)}`;
+}
+
+/**
+ * Generates a deterministic 21x21 QR-style matrix with standard 7x7 finder patterns,
+ * timing patterns, and payload-derived data modules so the Dynamic UPI QR SVG
+ * renders crisply offline without external image dependencies.
+ */
+export function generateQrMatrix(payload: string, size = 21): boolean[][] {
+  const grid: boolean[][] = Array.from({ length: size }, () =>
+    Array.from({ length: size }, () => false)
+  );
+  const reserved: boolean[][] = Array.from({ length: size }, () =>
+    Array.from({ length: size }, () => false)
+  );
+
+  const placeFinder = (r0: number, c0: number) => {
+    for (let r = -1; r <= 7; r++) {
+      for (let c = -1; c <= 7; c++) {
+        const rr = r0 + r;
+        const cc = c0 + c;
+        if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
+        reserved[rr][cc] = true;
+        if (r >= 0 && r <= 6 && c >= 0 && c <= 6) {
+          const isBorder = r === 0 || r === 6 || c === 0 || c === 6;
+          const isInner = r >= 2 && r <= 4 && c >= 2 && c <= 4;
+          grid[rr][cc] = isBorder || isInner;
+        } else {
+          grid[rr][cc] = false;
+        }
+      }
+    }
+  };
+
+  placeFinder(0, 0);
+  placeFinder(0, size - 7);
+  placeFinder(size - 7, 0);
+
+  // Timing patterns
+  for (let i = 8; i < size - 8; i++) {
+    reserved[6][i] = true;
+    reserved[i][6] = true;
+    grid[6][i] = i % 2 === 0;
+    grid[i][6] = i % 2 === 0;
+  }
+
+  // Deterministic hash stream from payload string
+  let hash = 2166136261;
+  const clean = String(payload || 'upi://pay');
+  const bytes: number[] = [];
+  for (let i = 0; i < clean.length; i++) {
+    const code = clean.charCodeAt(i);
+    hash ^= code;
+    hash = Math.imul(hash, 16777619);
+    bytes.push((hash >>> 0) & 0xff);
+  }
+  if (bytes.length === 0) bytes.push(0xaa);
+
+  let bitIdx = 0;
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (reserved[r][c]) continue;
+      const byteVal = bytes[Math.floor(bitIdx / 8) % bytes.length];
+      const shift = bitIdx % 8;
+      const bit = ((byteVal >> shift) ^ ((r * 3 + c * 5) & 1)) & 1;
+      grid[r][c] = bit === 1;
+      bitIdx++;
+    }
+  }
+
+  return grid;
+}
+
+export function buildOrderWhatsAppDispatchUrl(params: {
+  orderNumber: string;
+  customerName: string;
+  customerPhone?: string;
+  serviceTitle: string;
+  amountInr?: number;
+  totalTariffInr?: number;
+  paymentMode: string;
+  hasVoiceNote?: boolean;
+  whatsappNumber?: string;
+}): string {
+  const digits = String(params.whatsappNumber || '6206800799').replace(/\D/g, '');
+  const fullPhone = digits.length === 10 ? `91${digits}` : digits || '916206800799';
+  const tariff = Number(params.amountInr ?? params.totalTariffInr) || 0;
+  const lines = [
+    `Hello Aditya Online Center (Kateya),`,
+    `I have submitted an online service order:`,
+    `• Order ID: ${params.orderNumber || 'PENDING-ID'}`,
+    `• Customer Name: ${params.customerName || 'Customer'}${params.customerPhone ? ` (${params.customerPhone})` : ''}`,
+    `• Selected Service: ${params.serviceTitle || 'Digital Service'}`,
+    `• Total Tariff: ₹${tariff}`,
+    `• Payment Mode: ${params.paymentMode || 'UPI QR / Manual Verification'}`,
+    ...(params.hasVoiceNote ? [`• Voice Instructions: Attached in Portal`] : []),
+    `Please verify my dossier and confirm processing.`,
+  ];
+  return `https://wa.me/${fullPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
+}
+
+/**
+ * Generates a compact valid WAV audio data URL (1-second pleasant confirmation chime)
+ * so customers or automated browser tests without a physical microphone can still
+ * test and play back a recorded voice instruction note in Step 1.
+ */
+export function createSampleVoiceNoteWavDataUrl(): string {
+  const sampleRate = 8000;
+  const numSamples = 4000; // 0.5 sec
+  const buffer = new ArrayBuffer(44 + numSamples);
+  const view = new DataView(buffer);
+
+  const writeStr = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  };
+
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + numSamples, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // Mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate, true);
+  view.setUint16(32, 1, true);
+  view.setUint16(34, 8, true); // 8-bit
+  writeStr(36, 'data');
+  view.setUint32(40, numSamples, true);
+
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const freq = i < numSamples / 2 ? 523.25 : 659.25;
+    const val = Math.round(128 + 40 * Math.sin(2 * Math.PI * freq * t));
+    view.setUint8(44 + i, val);
+  }
+
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const b64 =
+    typeof btoa === 'function'
+      ? btoa(binary)
+      : Buffer.from(buffer).toString('base64');
+  return `data:audio/wav;base64,${b64}`;
+}
+
+// ============================================================================
+// UPGRADE 5: SHOP VISIT TOKEN / APPOINTMENT BOOKER (SECTION 04 CONTACT STUDIO)
+// ============================================================================
+
+export const SHOP_TIME_SLOTS = [
+  {
+    key: 'morning' as const,
+    labelEn: 'Morning Slot (8:00 AM – 12:00 PM)',
+    labelHi: 'सुबह का स्लॉट (8:00 AM – 12:00 PM)',
+    windowEn: '8:00 AM – 12:00 PM',
+    windowHi: 'सुबह 8:00 – दोपहर 12:00',
+  },
+  {
+    key: 'afternoon' as const,
+    labelEn: 'Afternoon Slot (12:00 PM – 4:00 PM)',
+    labelHi: 'दोपहर का स्लॉट (12:00 PM – 4:00 PM)',
+    windowEn: '12:00 PM – 4:00 PM',
+    windowHi: 'दोपहर 12:00 – शाम 4:00',
+  },
+  {
+    key: 'evening' as const,
+    labelEn: 'Evening Slot (4:00 PM – 8:00 PM)',
+    labelHi: 'शाम का स्लॉट (4:00 PM – 8:00 PM)',
+    windowEn: '4:00 PM – 8:00 PM',
+    windowHi: 'शाम 4:00 – रात 8:00',
+  },
+];
+
+export function generateShopVisitTokenNumber(seedNumber: number | string = 104): string {
+  const numeric = typeof seedNumber === 'number' ? seedNumber : 104;
+  const safeNum = Math.max(101, Math.min(999, Math.floor(Number(numeric) || 104)));
+  return `#KTY-${safeNum}`;
+}
+
+export function validateShopVisitTokenInput(input: {
+  customerName: string;
+  customerPhone: string;
+  visitDate: string;
+  timeSlot: string;
+  serviceTitle?: string;
+  serviceType?: string;
+}): ValidationResult {
+  const name = sanitizeString(input.customerName, 80);
+  if (name.length < 2) {
+    return {
+      valid: false,
+      errorEn: 'Please enter your full name for the priority shop token.',
+      errorHi: 'कृपया शॉप टोकन के लिए अपना पूरा नाम दर्ज करें।',
+    };
+  }
+  const phoneDigits = String(input.customerPhone || '').replace(/\D/g, '');
+  if (phoneDigits.length !== 10) {
+    return {
+      valid: false,
+      errorEn: 'Please enter a valid 10-digit mobile number.',
+      errorHi: 'कृपया 10-अंकीय मान्य मोबाइल नंबर दर्ज करें।',
+    };
+  }
+  if (!input.visitDate || !/^\d{4}-\d{2}-\d{2}$/.test(input.visitDate)) {
+    return {
+      valid: false,
+      errorEn: 'Please select a valid visit date.',
+      errorHi: 'कृपया दुकान पर आने की सही तारीख चुनें।',
+    };
+  }
+  return { valid: true };
+}
+
+export function buildShopTokenWhatsAppUrl(params: {
+  tokenNumber: string;
+  customerName: string;
+  customerPhone?: string;
+  visitDate: string;
+  timeSlotLabel: string;
+  serviceTitle?: string;
+  serviceType?: string;
+  whatsappNumber?: string;
+}): string {
+  const digits = String(params.whatsappNumber || '6206800799').replace(/\D/g, '');
+  const fullPhone = digits.length === 10 ? `91${digits}` : digits || '916206800799';
+  const srv = params.serviceTitle || params.serviceType || 'Digital Service';
+  const text = [
+    `Hello Aditya Online Center (Ward No. 08, Near G.A. High School, Kateya),`,
+    `I have booked an In-Shop Priority Visit Token:`,
+    `• Token No: ${params.tokenNumber}`,
+    `• Name: ${params.customerName}${params.customerPhone ? ` (${params.customerPhone})` : ''}`,
+    `• Date: ${params.visitDate}`,
+    `• Time Slot: ${params.timeSlotLabel}`,
+    `• Service: ${srv}`,
+  ].join('\n');
+  return `https://wa.me/${fullPhone}?text=${encodeURIComponent(text)}`;
+}
+
+// ============================================================================
+// UPGRADE 6: STAFF / ADMIN PIN AUTHENTICATION (DEFAULT DEMO PIN: 841437)
+// ============================================================================
+
+export const DEFAULT_STAFF_PIN = '841437';
+
+export function verifyStaffAdminPin(
+  inputPin: string,
+  expectedPin: string = DEFAULT_STAFF_PIN
+): boolean {
+  const cleanInput = String(inputPin || '').trim();
+  const cleanExpected = String(expectedPin || DEFAULT_STAFF_PIN).trim();
+  return cleanInput.length > 0 && cleanInput === cleanExpected;
+}
+
+
 

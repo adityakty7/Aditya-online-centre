@@ -10,8 +10,11 @@ import {
 } from '../types';
 import {
   ORDER_WORKFLOW_STEPS,
+  buildDynamicUpiUri,
+  buildOrderWhatsAppDispatchUrl,
   canCustomerCancelOrder,
   canCustomerSubmitUtr,
+  generateQrMatrix,
   isSafeDataUrl,
   sanitizeString,
   validateUploadedFile,
@@ -22,6 +25,7 @@ import {
   DEMO_SAMPLE_HISTORY,
   DEMO_SAMPLE_ORDERS,
 } from '../data/initialCatalog';
+import { BUSINESS_INFO } from '../config/businessInfo';
 import {
   Search,
   CheckCircle2,
@@ -37,6 +41,8 @@ import {
   Upload,
   ArrowUpRight,
   Plus,
+  MessageCircle,
+  Volume2,
 } from 'lucide-react';
 
 interface CustomerPortalViewsProps {
@@ -887,55 +893,92 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                     </span>
                   </div>
 
-                  {/* Display Real Business UPI Details ONLY after owner configures them */}
-                  {settings.isUpiConfigured && settings.upiId ? (
-                    <div className="p-4 bg-[#F7F3EA] border border-[#DCD4C6] space-y-3">
-                      <div className="flex items-center justify-between text-xs text-[#5C5852]">
-                        <span>
-                          {lang === 'en'
-                            ? 'Official Payee Name'
-                            : 'आधिकारिक प्राप्तकर्ता'}
-                        </span>
-                        <span className="font-bold text-[#101014]">
-                          {settings.payeeName}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-[#5C5852]">
-                        <span>
-                          {lang === 'en'
-                            ? 'Business UPI ID'
-                            : 'बिजनेस UPI आईडी'}
-                        </span>
-                        <span className="font-mono-tabular font-bold text-[#C83713]">
-                          {settings.upiId}
-                        </span>
-                      </div>
-                      {settings.qrCodeDataUrl &&
-                        isSafeDataUrl(settings.qrCodeDataUrl) && (
-                          <div className="pt-2 flex justify-center">
-                            <img
-                              src={settings.qrCodeDataUrl}
-                              alt="Configured Business UPI QR Code"
-                              referrerPolicy="no-referrer"
-                              className="w-40 h-40 object-contain border border-[#101014] bg-white p-2"
-                            />
+                  {/* Dynamic UPI QR Code + WhatsApp Order & Receipt Dispatch */}
+                  {(() => {
+                    const trackUpiUri = buildDynamicUpiUri({
+                      upiId: settings.upiId || '6206800799@ybl',
+                      payeeName:
+                        settings.payeeName || 'Aditya Online Center, Kateya',
+                      amountInr: activeOrder.priceInr,
+                      orderNumber: activeOrder.orderNumber,
+                    });
+                    const trackQrMatrix = generateQrMatrix(trackUpiUri, 25);
+                    const trackWhatsAppUrl = buildOrderWhatsAppDispatchUrl({
+                      whatsappNumber: BUSINESS_INFO.whatsappNumber,
+                      orderNumber: activeOrder.orderNumber,
+                      customerName: activeOrder.customerName,
+                      customerPhone: activeOrder.customerPhone,
+                      serviceTitle:
+                        lang === 'en'
+                          ? activeOrder.serviceTitleEn
+                          : activeOrder.serviceTitleHi,
+                      totalTariffInr: activeOrder.priceInr,
+                      paymentMode:
+                        activeOrder.paymentMode || 'UPI QR / Manual UTR',
+                      hasVoiceNote: Boolean(activeOrder.voiceNoteDataUrl),
+                    });
+
+                    return (
+                      <div className="p-4 rounded-xl bg-[#101014] text-[#F7F3EA] border border-[#272732] space-y-4">
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          <div className="bg-white p-2.5 rounded-lg border-2 border-[#FFB547] shrink-0">
+                            <svg
+                              data-testid="track-dynamic-upi-qr-svg"
+                              viewBox={`0 0 ${trackQrMatrix.length} ${trackQrMatrix.length}`}
+                              className="w-28 h-28"
+                              shapeRendering="crispEdges"
+                              role="img"
+                              aria-label={`Dynamic UPI QR for Order ${activeOrder.orderNumber}`}
+                            >
+                              {trackQrMatrix.map((row, rIdx) =>
+                                row.map((cell, cIdx) =>
+                                  cell ? (
+                                    <rect
+                                      key={`${rIdx}-${cIdx}`}
+                                      x={cIdx}
+                                      y={rIdx}
+                                      width={1}
+                                      height={1}
+                                      fill="#101014"
+                                    />
+                                  ) : null
+                                )
+                              )}
+                            </svg>
                           </div>
-                        )}
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-[#EFE9DC] border-l-4 border-[#101014] text-xs text-[#4A463E] space-y-1.5">
-                      <div className="font-bold text-[#101014]">
-                        {lang === 'en'
-                          ? 'Business UPI QR / ID Awaiting Owner Configuration'
-                          : 'बिजनेस UPI QR / आईडी अभी एडमिन द्वारा कॉन्फ़िगर नहीं किया गया है'}
+
+                          <div className="space-y-2 flex-1 text-xs">
+                            <div className="font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#FFB547]">
+                              {lang === 'en'
+                                ? `DYNAMIC UPI QR · ₹${activeOrder.priceInr} (${activeOrder.orderNumber})`
+                                : `डायनामिक UPI QR · ₹${activeOrder.priceInr} (${activeOrder.orderNumber})`}
+                            </div>
+                            <div className="text-[#D8D3C8]">
+                              {lang === 'en'
+                                ? `Payee: ${settings.payeeName || 'Aditya Online Center, Kateya'}`
+                                : `प्राप्तकर्ता: ${settings.payeeName || 'आदित्य ऑनलाइन सेंटर, कटेया'}`}
+                            </div>
+                            <div className="pt-1 flex flex-wrap gap-2">
+                              <a
+                                href={trackWhatsAppUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                data-testid="track-whatsapp-dispatch-btn"
+                                className="min-h-[38px] px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs inline-flex items-center gap-1.5 transition-all"
+                              >
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                <span>
+                                  {lang === 'en'
+                                    ? 'Send Order & Receipt on WhatsApp'
+                                    : 'व्हाट्सएप पर ऑर्डर और रसीद भेजें'}
+                                </span>
+                              </a>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <p>
-                        {lang === 'en'
-                          ? 'For security, no dummy UPI ID is shown. The center owner can configure the official UPI ID and QR code in the Admin Panel → UPI Payment Settings.'
-                          : 'सुरक्षा कारणों से कोई काल्पनिक UPI आईडी नहीं दिखाई गई है। केंद्र संचालक एडमिन पैनल में अपनी वास्तविक UPI आईडी और QR सेट कर सकते हैं।'}
-                      </p>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   <p className="text-xs text-[#4A463E] leading-relaxed">
                     {lang === 'en'
@@ -1060,39 +1103,70 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                       </div>
                     ) : (
                       <ul className="space-y-2.5">
-                        {deliverables.map((file) => (
-                          <li
-                            key={file.fileId}
-                            className="p-4 bg-[#101014] text-[#F7F3EA] flex items-center justify-between gap-3"
-                          >
-                            <div className="min-w-0">
-                              <div className="text-sm font-bold text-[#FFB547] truncate">
-                                {file.fileName}
+                        {deliverables.map((file) => {
+                          const canDownload =
+                            isSafeDataUrl(file.dataUrl) ||
+                            /^https?:\/\//i.test(file.dataUrl) ||
+                            file.dataUrl.startsWith('/');
+                          return (
+                            <li
+                              key={file.fileId}
+                              data-testid={`deliverable-item-${file.fileId}`}
+                              className="p-4 bg-[#101014] text-[#F7F3EA] flex items-center justify-between gap-3"
+                            >
+                              <div className="min-w-0">
+                                <div className="text-sm font-bold text-[#FFB547] truncate">
+                                  {file.fileName}
+                                </div>
+                                <div className="text-xs text-[#D8D3C8] font-mono-tabular mt-0.5">
+                                  {Math.max(
+                                    1,
+                                    Math.round(file.sizeBytes / 1024)
+                                  )}{' '}
+                                  KB · {file.createdAt.slice(0, 10)}
+                                </div>
                               </div>
-                              <div className="text-xs text-[#D8D3C8] font-mono-tabular mt-0.5">
-                                {Math.max(1, Math.round(file.sizeBytes / 1024))}{' '}
-                                KB · {file.createdAt.slice(0, 10)}
-                              </div>
-                            </div>
-                            {isSafeDataUrl(file.dataUrl) && (
-                              <a
-                                href={file.dataUrl}
-                                download={file.fileName}
-                                className="min-h-[42px] px-4 py-2 bg-[#FF5C35] hover:bg-[#E54922] text-white text-xs font-bold transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
-                              >
-                                <Download className="w-4 h-4" />
-                                <span>
-                                  {lang === 'en'
-                                    ? 'Download PDF'
-                                    : 'डाउनलोड करें'}
-                                </span>
-                              </a>
-                            )}
-                          </li>
-                        ))}
+                              {canDownload && (
+                                <a
+                                  href={file.dataUrl}
+                                  download={file.fileName}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  data-testid="download-deliverable-pdf-btn"
+                                  className="min-h-[42px] px-4 py-2 bg-[#FF5C35] hover:bg-[#E54922] text-white text-xs font-bold transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                                >
+                                  <Download className="w-4 h-4" />
+                                  <span>
+                                    {lang === 'en'
+                                      ? 'Download PDF'
+                                      : 'डाउनलोड करें'}
+                                  </span>
+                                </a>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                   </div>
+
+                  {activeOrder.voiceNoteDataUrl && (
+                    <div className="p-3.5 bg-[#F7F3EA] border border-[#DCD4C6] space-y-2">
+                      <div className="flex items-center gap-2 text-xs font-bold text-[#101014]">
+                        <Volume2 className="w-4 h-4 text-[#FF5C35]" />
+                        <span>
+                          {lang === 'en'
+                            ? 'Attached Voice Instruction Note'
+                            : 'ग्राहक का वॉइस निर्देश'}
+                        </span>
+                      </div>
+                      <audio
+                        controls
+                        src={activeOrder.voiceNoteDataUrl}
+                        className="h-9 w-full"
+                      />
+                    </div>
+                  )}
 
                   {/* Customer Uploaded Supporting Documents */}
                   <div className="space-y-2.5">
