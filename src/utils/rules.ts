@@ -2548,5 +2548,126 @@ export function verifyStaffAdminPin(
   return cleanInput.length > 0 && cleanInput === cleanExpected;
 }
 
+// ============================================================================
+// EXTERNAL DOMAIN & VERCEL AUTHENTICATION HELPERS (auth/unauthorized-domain)
+// ============================================================================
 
+export function isFirebaseUnauthorizedDomainError(err: unknown): boolean {
+  const raw =
+    err instanceof Error
+      ? `${err.name} ${err.message} ${(err as { code?: string }).code || ''}`
+      : String(err || '');
+  const lower = raw.toLowerCase();
+  return (
+    lower.includes('auth/unauthorized-domain') ||
+    lower.includes('unauthorized-domain') ||
+    lower.includes('operation-not-supported-in-this-environment') ||
+    lower.includes('auth/popup-blocked')
+  );
+}
 
+export interface FriendlyAuthErrorDetails {
+  isDomainError: boolean;
+  titleEn: string;
+  titleHi: string;
+  messageEn: string;
+  messageHi: string;
+  domainToAuthorize: string;
+  firebaseProjectId: string;
+  firebaseConsoleUrl: string;
+}
+
+export function formatFriendlyAuthError(
+  err: unknown,
+  hostname: string = 'aditya-online-centre-jk87.vercel.app',
+  firebaseProjectId: string = 'gen-lang-client-0774506168'
+): FriendlyAuthErrorDetails {
+  const cleanHost =
+    String(hostname || '').trim() || 'aditya-online-centre-jk87.vercel.app';
+  const cleanProject =
+    String(firebaseProjectId || '').trim() || 'gen-lang-client-0774506168';
+  const consoleUrl = `https://console.firebase.google.com/project/${cleanProject}/authentication/settings`;
+
+  if (isFirebaseUnauthorizedDomainError(err)) {
+    return {
+      isDomainError: true,
+      titleEn: 'Google Popup Not Yet Authorized on This Domain — Use Instant Mobile Sign-In Below',
+      titleHi: 'इस डोमेन पर Google पॉपअप अभी अधिकृत नहीं है — नीचे मोबाइल नंबर से तुरंत लॉगिन करें',
+      messageEn: `You can sign in immediately on ${cleanHost} using your Name & 10-Digit Mobile Number below (no Google popup needed). To also enable Google Sign-In on ${cleanHost}, add "${cleanHost}" in Firebase Console → Authentication → Settings → Authorized domains.`,
+      messageHi: `आप बिना किसी रुकावट के नीचे अपना नाम और 10-अंकीय मोबाइल नंबर दर्ज करके तुरंत लॉगिन कर सकते हैं। यदि आप ${cleanHost} पर Google लॉगिन भी चालू करना चाहते हैं, तो Firebase Console → Authentication → Settings → Authorized domains में जाकर "${cleanHost}" जोड़ें।`,
+      domainToAuthorize: cleanHost,
+      firebaseProjectId: cleanProject,
+      firebaseConsoleUrl: consoleUrl,
+    };
+  }
+
+  const fallbackMsg =
+    err instanceof Error && err.message
+      ? err.message
+      : 'Google Sign-In could not be completed. Please use Instant Mobile Sign-In below.';
+
+  return {
+    isDomainError: false,
+    titleEn: 'Sign-In Notice',
+    titleHi: 'लॉगिन सूचना',
+    messageEn: fallbackMsg,
+    messageHi:
+      'Google लॉगिन पूरा नहीं हो सका। कृपया नीचे अपना नाम और मोबाइल नंबर दर्ज करके तुरंत लॉगिन करें।',
+    domainToAuthorize: cleanHost,
+    firebaseProjectId: cleanProject,
+    firebaseConsoleUrl: consoleUrl,
+  };
+}
+
+export interface QuickCustomerSignInResult {
+  valid: boolean;
+  displayName?: string;
+  phone?: string;
+  email?: string;
+  villageOrTown?: string;
+  errorEn?: string;
+  errorHi?: string;
+}
+
+export function validateQuickCustomerSignIn(input: {
+  displayName: string;
+  phone: string;
+  email?: string;
+  villageOrTown?: string;
+}): QuickCustomerSignInResult {
+  const cleanName = sanitizeString(input.displayName, 80);
+  if (cleanName.length < 2) {
+    return {
+      valid: false,
+      errorEn: 'Please enter your full name (at least 2 characters).',
+      errorHi: 'कृपया अपना पूरा नाम लिखें (कम से कम 2 अक्षर)।',
+    };
+  }
+
+  const digits = String(input.phone || '').replace(/\D/g, '');
+  const cleanPhone = digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+  if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+    return {
+      valid: false,
+      errorEn: 'Please enter a valid 10-digit Indian mobile number.',
+      errorHi: 'कृपया सही 10-अंकीय मोबाइल नंबर दर्ज करें।',
+    };
+  }
+
+  const cleanEmail = sanitizeString(
+    input.email?.trim() || `${cleanPhone}@customer.adityaonline.in`,
+    120
+  );
+  const cleanVillage = sanitizeString(
+    input.villageOrTown?.trim() || 'Kateya, Gopalganj',
+    120
+  );
+
+  return {
+    valid: true,
+    displayName: cleanName,
+    phone: cleanPhone,
+    email: cleanEmail,
+    villageOrTown: cleanVillage,
+  };
+}

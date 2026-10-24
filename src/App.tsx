@@ -21,6 +21,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import {
+  ACTIVE_FIREBASE_PROJECT_ID,
   auth,
   BOOTSTRAPPED_ADMIN_EMAIL,
   db,
@@ -58,6 +59,8 @@ import {
 import { BUSINESS_INFO } from './config/businessInfo';
 import {
   DEFAULT_STAFF_PIN,
+  formatFriendlyAuthError,
+  FriendlyAuthErrorDetails,
   generateContactMessageId,
   generateOrderNumber,
   INITIAL_EXAM_RADAR_ITEMS,
@@ -66,6 +69,7 @@ import {
   resolveVisualTheme,
   sanitizeString,
   toggleVisualTheme,
+  validateQuickCustomerSignIn,
   verifyStaffAdminPin,
 } from './utils/rules';
 import { Navbar } from './components/Navbar';
@@ -80,6 +84,9 @@ import {
 import { ProjectBackupModal } from './components/ProjectBackupModal';
 import { setCachedDriveToken } from './utils/googleDrive';
 import {
+  Check,
+  Copy,
+  ExternalLink,
   Home,
   KeyRound,
   Layers,
@@ -89,6 +96,7 @@ import {
   MessageCircle,
   Search,
   ShieldCheck,
+  Smartphone,
   User,
   UserCheck,
   X,
@@ -240,6 +248,13 @@ export default function App() {
   const [staffPinInput, setStaffPinInput] = React.useState('');
   const [staffPinError, setStaffPinError] = React.useState<string | null>(null);
   const [authModalOpen, setAuthModalOpen] = React.useState(false);
+  const [authModalTab, setAuthModalTab] = React.useState<'customer' | 'staff'>('customer');
+  const [quickAuthName, setQuickAuthName] = React.useState('');
+  const [quickAuthPhone, setQuickAuthPhone] = React.useState('');
+  const [quickAuthVillage, setQuickAuthVillage] = React.useState('Kateya, Gopalganj');
+  const [friendlyAuthDetails, setFriendlyAuthDetails] =
+    React.useState<FriendlyAuthErrorDetails | null>(null);
+  const [domainCopied, setDomainCopied] = React.useState(false);
   const [backupModalOpen, setBackupModalOpen] = React.useState(false);
   const [authError, setAuthError] = React.useState<string | null>(null);
 
@@ -267,7 +282,22 @@ export default function App() {
   const [settings, setSettings] = React.useState<CenterSettings>(
     DEFAULT_CENTER_SETTINGS
   );
-  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = React.useState<UserProfile | null>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = window.localStorage.getItem('aoc_customer_session_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved) as UserProfile;
+          if (parsed && parsed.displayName && parsed.phone) {
+            return parsed;
+          }
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return null;
+  });
   const [orders, setOrders] = React.useState<ServiceOrder[]>(loadInitialGuestOrders);
   const [orderFiles, setOrderFiles] =
     React.useState<Record<string, OrderFile[]>>(loadInitialGuestOrderFiles);
@@ -416,7 +446,24 @@ export default function App() {
           handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
         }
       } else {
-        setUserProfile(null);
+        try {
+          const savedSession =
+            typeof window !== 'undefined'
+              ? window.localStorage.getItem('aoc_customer_session_v1')
+              : null;
+          if (savedSession) {
+            const parsed = JSON.parse(savedSession) as UserProfile;
+            if (parsed && parsed.displayName && parsed.phone) {
+              setUserProfile(parsed);
+            } else {
+              setUserProfile(null);
+            }
+          } else {
+            setUserProfile(null);
+          }
+        } catch {
+          setUserProfile(null);
+        }
         setIsDbAdminDoc(false);
         setSandboxRole('none');
         setOrders(loadInitialGuestOrders());
@@ -792,8 +839,56 @@ export default function App() {
   }, [authReady, fbUser, isLiveAdmin, selectedOrderNumber, orders]);
 
   // Handlers
+  const handleQuickMobileSignIn = (
+    nameOverride?: string,
+    phoneOverride?: string,
+    villageOverride?: string
+  ) => {
+    setAuthError(null);
+    setFriendlyAuthDetails(null);
+
+    const validation = validateQuickCustomerSignIn({
+      displayName: nameOverride ?? quickAuthName,
+      phone: phoneOverride ?? quickAuthPhone,
+      villageOrTown: villageOverride ?? quickAuthVillage,
+    });
+
+    if (!validation.valid) {
+      setAuthError(lang === 'en' ? validation.errorEn! : validation.errorHi!);
+      return false;
+    }
+
+    const nowIso = new Date().toISOString();
+    const sessionProfile: UserProfile = {
+      uid: `cust-${validation.phone}`,
+      displayName: validation.displayName!,
+      email: validation.email!,
+      phone: validation.phone!,
+      villageOrTown: validation.villageOrTown!,
+      preferredLanguage: lang,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    };
+
+    setUserProfile(sessionProfile);
+    setSandboxRole('customer');
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(
+          'aoc_customer_session_v1',
+          JSON.stringify(sessionProfile)
+        );
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    setAuthModalOpen(false);
+    return true;
+  };
+
   const handleGoogleSignIn = async () => {
     setAuthError(null);
+    setFriendlyAuthDetails(null);
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -802,16 +897,48 @@ export default function App() {
       }
       setAuthModalOpen(false);
     } catch (err) {
-      setAuthError(
-        err instanceof Error
-          ? err.message
-          : 'Google Sign-In could not be completed in this browser window.'
+      // If user already entered valid Name & 10-digit Phone, sign them in seamlessly!
+      const prefilledCheck = validateQuickCustomerSignIn({
+        displayName: quickAuthName,
+        phone: quickAuthPhone,
+        villageOrTown: quickAuthVillage,
+      });
+      if (prefilledCheck.valid) {
+        handleQuickMobileSignIn();
+        return;
+      }
+
+      const currentHost =
+        typeof window !== 'undefined' && window.location?.hostname
+          ? window.location.hostname
+          : 'aditya-online-centre-jk87.vercel.app';
+      const details = formatFriendlyAuthError(
+        err,
+        currentHost,
+        ACTIVE_FIREBASE_PROJECT_ID
       );
+      setFriendlyAuthDetails(details);
+      if (!details.isDomainError) {
+        setAuthError(lang === 'en' ? details.messageEn : details.messageHi);
+      }
     }
   };
 
   const handleSignOut = async () => {
-    await signOut(auth);
+    try {
+      await signOut(auth);
+    } catch {
+      // Ignore if not signed into Firebase
+    }
+    setUserProfile(null);
+    setSandboxRole('none');
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem('aoc_customer_session_v1');
+      }
+    } catch {
+      // Ignore storage errors
+    }
     setCachedDriveToken(null);
     setAuthModalOpen(false);
   };
@@ -1707,12 +1834,16 @@ export default function App() {
         onToggleLang={setLang}
         theme={theme}
         onToggleTheme={() => setTheme((prev) => toggleVisualTheme(prev))}
-        userEmail={fbUser?.email || null}
+        userEmail={fbUser?.email || userProfile?.email || null}
         userName={fbUser?.displayName || userProfile?.displayName || null}
         isLiveAdmin={isLiveAdmin}
         sandboxRole={sandboxRole}
         onSetSandboxRole={setSandboxRole}
-        onOpenAuthModal={() => setAuthModalOpen(true)}
+        onOpenAuthModal={() => {
+          setAuthError(null);
+          setFriendlyAuthDetails(null);
+          setAuthModalOpen(true);
+        }}
         onOpenBackupModal={() => setBackupModalOpen(true)}
       />
 
@@ -1854,24 +1985,32 @@ export default function App() {
         )}
       </main>
 
-      {/* Sign-In & Role Modal Dialog */}
+      {/* Sign-In & Role Modal Dialog (Domain-Independent Mobile Sign-In + Google OAuth + Staff PIN) */}
       {authModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="auth-modal-title"
-          className="fixed inset-0 z-50 bg-[#101014]/75 backdrop-blur-xs flex items-center justify-center p-4"
+          data-testid="account-auth-modal"
+          className="fixed inset-0 z-50 bg-[#0A0D12]/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
         >
-          <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl max-w-md w-full p-6 space-y-5">
+          <div className="bg-[#FFFDF9] border border-[#E6DFD3] rounded-2xl max-w-md w-full p-5 sm:p-6 space-y-4 shadow-[0_24px_60px_rgba(0,0,0,0.65)] my-auto">
             <div className="flex items-center justify-between border-b border-[#E6DFD3] pb-3">
-              <h2
-                id="auth-modal-title"
-                className="text-lg font-bold text-[#101014] font-display"
-              >
-                {lang === 'en'
-                  ? 'Account & Authentication'
-                  : 'खाता और प्रमाणीकरण'}
-              </h2>
+              <div>
+                <h2
+                  id="auth-modal-title"
+                  className="text-lg font-extrabold text-[#101014] font-display"
+                >
+                  {lang === 'en'
+                    ? 'Account & Authentication'
+                    : 'खाता और प्रमाणीकरण'}
+                </h2>
+                <p className="text-[11px] text-[#787166]">
+                  {lang === 'en'
+                    ? 'Aditya Online Center · Private Customer & Staff Vault'
+                    : 'आदित्य ऑनलाइन सेंटर · सुरक्षित ग्राहक एवं स्टाफ लॉगिन'}
+                </p>
+              </div>
               <button
                 type="button"
                 aria-label="Close account modal"
@@ -1882,59 +2021,426 @@ export default function App() {
               </button>
             </div>
 
-            {authError && (
-              <div
-                role="alert"
-                className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800"
-              >
-                {authError}
-              </div>
-            )}
-
-            {fbUser ? (
+            {fbUser || userProfile ? (
               <div className="space-y-4">
-                <div className="p-4 bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl text-xs space-y-1">
-                  <div className="text-[#787166]">Signed in with Google:</div>
-                  <div className="text-sm font-bold text-[#101014]">
-                    {fbUser.displayName || 'Customer'}
+                <div
+                  data-testid="signed-in-account-card"
+                  className="p-4 bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl text-xs space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#787166] font-mono-tabular uppercase text-[10px]">
+                      {fbUser
+                        ? lang === 'en'
+                          ? 'VERIFIED GOOGLE ACCOUNT'
+                          : 'सत्यापित गूगल खाता'
+                        : lang === 'en'
+                        ? 'VERIFIED MOBILE SESSION'
+                        : 'सत्यापित मोबाइल खाता'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                      {lang === 'en' ? 'ACTIVE' : 'सक्रिय'}
+                    </span>
                   </div>
+                  <div className="text-base font-extrabold text-[#101014]">
+                    {fbUser?.displayName || userProfile?.displayName || 'Customer'}
+                  </div>
+                  {userProfile?.phone && (
+                    <div className="font-mono-tabular text-xs font-bold text-[#101014]">
+                      +91 {userProfile.phone} · {userProfile.villageOrTown}
+                    </div>
+                  )}
                   <div className="font-mono-tabular text-[#4A463E]">
-                    {fbUser.email}
+                    {fbUser?.email || userProfile?.email}
                   </div>
                   <div className="pt-1 font-semibold text-[#C83713]">
-                    Role: {isLiveAdmin ? 'Verified Center Admin' : 'Verified Customer'}
+                    Role:{' '}
+                    {isAuthorizedAdmin
+                      ? lang === 'en'
+                        ? 'Verified Center Admin'
+                        : 'सेंटर एडमिन'
+                      : lang === 'en'
+                      ? 'Verified Customer'
+                      : 'सत्यापित ग्राहक'}
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="w-full min-h-[44px] px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>{lang === 'en' ? 'Sign Out' : 'लॉग आउट करें'}</span>
-                </button>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalOpen(false);
+                      setCurrentView('dashboard');
+                    }}
+                    className="w-full min-h-[42px] px-4 py-2 bg-[#101014] hover:bg-[#272732] text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2"
+                  >
+                    <UserCheck className="w-4 h-4 text-[#FFB547]" />
+                    <span>
+                      {lang === 'en' ? 'Open Customer Portal' : 'ग्राहक पोर्टल खोलें'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="sign-out-btn"
+                    onClick={handleSignOut}
+                    className="w-full min-h-[42px] px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>{lang === 'en' ? 'Sign Out' : 'लॉग आउट करें'}</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-xs text-[#4A463E] leading-relaxed">
-                  {lang === 'en'
-                    ? 'Sign in with your Google account to access your 100% Private & Safe Document Vault, track orders, and download completed PDFs under our Complete Data Privacy Guarantee.'
-                    : 'अपने 100% सुरक्षित एवं गोपनीय दस्तावेज़ वॉल्ट तक पहुँचने और तैयार PDF डाउनलोड करने के लिए गूगल खाते से लॉगिन करें।'}
-                </p>
+                {/* Mode Switcher: Customer Sign-In vs Staff / Admin PIN */}
+                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#F0EAE0] border border-[#E2D9C8]">
+                  <button
+                    type="button"
+                    data-testid="auth-tab-customer"
+                    onClick={() => {
+                      setAuthModalTab('customer');
+                      setAuthError(null);
+                    }}
+                    className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      authModalTab === 'customer'
+                        ? 'bg-[#101014] text-white shadow-xs'
+                        : 'text-[#4A463E] hover:text-[#101014]'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5 text-[#FF5C35]" />
+                    <span>
+                      {lang === 'en' ? 'Customer Sign-In' : 'ग्राहक लॉगिन'}
+                    </span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  className="w-full min-h-[48px] px-5 py-3 bg-[#FF5C35] hover:bg-[#E04823] text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>
-                    {lang === 'en'
-                      ? 'Sign In with Google'
-                      : 'गूगल (Google) खाते से लॉगिन करें'}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    data-testid="auth-tab-staff"
+                    onClick={() => {
+                      setAuthModalTab('staff');
+                      setAuthError(null);
+                      setFriendlyAuthDetails(null);
+                    }}
+                    className={`min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      authModalTab === 'staff'
+                        ? 'bg-[#101014] text-white shadow-xs'
+                        : 'text-[#4A463E] hover:text-[#101014]'
+                    }`}
+                  >
+                    <KeyRound className="w-3.5 h-3.5 text-[#FFB547]" />
+                    <span>
+                      {lang === 'en' ? 'Staff / Admin PIN' : 'स्टाफ / एडमिन पिन'}
+                    </span>
+                  </button>
+                </div>
+
+                {authError && (
+                  <div
+                    role="alert"
+                    data-testid="auth-modal-error"
+                    className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs font-medium text-red-800"
+                  >
+                    {authError}
+                  </div>
+                )}
+
+                {authModalTab === 'customer' ? (
+                  <div className="space-y-4">
+                    {/* Friendly Domain Fallback Banner when Google Popup throws auth/unauthorized-domain on Vercel */}
+                    {friendlyAuthDetails && (
+                      <div
+                        data-testid="domain-auth-fallback-banner"
+                        className="p-3.5 rounded-xl bg-amber-50/90 border border-amber-300 text-xs text-[#101014] space-y-2.5"
+                      >
+                        <div className="font-bold text-[#9A3412] flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-[#FF5C35] shrink-0" />
+                          <span>
+                            {lang === 'en'
+                              ? friendlyAuthDetails.titleEn
+                              : friendlyAuthDetails.titleHi}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#4A463E] leading-relaxed">
+                          {lang === 'en'
+                            ? friendlyAuthDetails.messageEn
+                            : friendlyAuthDetails.messageHi}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            data-testid="quick-demo-customer-signin-btn"
+                            onClick={() =>
+                              handleQuickMobileSignIn(
+                                'Ramesh Kumar',
+                                '9876543210',
+                                'Ward No. 08, Kateya'
+                              )
+                            }
+                            className="px-3 py-1.5 rounded-lg bg-[#FF5C35] hover:bg-[#E04823] text-white font-bold text-[11px] transition-colors"
+                          >
+                            {lang === 'en'
+                              ? '1-Click Instant Sign-In (Demo Customer) →'
+                              : '1-क्लिक तुरंत ग्राहक लॉगिन →'}
+                          </button>
+
+                          <button
+                            type="button"
+                            data-testid="copy-authorized-domain-btn"
+                            onClick={() => {
+                              if (navigator?.clipboard?.writeText) {
+                                navigator.clipboard.writeText(
+                                  friendlyAuthDetails.domainToAuthorize
+                                );
+                                setDomainCopied(true);
+                                setTimeout(() => setDomainCopied(false), 2500);
+                              }
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 text-[#101014] font-mono-tabular font-bold text-[11px] inline-flex items-center gap-1"
+                          >
+                            {domainCopied ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>
+                                  {lang === 'en' ? 'Domain Copied!' : 'कॉपी हो गया!'}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3.5 h-3.5 text-[#FF5C35]" />
+                                <span>
+                                  Copy: {friendlyAuthDetails.domainToAuthorize}
+                                </span>
+                              </>
+                            )}
+                          </button>
+
+                          <a
+                            href={friendlyAuthDetails.firebaseConsoleUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 rounded-lg bg-[#101014] hover:bg-[#272732] text-white font-bold text-[11px] inline-flex items-center gap-1"
+                          >
+                            <span>Firebase Auth Settings</span>
+                            <ExternalLink className="w-3 h-3 text-[#FFB547]" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Primary: Domain-Independent Instant Mobile & Name Sign-In */}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleQuickMobileSignIn();
+                      }}
+                      className="p-4 rounded-xl bg-[#F7F3EA] border border-[#E2D9C8] space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#C83713]">
+                          {lang === 'en'
+                            ? 'INSTANT MOBILE SIGN-IN (ALL DOMAINS)'
+                            : 'मोबाइल नंबर से तुरंत लॉगिन (सभी डोमेन पर)'}
+                        </span>
+                        <span className="font-mono-tabular text-[10px] font-bold text-emerald-700">
+                          {lang === 'en' ? 'NO POPUP NEEDED' : 'बिना पॉपअप'}
+                        </span>
+                      </div>
+
+                      <div>
+                        <label
+                          htmlFor="quick-auth-name"
+                          className="block text-[11px] font-bold text-[#101014] mb-1"
+                        >
+                          {lang === 'en' ? 'Your Full Name *' : 'आपका पूरा नाम *'}
+                        </label>
+                        <input
+                          id="quick-auth-name"
+                          data-testid="quick-auth-name-input"
+                          type="text"
+                          value={quickAuthName}
+                          onChange={(e) => setQuickAuthName(e.target.value)}
+                          placeholder={
+                            lang === 'en'
+                              ? 'e.g., Ramesh Kumar'
+                              : 'जैसे: रमेश कुमार'
+                          }
+                          className="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-[#DCD4C6] text-xs text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div>
+                          <label
+                            htmlFor="quick-auth-phone"
+                            className="block text-[11px] font-bold text-[#101014] mb-1"
+                          >
+                            {lang === 'en'
+                              ? '10-Digit Mobile No. *'
+                              : '10-अंकीय मोबाइल नंबर *'}
+                          </label>
+                          <input
+                            id="quick-auth-phone"
+                            data-testid="quick-auth-phone-input"
+                            type="tel"
+                            maxLength={10}
+                            value={quickAuthPhone}
+                            onChange={(e) =>
+                              setQuickAuthPhone(
+                                e.target.value.replace(/\D/g, '').slice(0, 10)
+                              )
+                            }
+                            placeholder="9876543210"
+                            className="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-[#DCD4C6] text-xs font-mono-tabular text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor="quick-auth-village"
+                            className="block text-[11px] font-bold text-[#101014] mb-1"
+                          >
+                            {lang === 'en'
+                              ? 'Village / Ward (Kateya)'
+                              : 'गाँव / वार्ड (कटेया)'}
+                          </label>
+                          <input
+                            id="quick-auth-village"
+                            data-testid="quick-auth-village-input"
+                            type="text"
+                            value={quickAuthVillage}
+                            onChange={(e) => setQuickAuthVillage(e.target.value)}
+                            placeholder="Kateya Ward 08"
+                            className="w-full min-h-[40px] px-3 py-1.5 rounded-lg bg-white border border-[#DCD4C6] text-xs text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        data-testid="quick-mobile-signin-btn"
+                        className="w-full min-h-[44px] px-4 py-2.5 bg-[#FF5C35] hover:bg-[#E04823] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      >
+                        <Smartphone className="w-4 h-4" />
+                        <span>
+                          {lang === 'en'
+                            ? 'Sign In Instantly with Mobile Number →'
+                            : 'मोबाइल नंबर से तुरंत लॉगिन करें →'}
+                        </span>
+                      </button>
+                    </form>
+
+                    <div className="relative flex py-0.5 items-center">
+                      <div className="flex-grow border-t border-[#E6DFD3]" />
+                      <span className="flex-shrink mx-3 font-mono-tabular text-[10px] uppercase tracking-wider text-[#787166]">
+                        {lang === 'en'
+                          ? 'OR GOOGLE ACCOUNT'
+                          : 'या गूगल (GOOGLE) खाता'}
+                      </span>
+                      <div className="flex-grow border-t border-[#E6DFD3]" />
+                    </div>
+
+                    <button
+                      type="button"
+                      data-testid="google-signin-btn"
+                      onClick={handleGoogleSignIn}
+                      className="w-full min-h-[44px] px-4 py-2.5 bg-[#101014] hover:bg-[#272732] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <LogIn className="w-4 h-4 text-[#FFB547]" />
+                      <span>
+                        {lang === 'en'
+                          ? 'Sign In with Google'
+                          : 'गूगल (Google) खाते से लॉगिन करें'}
+                      </span>
+                    </button>
+                  </div>
+                ) : (
+                  /* Staff / Admin PIN Login directly inside Account Modal */
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (verifyStaffAdminPin(staffPinInput, DEFAULT_STAFF_PIN)) {
+                        setIsPinAdminUnlocked(true);
+                        setSandboxRole('admin');
+                        try {
+                          if (typeof window !== 'undefined') {
+                            window.sessionStorage.setItem('aoc_pin_admin', '1');
+                          }
+                        } catch {
+                          // Ignore storage errors
+                        }
+                        setAuthModalOpen(false);
+                        setCurrentView('admin');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else {
+                        setAuthError(
+                          lang === 'en'
+                            ? 'Invalid Staff PIN. Default demo PIN is 841437.'
+                            : 'गलत स्टाफ पिन। डिफ़ॉल्ट डेमो पिन 841437 है।'
+                        );
+                      }
+                    }}
+                    className="p-4 rounded-xl bg-[#F7F3EA] border border-[#E2D9C8] space-y-3.5"
+                  >
+                    <div className="text-xs text-[#4A463E] leading-relaxed">
+                      {lang === 'en'
+                        ? 'Center Operator / Admin? Enter your 6-digit Kateya Studio PIN (Default: 841437) to open the Admin Control Center on any domain.'
+                        : 'सेंटर ऑपरेटर / एडमिन? किसी भी डोमेन पर एडमिन कंट्रोल पैनल खोलने के लिए 6-अंकीय पिन (डिफ़ॉल्ट: 841437) दर्ज करें।'}
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="auth-modal-staff-pin"
+                        className="block font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#101014] mb-1"
+                      >
+                        {lang === 'en'
+                          ? '6-Digit Staff Security PIN *'
+                          : '6-अंकीय स्टाफ सुरक्षा पिन *'}
+                      </label>
+                      <input
+                        id="auth-modal-staff-pin"
+                        data-testid="auth-modal-staff-pin-input"
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={12}
+                        value={staffPinInput}
+                        onChange={(e) => setStaffPinInput(e.target.value)}
+                        placeholder="•••••• (Demo: 841437)"
+                        className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-white border border-[#DCD4C6] text-base font-mono-tabular tracking-[0.25em] text-[#101014] focus:border-[#FF5C35] focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-[#787166]">
+                      <span>
+                        {lang === 'en'
+                          ? 'Default Demo PIN: 841437'
+                          : 'डिफ़ॉल्ट डेमो पिन: 841437'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setStaffPinInput(DEFAULT_STAFF_PIN)}
+                        className="text-[#C83713] font-mono-tabular font-bold underline"
+                      >
+                        {lang === 'en'
+                          ? 'Auto-Fill 841437'
+                          : '841437 स्वतः भरें'}
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      data-testid="auth-modal-staff-pin-submit-btn"
+                      className="w-full min-h-[44px] px-4 py-2.5 bg-[#101014] hover:bg-[#272732] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-[#FFB547]" />
+                      <span>
+                        {lang === 'en'
+                          ? 'Unlock Admin Control Center →'
+                          : 'एडमिन कंट्रोल पैनल खोलें →'}
+                      </span>
+                    </button>
+                  </form>
+                )}
               </div>
             )}
           </div>

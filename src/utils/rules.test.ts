@@ -70,6 +70,9 @@ import {
   buildShopTokenWhatsAppUrl,
   DEFAULT_STAFF_PIN,
   verifyStaffAdminPin,
+  isFirebaseUnauthorizedDomainError,
+  formatFriendlyAuthError,
+  validateQuickCustomerSignIn,
 } from './rules.ts';
 import {
   BUSINESS_INFO,
@@ -986,5 +989,31 @@ test('6 Functional Upgrades: Exam Radar, Student Utility Lab, Live Draft Preview
   assert.equal(verifyStaffAdminPin('000000'), false);
 });
 
+test('External Domain & Vercel Authentication: auth/unauthorized-domain detection and Instant Mobile Sign-In validation', () => {
+  const vercelErr = new Error('Firebase: Error (auth/unauthorized-domain).');
+  assert.equal(isFirebaseUnauthorizedDomainError(vercelErr), true);
 
+  const friendly = formatFriendlyAuthError(
+    vercelErr,
+    'aditya-online-centre-jk87.vercel.app',
+    'gen-lang-client-0774506168'
+  );
+  assert.equal(friendly.isDomainError, true);
+  assert.equal(friendly.domainToAuthorize, 'aditya-online-centre-jk87.vercel.app');
+  assert.match(friendly.firebaseConsoleUrl, /gen-lang-client-0774506168/);
 
+  const validQuick = validateQuickCustomerSignIn({
+    displayName: 'Ramesh Kumar',
+    phone: '9876543210',
+    villageOrTown: 'Kateya Ward 08',
+  });
+  assert.equal(validQuick.valid, true);
+  assert.equal(validQuick.displayName, 'Ramesh Kumar');
+  assert.equal(validQuick.phone, '9876543210');
+
+  const invalidQuick = validateQuickCustomerSignIn({
+    displayName: 'R',
+    phone: '123',
+  });
+  assert.equal(invalidQuick.valid, false);
+});
