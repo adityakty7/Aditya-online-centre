@@ -29,6 +29,7 @@ import {
 import { ExamRadarSection } from './ExamRadarSection';
 import { StudentUtilityLab } from './StudentUtilityLab';
 import { LiveDraftPreviewModal } from './LiveDraftPreviewModal';
+import { Service3DVisualStage } from './Service3DVisualStage';
 import {
   Search,
   Clock,
@@ -357,7 +358,7 @@ const EditorialEmberSculpture: React.FC<{
       <div
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
-        className="perspective-stage relative w-full min-h-[340px] sm:min-h-[410px] lg:min-h-[440px] rounded-3xl glass-obsidian-panel overflow-hidden select-none flex flex-col justify-between p-4 sm:p-5"
+        className="perspective-stage flex-1 relative w-full min-h-[340px] sm:min-h-[410px] lg:min-h-[440px] rounded-3xl glass-obsidian-panel overflow-hidden select-none flex flex-col justify-between p-4 sm:p-5"
       >
         {/* Ambient Volumetric Core Spotlight */}
         <div
@@ -1424,6 +1425,31 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
   const [livePreviewOpen, setLivePreviewOpen] = React.useState(false);
   const [livePreviewTemplateId, setLivePreviewTemplateId] =
     React.useState<LiveDraftTemplateId>('bank-unfreeze');
+  const [globalDisable3D, setGlobalDisable3D] = React.useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem('aoc_disable_3d_motion_v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleGlobal3D = () => {
+    setGlobalDisable3D((prev) => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(
+            'aoc_disable_3d_motion_v1',
+            next ? 'true' : 'false'
+          );
+        } catch {
+          // Ignore storage error
+        }
+      }
+      return next;
+    });
+  };
 
   React.useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -1556,8 +1582,15 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                 </p>
               </div>
 
-              {/* Price & Turnaround 3D Frosted Glass Block */}
+              {/* Price & Turnaround 3D Frosted Glass Block + 3D Visual Stage */}
               <div className="lg:col-span-4 rounded-3xl glass-obsidian-panel p-6 flex flex-col justify-between space-y-5">
+                <Service3DVisualStage
+                  service={selectedService}
+                  lang={lang}
+                  globalDisableAnimation={globalDisable3D}
+                  variant="detail"
+                  isDarkCard
+                />
                 <div className="flex items-baseline justify-between border-b border-white/15 pb-4">
                   <div>
                     <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8]">
@@ -1905,7 +1938,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                           onNavigate('services');
                         }
                       }}
-                      className="min-h-[48px] px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF5C35] to-[#E54922] hover:from-[#FF6B47] hover:to-[#FF5C35] text-white font-bold text-sm transition-all flex items-center gap-2.5 shadow-[0_8px_28px_rgba(255,92,53,0.45)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFB547]"
+                      className="awwwards-cta-stamp min-h-[48px] px-6 py-3 rounded-xl bg-gradient-to-r from-[#FF5C35] to-[#E54922] hover:from-[#FF6B47] hover:to-[#FF5C35] text-white font-bold text-sm transition-all flex items-center gap-2.5 shadow-[0_8px_28px_rgba(255,92,53,0.45)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFB547]"
                     >
                       <span>
                         {lang === 'en' ? 'Explore Services' : 'सेवाएं देखें'}
@@ -1916,7 +1949,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     <button
                       type="button"
                       onClick={() => onNavigate('track-order')}
-                      className="min-h-[48px] px-6 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/25 hover:border-[#FFB547] font-semibold text-sm transition-all flex items-center gap-2 backdrop-blur-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C35]"
+                      className="awwwards-secondary-cta min-h-[48px] px-6 py-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/25 hover:border-[#FFB547] font-semibold text-sm transition-all flex items-center gap-2 backdrop-blur-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FF5C35]"
                     >
                       <span>
                         {lang === 'en' ? 'Track Order' : 'ऑर्डर ट्रैक करें'}
@@ -1975,7 +2008,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                 <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 relative z-10">
                   <div
                     data-testid="hero-metric-services"
-                    className="hero-metric-card-3d rounded-2xl p-3.5 flex flex-col justify-between gap-2"
+                    className="hero-metric-card-3d rounded-2xl p-3 flex flex-col justify-between gap-2 min-w-0"
                   >
                     <div className="flex items-center justify-between">
                       <span className="w-7 h-7 rounded-lg bg-[#FF5C35]/20 border border-[#FF5C35]/40 flex items-center justify-center text-[#FF5C35]">
@@ -1984,10 +2017,10 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     </div>
                     <div>
-                      <div className="font-mono-tabular text-xl sm:text-2xl font-extrabold text-white">
+                      <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-white whitespace-nowrap">
                         {heroStats.countText}
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
+                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
                         {lang === 'en' ? 'Active Services' : 'सक्रिय सेवाएं'}
                       </div>
                     </div>
@@ -1995,7 +2028,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
 
                   <div
                     data-testid="hero-metric-tariff"
-                    className="hero-metric-card-3d rounded-2xl p-3.5 flex flex-col justify-between gap-2"
+                    className="hero-metric-card-3d rounded-2xl p-3 flex flex-col justify-between gap-2 min-w-0"
                   >
                     <div className="flex items-center justify-between">
                       <span className="w-7 h-7 rounded-lg bg-[#FFB547]/20 border border-[#FFB547]/40 flex items-center justify-center text-[#FFB547]">
@@ -2004,10 +2037,10 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <span className="w-1.5 h-1.5 rounded-full bg-[#FFB547]" />
                     </div>
                     <div>
-                      <div className="font-mono-tabular text-xl sm:text-2xl font-extrabold text-[#FFB547]">
+                      <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-[#FFB547] whitespace-nowrap">
                         {heroStats.tariffText}
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
+                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
                         {lang === 'en' ? 'Standard Tariff' : 'स्पष्ट शुल्क'}
                       </div>
                     </div>
@@ -2015,7 +2048,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
 
                   <div
                     data-testid="hero-metric-turnaround"
-                    className="hero-metric-card-3d rounded-2xl p-3.5 flex flex-col justify-between gap-2"
+                    className="hero-metric-card-3d rounded-2xl p-3 flex flex-col justify-between gap-2 min-w-0"
                   >
                     <div className="flex items-center justify-between">
                       <span className="w-7 h-7 rounded-lg bg-cyan-400/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
@@ -2024,10 +2057,10 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                     </div>
                     <div>
-                      <div className="font-mono-tabular text-xl sm:text-2xl font-extrabold text-white">
+                      <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-white whitespace-nowrap">
                         {heroStats.turnaroundText}
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
+                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
                         {lang === 'en' ? 'Turnaround' : 'वितरण समय'}
                       </div>
                     </div>
@@ -2035,7 +2068,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
 
                   <div
                     data-testid="hero-metric-vault"
-                    className="hero-metric-card-3d rounded-2xl p-3.5 flex flex-col justify-between gap-2"
+                    className="hero-metric-card-3d rounded-2xl p-3 flex flex-col justify-between gap-2 min-w-0"
                   >
                     <div className="flex items-center justify-between">
                       <span className="w-7 h-7 rounded-lg bg-emerald-400/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300">
@@ -2044,10 +2077,10 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     </div>
                     <div>
-                      <div className="font-mono-tabular text-xl sm:text-2xl font-extrabold text-emerald-400">
+                      <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-emerald-400 whitespace-nowrap">
                         100%
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
+                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
                         {lang === 'en' ? 'Private Vault' : 'निजी दस्तावेज़'}
                       </div>
                     </div>
@@ -2198,10 +2231,31 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
               })}
             </div>
 
-            <div className="font-mono-tabular text-xs text-[#5C5852] shrink-0">
-              {lang === 'en'
-                ? `SHOWING ${filteredServices.length} OF ${activeServices.length} SERVICES`
-                : `कुल ${activeServices.length} में से ${filteredServices.length} सेवाएं`}
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={!globalDisable3D}
+                data-testid="toggle-global-3d-animations"
+                onClick={handleToggleGlobal3D}
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-full font-mono-tabular text-[11px] font-bold uppercase tracking-wider border transition-all flex items-center gap-1.5 ${
+                  !globalDisable3D
+                    ? 'bg-[#101014] text-[#FFB547] border-[#FF5C35]/50 shadow-xs'
+                    : 'bg-[#EFE9DC] text-[#4A463E] border-[#DCD4C6]'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#FF5C35]" />
+                <span>
+                  {lang === 'en'
+                    ? `3D Motion: ${!globalDisable3D ? 'ON' : 'OFF'}`
+                    : `3D एनिमेशन: ${!globalDisable3D ? 'चालू' : 'बंद'}`}
+                </span>
+              </button>
+              <div className="font-mono-tabular text-xs text-[#5C5852]">
+                {lang === 'en'
+                  ? `SHOWING ${filteredServices.length} OF ${activeServices.length} SERVICES`
+                  : `कुल ${activeServices.length} में से ${filteredServices.length} सेवाएं`}
+              </div>
             </div>
           </div>
         </div>
@@ -2266,6 +2320,15 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                   )}
 
                   <div className="space-y-4 relative z-10">
+                    {/* Dedicated 3D Visual Stage / Custom Admin Image per Service */}
+                    <Service3DVisualStage
+                      service={srv}
+                      lang={lang}
+                      globalDisableAnimation={globalDisable3D}
+                      variant="card"
+                      isDarkCard={isDarkTile}
+                    />
+
                     {/* Top Row: Glowing Service Icon Badge + Prominent Top-Right Price Pill */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">

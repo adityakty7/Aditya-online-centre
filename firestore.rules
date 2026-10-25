@@ -80,7 +80,7 @@ service cloud.firestore {
         'id', 'category', 'titleEn', 'titleHi', 'descEn', 'descHi', 'priceInr',
         'minPriceInr', 'maxPriceInr', 'instructionsEn', 'instructionsHi',
         'estimatedTimeEn', 'estimatedTimeHi', 'requiredDocs', 'documentRequirementsJson',
-        'customFieldsJson', 'isActive', 'featured', 'updatedAt'
+        'customFieldsJson', 'appearanceConfigJson', 'isActive', 'featured', 'updatedAt'
       ]) &&
       data.id is string && data.id == serviceId && isValidId(data.id) &&
       data.category is string && data.category.size() >= 2 && data.category.size() <= 64 &&
@@ -99,6 +99,7 @@ service cloud.firestore {
       data.requiredDocs is string && data.requiredDocs.size() <= 500 &&
       (!('documentRequirementsJson' in data) || (data.documentRequirementsJson is string && data.documentRequirementsJson.size() <= 8000)) &&
       data.customFieldsJson is string && data.customFieldsJson.size() <= 1500 &&
+      (!('appearanceConfigJson' in data) || (data.appearanceConfigJson is string && data.appearanceConfigJson.size() <= 450000)) &&
       data.isActive is bool &&
       data.featured is bool &&
       data.updatedAt is timestamp;

@@ -1,0 +1,27 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny for all unspecified paths (protects private customer files)
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.token.email_verified == true &&
+        request.auth.token.email == 'adityakty77@gmail.com';
+    }
+
+    // Public Service Catalog 3D & Custom Media Assets
+    // Strictly isolated from private customer order uploads
+    match /service_media/{serviceId}/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+        serviceId.size() >= 1 &&
+        serviceId.size() <= 128 &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/(png|jpeg|webp)');
+      allow delete: if isAdmin();
+    }
+  }
+}

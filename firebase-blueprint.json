@@ -154,6 +154,10 @@
           "type": "string",
           "maxLength": 1500
         },
+        "appearanceConfigJson": {
+          "type": "string",
+          "maxLength": 450000
+        },
         "isActive": {
           "type": "boolean"
         },

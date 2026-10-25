@@ -80,6 +80,17 @@ import {
   getActiveSocialLinks,
 } from '../config/businessInfo.ts';
 import { INITIAL_SERVICES, INITIAL_DOCUMENT_LIBRARY } from '../data/initialCatalog.ts';
+import {
+  BUILTIN_3D_MEDIA_LIBRARY,
+  resolveDefaultPresetIdForService,
+  getDefaultServiceAppearanceConfig,
+  getServiceAppearanceConfig,
+  serializeServiceAppearanceConfig,
+  validateServiceImageUploadFile,
+  clampImageScale,
+  clampFocalPoint,
+  applyAppearanceToSingleService,
+} from './serviceVisuals.ts';
 
 test('generateOrderNumber creates valid formatted AOC order numbers', () => {
   const date = new Date('2026-10-19T10:00:00Z');
@@ -1074,5 +1085,142 @@ test('Official Brand Identity, Uploaded Transparent PNG Logo, Simplified Square 
   assert.equal(fs.existsSync(sitemapXmlPath), true);
   const sitemapXml = fs.readFileSync(sitemapXmlPath, 'utf8');
   assert.match(sitemapXml, /https:\/\/aditya-online-centre-jk87\.vercel\.app\/sitemap\.html/);
+
+  // Verify Awwwards DESIGN.md art direction & motion system
+  const designMdPath = new URL('../../DESIGN.md', import.meta.url);
+  assert.equal(fs.existsSync(designMdPath), true);
+  const designMd = fs.readFileSync(designMdPath, 'utf8');
+  assert.match(designMd, /Winning Concept Card/);
+  assert.match(designMd, /Stamp & Settle/);
+
+  const cssContent = fs.readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+  assert.match(cssContent, /\.awwwards-cta-stamp/);
+  assert.match(cssContent, /text-wrap:\s*balance/);
 });
+
+test('Service Appearance & 3D Images System: 12 3D presets, per-service visual isolation, upload validation, framing & Storage rules', () => {
+  // 1. 12 distinct 3D Media Library presets covering all services & document types
+  assert.equal(BUILTIN_3D_MEDIA_LIBRARY.length, 12);
+  const presetKeys = BUILTIN_3D_MEDIA_LIBRARY.map((p) => p.svgPresetKey);
+  assert.equal(presetKeys.includes('aadhaar_3d'), true);
+  assert.equal(presetKeys.includes('pan_3d'), true);
+  assert.equal(presetKeys.includes('passport_3d'), true);
+  assert.equal(presetKeys.includes('railway_3d'), true);
+  assert.equal(presetKeys.includes('exam_form_3d'), true);
+  assert.equal(presetKeys.includes('scholarship_3d'), true);
+  assert.equal(presetKeys.includes('certificate_3d'), true);
+  assert.equal(presetKeys.includes('bill_pay_3d'), true);
+  assert.equal(presetKeys.includes('resume_3d'), true);
+  assert.equal(presetKeys.includes('biodata_3d'), true);
+  assert.equal(presetKeys.includes('pdf_3d'), true);
+  assert.equal(presetKeys.includes('typing_3d'), true);
+
+  // 2. Every built-in service resolves to a tailored default 3D preset
+  for (const srv of INITIAL_SERVICES) {
+    const presetId = resolveDefaultPresetIdForService(srv);
+    assert.equal(
+      BUILTIN_3D_MEDIA_LIBRARY.some((p) => p.id === presetId),
+      true,
+      `Service ${srv.id} did not resolve to a valid 3D preset`
+    );
+    const defConf = getDefaultServiceAppearanceConfig(srv);
+    assert.equal(defConf.visualMode, 'default_3d');
+    assert.equal(defConf.enable3DAnimation, true);
+    assert.equal(defConf.imageFit, 'contain');
+    assert.equal(defConf.imageScale, 1);
+    assert.equal(defConf.focalPointX, 50);
+    assert.equal(defConf.focalPointY, 50);
+  }
+
+  // 3. Upload file validation (PNG, JPG, WebP up to 5 MB; rejects invalid types & oversize files)
+  assert.equal(
+    validateServiceImageUploadFile({
+      name: 'pan_card_3d.png',
+      type: 'image/png',
+      size: 420 * 1024,
+    }).valid,
+    true
+  );
+  assert.equal(
+    validateServiceImageUploadFile({
+      name: 'aadhaar_visual.webp',
+      type: 'image/webp',
+      size: 180 * 1024,
+    }).valid,
+    true
+  );
+  assert.equal(
+    validateServiceImageUploadFile({
+      name: 'malicious.exe',
+      type: 'application/x-msdownload',
+      size: 1024,
+    }).valid,
+    false
+  );
+  assert.equal(
+    validateServiceImageUploadFile({
+      name: 'huge.png',
+      type: 'image/png',
+      size: 8 * 1024 * 1024,
+    }).valid,
+    false
+  );
+
+  // 4. Framing & scale clamping
+  assert.equal(clampImageScale(0.2), 0.6);
+  assert.equal(clampImageScale(2.5), 1.6);
+  assert.equal(clampImageScale(1.25), 1.25);
+  assert.equal(clampFocalPoint(-20), 0);
+  assert.equal(clampFocalPoint(140), 100);
+  assert.equal(clampFocalPoint(65), 65);
+
+  // 5. Independent per-service visual isolation: changing one service image NEVER alters another service's image
+  const targetService = INITIAL_SERVICES[1]; // srv-marriage-biodata
+  const customConfForTarget = {
+    ...getDefaultServiceAppearanceConfig(targetService),
+    visualMode: 'custom_upload' as const,
+    customImageUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+    customImageName: 'custom-biodata-3d.png',
+    imageFit: 'contain' as const,
+    imageScale: 1.15,
+    focalPointX: 45,
+    focalPointY: 55,
+    enable3DAnimation: false,
+    animationStyle: 'static' as const,
+  };
+
+  const updatedCatalog = applyAppearanceToSingleService(
+    INITIAL_SERVICES,
+    targetService.id,
+    customConfForTarget
+  );
+
+  const updatedTargetSrv = updatedCatalog.find((s) => s.id === targetService.id)!;
+  const untouchedResumeSrv = updatedCatalog.find((s) => s.id === 'srv-modern-resume')!;
+
+  const parsedTargetConf = getServiceAppearanceConfig(updatedTargetSrv);
+  const parsedResumeConf = getServiceAppearanceConfig(untouchedResumeSrv);
+
+  assert.equal(parsedTargetConf.visualMode, 'custom_upload');
+  assert.equal(parsedTargetConf.customImageName, 'custom-biodata-3d.png');
+  assert.equal(parsedTargetConf.imageScale, 1.15);
+  assert.equal(parsedTargetConf.enable3DAnimation, false);
+
+  // Confirm other services remain completely untouched
+  assert.equal(parsedResumeConf.visualMode, 'default_3d');
+  assert.equal(parsedResumeConf.customImageUrl, '');
+  assert.equal(parsedResumeConf.enable3DAnimation, true);
+
+  // 6. Verify storage.rules and firestore.rules include isolated service_media and appearanceConfigJson
+  const storageRulesPath = new URL('../../storage.rules', import.meta.url);
+  assert.equal(fs.existsSync(storageRulesPath), true);
+  const storageRulesContent = fs.readFileSync(storageRulesPath, 'utf8');
+  assert.match(storageRulesContent, /match \/service_media\/\{serviceId\}\/\{fileName\}/);
+
+  const firestoreRulesPath = new URL('../../firestore.rules', import.meta.url);
+  const firestoreRulesContent = fs.readFileSync(firestoreRulesPath, 'utf8');
+  assert.match(firestoreRulesContent, /appearanceConfigJson/);
+});
+
+
 

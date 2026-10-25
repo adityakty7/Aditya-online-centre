@@ -69,6 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   userEmail,
   userName,
   isLiveAdmin,
+  sandboxRole,
   onOpenAuthModal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -96,7 +97,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, [largeTextMode]);
 
   const isAuthorizedEmail =
-    isLiveAdmin || userEmail?.toLowerCase() === 'adityakty77@gmail.com';
+    isLiveAdmin ||
+    sandboxRole === 'admin' ||
+    userEmail?.toLowerCase() === 'adityakty77@gmail.com';
 
   const navItems: Array<{
     index: string;
@@ -156,11 +159,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               theme={theme}
               className="w-8 h-8 sm:w-11 sm:h-11 transition-transform duration-300 group-hover:scale-105"
             />
-            <div className="leading-tight min-w-0">
-              <span className="block font-display text-[12px] sm:text-base lg:text-[17px] font-extrabold tracking-tight text-[#F7F3EA] group-hover:text-[#FFB547] transition-colors truncate leading-none">
+            <div className="leading-tight min-w-0 max-w-[165px] xl:max-w-[230px]">
+              <span className="block font-display text-[12px] sm:text-sm xl:text-[16px] font-extrabold tracking-tight text-[#F7F3EA] group-hover:text-[#FFB547] transition-colors truncate leading-none">
                 {lang === 'en' ? 'ADITYA ONLINE CENTER' : 'आदित्य ऑनलाइन सेंटर'}
               </span>
-              <span className="hidden sm:block font-mono-tabular text-[9.5px] tracking-[0.12em] text-[#FFB547] mt-1 whitespace-nowrap">
+              <span className="hidden sm:block font-mono-tabular text-[9px] tracking-[0.08em] text-[#FFB547] mt-1 truncate">
                 {lang === 'en'
                   ? BRAND_IDENTITY.taglineEn
                   : BRAND_IDENTITY.taglineHi}
@@ -171,7 +174,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Zone 2: Glassmorphic Pill Navigation Capsule */}
           <nav
             aria-label={lang === 'en' ? 'Primary Navigation' : 'मुख्य नेविगेशन'}
-            className="hidden lg:flex items-center gap-1.5 p-1 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-xl text-sm"
+            className="hidden lg:flex items-center gap-1 p-1 rounded-2xl bg-white/[0.04] border border-white/10 backdrop-blur-xl text-xs xl:text-sm shrink-0"
           >
             {navItems.map((item) => {
               const isActive =
@@ -293,7 +296,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               type="button"
               onClick={onOpenAuthModal}
-              className={`hidden sm:flex min-h-[40px] sm:min-h-[42px] px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold text-white rounded-xl transition-all whitespace-nowrap shrink-0 items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 ${
+              className={`awwwards-cta-stamp hidden sm:flex min-h-[40px] sm:min-h-[42px] px-3 sm:px-4 py-1.5 text-xs sm:text-sm font-bold text-white rounded-xl transition-all whitespace-nowrap shrink-0 items-center gap-1.5 focus-visible:outline-2 focus-visible:outline-offset-2 ${
                 isRoyal
                   ? 'bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#3B82F6] hover:to-[#2563EB] border border-[#38BDF8]/40 shadow-[0_4px_20px_rgba(37,99,235,0.4)]'
                   : 'bg-gradient-to-r from-[#FF5C35] to-[#E0431D] hover:from-[#FF6B47] hover:to-[#FF5C35] border border-[#FFB547]/40 shadow-[0_4px_20px_rgba(255,92,53,0.35)]'

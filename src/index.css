@@ -101,7 +101,8 @@
 
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
   }
 
   .font-mono-tabular {
@@ -109,6 +110,63 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.015em;
   }
+}
+
+/* ========================================================================== */
+/* AWWWARDS MOTION VERB: "STAMP & SETTLE" (Specular Sweep + Tactile Press)    */
+/* ========================================================================== */
+.awwwards-cta-stamp {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.awwwards-cta-stamp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 25%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0) 75%
+  );
+  transform: translateX(-120%);
+  transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .awwwards-cta-stamp:hover {
+    transform: translateY(-2px);
+  }
+  .awwwards-cta-stamp:hover::after {
+    transform: translateX(120%);
+  }
+}
+
+.awwwards-cta-stamp:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.awwwards-secondary-cta {
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (hover: hover) {
+  .awwwards-secondary-cta:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.awwwards-secondary-cta:active {
+  transform: translateY(1px);
 }
 
 /* ========================================================================== */
@@ -543,6 +601,20 @@
   animation: heroRevealUp 750ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
 }
 
+@keyframes service3DFloatGentle {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.service-3d-float-stage {
+  animation: service3DFloatGentle 5.5s ease-in-out infinite;
+}
+
 /* Pause continuous background animations when browser tab is hidden */
 .cinematic-paused .animate-float-slow,
 .cinematic-paused .animate-float-card-3d,
@@ -550,7 +622,8 @@
 .cinematic-paused .animate-ember-plume,
 .cinematic-paused .animate-amber-plume,
 .cinematic-paused .animate-sculpture-orbit,
-.cinematic-paused .animate-ember-particle {
+.cinematic-paused .animate-ember-particle,
+.cinematic-paused .service-3d-float-stage {
   animation-play-state: paused !important;
 }
 
@@ -578,7 +651,8 @@
   .animate-sculpture-orbit,
   .animate-ember-particle,
   .animate-hero-reveal,
-  .animate-hero-reveal-delayed {
+  .animate-hero-reveal-delayed,
+  .service-3d-float-stage {
     animation: none !important;
     transform: none !important;
   }

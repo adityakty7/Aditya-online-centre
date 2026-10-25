@@ -95,6 +95,7 @@ export interface ServiceCustomField {
 export type AdminSection =
   | 'dashboard'
   | 'services'
+  | 'appearance'
   | 'categories'
   | 'documents'
   | 'orders'
@@ -103,6 +104,31 @@ export type AdminSection =
   | 'messages'
   | 'exam_radar'
   | 'settings';
+
+export type ServiceVisualMode = 'default_3d' | 'media_library' | 'custom_upload';
+
+export type ServiceImageFit = 'contain' | 'cover' | 'scale-down';
+
+export type ServiceAnimationStyle =
+  | 'float_tilt'
+  | 'gentle_float'
+  | 'hover_depth'
+  | 'static';
+
+export interface ServiceAppearanceConfig {
+  visualMode: ServiceVisualMode;
+  customImageUrl: string;
+  customImageName?: string;
+  mediaLibraryId: string;
+  imageFit: ServiceImageFit;
+  imageScale: number; // 0.6 to 1.6
+  focalPointX: number; // 0 to 100
+  focalPointY: number; // 0 to 100
+  enable3DAnimation: boolean;
+  animationStyle: ServiceAnimationStyle;
+  glowIntensity: 'subtle' | 'medium' | 'ember';
+  updatedAt: string;
+}
 
 export interface DigitalService {
   id: string;
@@ -123,6 +149,7 @@ export interface DigitalService {
   requiredDocsHi?: string[];
   documentRequirementsJson?: string;
   customFieldsJson: string;
+  appearanceConfigJson?: string;
   isActive: boolean;
   featured: boolean;
   updatedAt: string;

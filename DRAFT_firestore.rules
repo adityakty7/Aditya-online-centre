@@ -1,0 +1,583 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Zero-lookup admin check for list operations (prevents O(n) exists() lookups in list queries)
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'adityakty77@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Helpers
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll([
+        'uid', 'displayName', 'email', 'phone', 'villageOrTown', 'preferredLanguage', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'uid', 'displayName', 'email', 'phone', 'villageOrTown', 'preferredLanguage', 'createdAt', 'updatedAt'
+      ]) &&
+      data.uid is string && data.uid == userId && isValidId(data.uid) &&
+      data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+      data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+      data.phone is string && data.phone.size() <= 20 &&
+      data.villageOrTown is string && data.villageOrTown.size() <= 120 &&
+      data.preferredLanguage is string && data.preferredLanguage.size() <= 10 &&
+      (data.preferredLanguage == 'en' || data.preferredLanguage == 'hi') &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRole(data, adminId) {
+      return data.keys().hasAll(['uid', 'email', 'grantedAt']) &&
+      data.keys().hasOnly(['uid', 'email', 'grantedAt']) &&
+      data.uid is string && data.uid == adminId && isValidId(data.uid) &&
+      data.email is string && data.email.size() >= 3 && data.email.size() <= 150 &&
+      data.grantedAt is timestamp;
+    }
+
+    function isValidDigitalService(data, serviceId) {
+      return data.keys().hasAll([
+        'id', 'category', 'titleEn', 'titleHi', 'descEn', 'descHi', 'priceInr',
+        'estimatedTimeEn', 'estimatedTimeHi', 'requiredDocs', 'customFieldsJson',
+        'isActive', 'featured', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'category', 'titleEn', 'titleHi', 'descEn', 'descHi', 'priceInr',
+        'minPriceInr', 'maxPriceInr', 'instructionsEn', 'instructionsHi',
+        'estimatedTimeEn', 'estimatedTimeHi', 'requiredDocs', 'documentRequirementsJson',
+        'customFieldsJson', 'appearanceConfigJson', 'isActive', 'featured', 'updatedAt'
+      ]) &&
+      data.id is string && data.id == serviceId && isValidId(data.id) &&
+      data.category is string && data.category.size() >= 2 && data.category.size() <= 64 &&
+      isValidId(data.category) &&
+      data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 120 &&
+      data.titleHi is string && data.titleHi.size() >= 1 && data.titleHi.size() <= 120 &&
+      data.descEn is string && data.descEn.size() >= 1 && data.descEn.size() <= 600 &&
+      data.descHi is string && data.descHi.size() >= 1 && data.descHi.size() <= 600 &&
+      data.priceInr is number && data.priceInr >= 0 && data.priceInr <= 100000 &&
+      (!('minPriceInr' in data) || (data.minPriceInr is number && data.minPriceInr >= 0 && data.minPriceInr <= 100000)) &&
+      (!('maxPriceInr' in data) || (data.maxPriceInr is number && data.maxPriceInr >= 0 && data.maxPriceInr <= 100000)) &&
+      (!('instructionsEn' in data) || (data.instructionsEn is string && data.instructionsEn.size() <= 1000)) &&
+      (!('instructionsHi' in data) || (data.instructionsHi is string && data.instructionsHi.size() <= 1000)) &&
+      data.estimatedTimeEn is string && data.estimatedTimeEn.size() <= 80 &&
+      data.estimatedTimeHi is string && data.estimatedTimeHi.size() <= 80 &&
+      data.requiredDocs is string && data.requiredDocs.size() <= 500 &&
+      (!('documentRequirementsJson' in data) || (data.documentRequirementsJson is string && data.documentRequirementsJson.size() <= 8000)) &&
+      data.customFieldsJson is string && data.customFieldsJson.size() <= 1500 &&
+      (!('appearanceConfigJson' in data) || (data.appearanceConfigJson is string && data.appearanceConfigJson.size() <= 450000)) &&
+      data.isActive is bool &&
+      data.featured is bool &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidDocumentLibraryItem(data, docId) {
+      return data.keys().hasAll([
+        'id', 'labelEn', 'labelHi', 'category', 'defaultFormats',
+        'defaultMaxSizeKb', 'defaultInstructionsEn', 'defaultInstructionsHi',
+        'allowMultiple', 'isBuiltIn', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'labelEn', 'labelHi', 'category', 'defaultFormats',
+        'defaultMaxSizeKb', 'defaultInstructionsEn', 'defaultInstructionsHi',
+        'allowMultiple', 'isBuiltIn', 'updatedAt'
+      ]) &&
+      data.id is string && data.id == docId && isValidId(data.id) &&
+      data.labelEn is string && data.labelEn.size() >= 1 && data.labelEn.size() <= 120 &&
+      data.labelHi is string && data.labelHi.size() >= 1 && data.labelHi.size() <= 120 &&
+      data.category is string && data.category.size() <= 40 &&
+      data.defaultFormats is list && data.defaultFormats.size() >= 1 && data.defaultFormats.size() <= 4 &&
+      data.defaultMaxSizeKb is number && data.defaultMaxSizeKb >= 10 && data.defaultMaxSizeKb <= 500 &&
+      data.defaultInstructionsEn is string && data.defaultInstructionsEn.size() <= 500 &&
+      data.defaultInstructionsHi is string && data.defaultInstructionsHi.size() <= 500 &&
+      data.allowMultiple is bool &&
+      data.isBuiltIn is bool &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidCategory(data, catId) {
+      return data.keys().hasAll([
+        'key', 'labelEn', 'labelHi', 'summaryEn', 'summaryHi', 'isCustom', 'order', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'key', 'labelEn', 'labelHi', 'summaryEn', 'summaryHi', 'isCustom', 'order', 'updatedAt'
+      ]) &&
+      data.key is string && data.key == catId && isValidId(data.key) &&
+      data.labelEn is string && data.labelEn.size() >= 2 && data.labelEn.size() <= 100 &&
+      data.labelHi is string && data.labelHi.size() >= 2 && data.labelHi.size() <= 100 &&
+      data.summaryEn is string && data.summaryEn.size() <= 300 &&
+      data.summaryHi is string && data.summaryHi.size() <= 300 &&
+      data.isCustom is bool &&
+      data.order is number &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidCenterSettings(data) {
+      return data.keys().hasAll([
+        'upiId', 'payeeName', 'qrCodeDataUrl', 'paymentInstructionsEn', 'paymentInstructionsHi',
+        'isUpiConfigured', 'shopPhone', 'shopAddressEn', 'shopAddressHi', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'upiId', 'payeeName', 'qrCodeDataUrl', 'paymentInstructionsEn', 'paymentInstructionsHi',
+        'isUpiConfigured', 'shopPhone', 'shopAddressEn', 'shopAddressHi', 'updatedAt'
+      ]) &&
+      data.upiId is string && data.upiId.size() <= 100 &&
+      data.payeeName is string && data.payeeName.size() <= 100 &&
+      data.qrCodeDataUrl is string && data.qrCodeDataUrl.size() <= 350000 &&
+      (
+        data.qrCodeDataUrl == '' ||
+        data.qrCodeDataUrl.matches('^data:image/(png|jpeg);base64,[A-Za-z0-9+/=\\r\\n]+$')
+      ) &&
+      data.paymentInstructionsEn is string && data.paymentInstructionsEn.size() <= 600 &&
+      data.paymentInstructionsHi is string && data.paymentInstructionsHi.size() <= 600 &&
+      data.isUpiConfigured is bool &&
+      data.shopPhone is string && data.shopPhone.size() <= 30 &&
+      data.shopAddressEn is string && data.shopAddressEn.size() <= 250 &&
+      data.shopAddressHi is string && data.shopAddressHi.size() <= 250 &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidOrderStatus(status) {
+      return status is string && status.size() <= 40 && (
+        status == 'Submitted' ||
+        status == 'Under Review' ||
+        status == 'Awaiting Payment' ||
+        status == 'Payment Verification' ||
+        status == 'In Progress' ||
+        status == 'Needs Customer Information' ||
+        status == 'Completed' ||
+        status == 'Delivered' ||
+        status == 'Cancelled'
+      );
+    }
+
+    function isValidPaymentStatus(pStatus) {
+      return pStatus is string && pStatus.size() <= 40 && (
+        pStatus == 'Unpaid' ||
+        pStatus == 'Pending Verification' ||
+        pStatus == 'Verified' ||
+        pStatus == 'Rejected'
+      );
+    }
+
+    function isValidServiceOrder(data, orderId) {
+      return data.keys().hasAll([
+        'orderNumber', 'customerId', 'customerName', 'customerPhone', 'customerEmail',
+        'customerLocation', 'serviceId', 'serviceTitleEn', 'serviceTitleHi', 'serviceCategory',
+        'priceInr', 'estimatedCompletion', 'formResponsesSummary', 'customerNotes',
+        'status', 'paymentStatus', 'paymentUtr', 'adminNote', 'missingInfoRequest',
+        'customerInfoReply', 'uploadedFileCount', 'hasDeliverable', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'orderNumber', 'customerId', 'customerName', 'customerPhone', 'customerEmail',
+        'customerLocation', 'serviceId', 'serviceTitleEn', 'serviceTitleHi', 'serviceCategory',
+        'priceInr', 'estimatedCompletion', 'formResponsesSummary', 'customerNotes',
+        'status', 'paymentStatus', 'paymentUtr', 'adminNote', 'missingInfoRequest',
+        'customerInfoReply', 'uploadedFileCount', 'hasDeliverable', 'createdAt', 'updatedAt'
+      ]) &&
+      data.orderNumber is string && data.orderNumber == orderId &&
+      data.orderNumber.size() >= 4 && data.orderNumber.size() <= 40 && data.orderNumber.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.customerId is string && isValidId(data.customerId) &&
+      data.customerName is string && data.customerName.size() >= 1 && data.customerName.size() <= 100 &&
+      data.customerPhone is string && data.customerPhone.size() >= 5 && data.customerPhone.size() <= 20 &&
+      data.customerEmail is string && data.customerEmail.size() <= 150 &&
+      data.customerLocation is string && data.customerLocation.size() <= 120 &&
+      data.serviceId is string && isValidId(data.serviceId) &&
+      data.serviceTitleEn is string && data.serviceTitleEn.size() <= 120 &&
+      data.serviceTitleHi is string && data.serviceTitleHi.size() <= 120 &&
+      data.serviceCategory is string && data.serviceCategory.size() <= 64 &&
+      data.priceInr is number && data.priceInr >= 0 && data.priceInr <= 100000 &&
+      data.estimatedCompletion is string && data.estimatedCompletion.size() <= 80 &&
+      data.formResponsesSummary is string && data.formResponsesSummary.size() <= 2500 &&
+      data.customerNotes is string && data.customerNotes.size() <= 1000 &&
+      isValidOrderStatus(data.status) &&
+      isValidPaymentStatus(data.paymentStatus) &&
+      data.paymentUtr is string && data.paymentUtr.size() <= 60 &&
+      data.adminNote is string && data.adminNote.size() <= 1000 &&
+      data.missingInfoRequest is string && data.missingInfoRequest.size() <= 1000 &&
+      data.customerInfoReply is string && data.customerInfoReply.size() <= 1000 &&
+      data.uploadedFileCount is number && data.uploadedFileCount >= 0 && data.uploadedFileCount <= 20 &&
+      data.hasDeliverable is bool &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidOrderFile(data, orderId, fileId) {
+      return data.keys().hasAll([
+        'fileId', 'orderId', 'customerId', 'uploadedByRole', 'fileCategory',
+        'fileName', 'mimeType', 'sizeBytes', 'dataUrl', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'fileId', 'orderId', 'customerId', 'uploadedByRole', 'fileCategory',
+        'documentTypeId', 'documentLabelEn', 'documentLabelHi',
+        'fileName', 'mimeType', 'sizeBytes', 'dataUrl', 'createdAt'
+      ]) &&
+      data.fileId is string && data.fileId == fileId && isValidId(data.fileId) &&
+      data.orderId is string && data.orderId == orderId && isValidId(data.orderId) &&
+      data.customerId is string && isValidId(data.customerId) &&
+      data.uploadedByRole is string && data.uploadedByRole.size() <= 20 &&
+      (data.uploadedByRole == 'customer' || data.uploadedByRole == 'admin') &&
+      data.fileCategory is string && data.fileCategory.size() <= 40 &&
+      (
+        data.fileCategory == 'customer_document' ||
+        data.fileCategory == 'payment_receipt' ||
+        data.fileCategory == 'final_deliverable'
+      ) &&
+      (!('documentTypeId' in data) || (data.documentTypeId is string && data.documentTypeId.size() <= 128)) &&
+      (!('documentLabelEn' in data) || (data.documentLabelEn is string && data.documentLabelEn.size() <= 120)) &&
+      (!('documentLabelHi' in data) || (data.documentLabelHi is string && data.documentLabelHi.size() <= 120)) &&
+      data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 150 &&
+      data.mimeType is string && data.mimeType.size() <= 100 &&
+      (
+        data.mimeType == 'application/pdf' ||
+        data.mimeType == 'image/jpeg' ||
+        data.mimeType == 'image/png' ||
+        data.mimeType == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ) &&
+      data.sizeBytes is number && data.sizeBytes > 0 && data.sizeBytes <= 524288 &&
+      data.dataUrl is string && data.dataUrl.size() >= 20 && data.dataUrl.size() <= 700000 &&
+      data.dataUrl.matches('^data:(application/pdf|image/jpeg|image/png|application/vnd\\.openxmlformats-officedocument\\.wordprocessingml\\.document);base64,[A-Za-z0-9+/=\\r\\n]+$') &&
+      data.createdAt is timestamp;
+    }
+
+    function isValidOrderStatusEvent(data, orderId, historyId) {
+      return data.keys().hasAll([
+        'historyId', 'orderId', 'customerId', 'status', 'note',
+        'actorUid', 'actorRole', 'actorName', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'historyId', 'orderId', 'customerId', 'status', 'note',
+        'actorUid', 'actorRole', 'actorName', 'createdAt'
+      ]) &&
+      data.historyId is string && data.historyId == historyId && isValidId(data.historyId) &&
+      data.orderId is string && data.orderId == orderId && isValidId(data.orderId) &&
+      data.customerId is string && isValidId(data.customerId) &&
+      isValidOrderStatus(data.status) &&
+      data.note is string && data.note.size() <= 500 &&
+      data.actorUid is string && data.actorUid == request.auth.uid && isValidId(data.actorUid) &&
+      data.actorRole is string && data.actorRole.size() <= 20 &&
+      (data.actorRole == 'customer' || data.actorRole == 'admin') &&
+      data.actorName is string && data.actorName.size() <= 100 &&
+      data.createdAt is timestamp;
+    }
+
+    function isValidContactMessage(data, messageId) {
+      return data.keys().hasAll([
+        'id', 'name', 'phone', 'email', 'subject', 'message',
+        'orderId', 'preferredLanguage', 'status', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'name', 'phone', 'email', 'subject', 'message',
+        'orderId', 'preferredLanguage', 'status', 'createdAt'
+      ]) &&
+      data.id is string && data.id == messageId && isValidId(data.id) &&
+      data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+      data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 20 &&
+      data.email is string && data.email.size() <= 150 &&
+      data.subject is string && data.subject.size() >= 3 && data.subject.size() <= 150 &&
+      data.message is string && data.message.size() >= 5 && data.message.size() <= 1500 &&
+      data.orderId is string && data.orderId.size() <= 40 &&
+      (data.orderId == '' || data.orderId.matches('^[a-zA-Z0-9_\\-]+$')) &&
+      data.preferredLanguage is string && data.preferredLanguage.size() <= 10 &&
+      (data.preferredLanguage == 'en' || data.preferredLanguage == 'hi') &&
+      data.status is string && data.status.size() <= 20 &&
+      (data.status == 'New' || data.status == 'Replied') &&
+      data.createdAt is timestamp;
+    }
+
+    // 1. User Profiles (PII Isolated to Owner or Admin)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            isOwner(userId) &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'displayName', 'phone', 'villageOrTown', 'preferredLanguage', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if false;
+    }
+
+    // 2. Trusted Admin Registry
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create: if isAdmin() &&
+        isValidId(adminId) &&
+        isValidAdminRole(incoming(), adminId) &&
+        incoming().grantedAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // 3. Digital Services Catalog
+    match /services/{serviceId} {
+      allow get: if isValidId(serviceId) && (resource.data.isActive == true || isAdmin());
+      allow list: if resource.data.isActive == true || isBootstrappedAdmin();
+      allow create: if isAdmin() &&
+        isValidId(serviceId) &&
+        isValidDigitalService(incoming(), serviceId) &&
+        incoming().updatedAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(serviceId) &&
+        isValidDigitalService(incoming(), serviceId) &&
+        incoming().id == existing().id &&
+        incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(serviceId);
+    }
+
+    // 3b. Reusable Document Checklist Library
+    match /document_library/{docId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin() &&
+        isValidId(docId) &&
+        isValidDocumentLibraryItem(incoming(), docId) &&
+        incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(docId);
+    }
+
+    // 3c. Digital Service Categories
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin() &&
+        isValidId(categoryId) &&
+        isValidCategory(incoming(), categoryId) &&
+        incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(categoryId);
+    }
+
+    // 4. Center & UPI Payment Settings
+    match /settings/{settingId} {
+      allow get: if settingId == 'payment_config';
+      allow list: if isBootstrappedAdmin();
+      allow create, update: if isAdmin() &&
+        settingId == 'payment_config' &&
+        isValidCenterSettings(incoming()) &&
+        incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    // 5. Customer Orders
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && (
+        (isSignedIn() && resource.data.customerId == request.auth.uid) ||
+        isAdmin()
+      );
+      allow list: if isSignedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        isBootstrappedAdmin()
+      );
+      allow create: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidServiceOrder(incoming(), orderId) &&
+        incoming().customerId == request.auth.uid &&
+        incoming().status == 'Submitted' &&
+        incoming().paymentStatus == 'Unpaid' &&
+        incoming().paymentUtr == '' &&
+        incoming().adminNote == '' &&
+        incoming().missingInfoRequest == '' &&
+        incoming().customerInfoReply == '' &&
+        incoming().uploadedFileCount <= 12 &&
+        incoming().hasDeliverable == false &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(incoming().customerId));
+
+      allow update: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidServiceOrder(incoming(), orderId) &&
+        incoming().orderNumber == existing().orderNumber &&
+        incoming().customerId == existing().customerId &&
+        incoming().serviceId == existing().serviceId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().customerId == request.auth.uid &&
+            existing().status != 'Delivered' &&
+            existing().status != 'Cancelled' &&
+            (
+              // Action 1: Customer submits UPI UTR reference (only before payment is verified and before completion)
+              (
+                existing().paymentStatus != 'Verified' &&
+                (
+                  existing().status == 'Submitted' ||
+                  existing().status == 'Under Review' ||
+                  existing().status == 'Awaiting Payment' ||
+                  existing().status == 'Payment Verification'
+                ) &&
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'paymentUtr', 'paymentStatus', 'status', 'updatedAt'
+                ]) &&
+                incoming().paymentStatus == 'Pending Verification' &&
+                incoming().status == 'Payment Verification' &&
+                incoming().paymentUtr.size() >= 6 &&
+                incoming().paymentUtr.size() <= 36 &&
+                incoming().paymentUtr.matches('^[a-zA-Z0-9_\\-]+$')
+              ) ||
+              // Action 2: Customer replies to missing information request
+              (
+                existing().status == 'Needs Customer Information' &&
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'customerInfoReply', 'status', 'updatedAt'
+                ]) &&
+                incoming().status == 'In Progress' &&
+                incoming().customerInfoReply.size() >= 1
+              ) ||
+              // Action 3: Customer increments uploadedFileCount
+              (
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'uploadedFileCount', 'updatedAt'
+                ]) &&
+                incoming().uploadedFileCount == existing().uploadedFileCount + 1 &&
+                incoming().uploadedFileCount <= 12
+              ) ||
+              // Action 4: Customer cancels early-stage order
+              (
+                (existing().status == 'Submitted' || existing().status == 'Under Review' || existing().status == 'Awaiting Payment') &&
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'status', 'updatedAt'
+                ]) &&
+                incoming().status == 'Cancelled'
+              )
+            )
+          )
+        );
+      allow delete: if false;
+
+      // 6. Order Files Subcollection (Master Gate)
+      match /files/{fileId} {
+        allow get: if isValidId(orderId) && isValidId(fileId) && (
+          isAdmin() ||
+          (
+            isSignedIn() &&
+            resource.data.customerId == request.auth.uid &&
+            get(/databases/$(database)/documents/orders/$(orderId)).data.customerId == request.auth.uid
+          )
+        );
+        allow list: if isSignedIn() && (
+          resource.data.customerId == request.auth.uid ||
+          isBootstrappedAdmin()
+        );
+        allow create: if isVerifiedUser() &&
+          isValidId(orderId) &&
+          isValidId(fileId) &&
+          isValidOrderFile(incoming(), orderId, fileId) &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/orders/$(orderId)) &&
+          (
+            (
+              isAdmin() &&
+              incoming().uploadedByRole == 'admin'
+            ) ||
+            (
+              incoming().customerId == request.auth.uid &&
+              incoming().uploadedByRole == 'customer' &&
+              (incoming().fileCategory == 'customer_document' || incoming().fileCategory == 'payment_receipt') &&
+              get(/databases/$(database)/documents/orders/$(orderId)).data.customerId == request.auth.uid &&
+              get(/databases/$(database)/documents/orders/$(orderId)).data.status != 'Delivered' &&
+              get(/databases/$(database)/documents/orders/$(orderId)).data.status != 'Cancelled'
+            )
+          );
+        allow update, delete: if false;
+      }
+
+      // 7. Order Status History Subcollection (Master Gate)
+      match /history/{historyId} {
+        allow get: if isValidId(orderId) && isValidId(historyId) && (
+          isAdmin() ||
+          (
+            isSignedIn() &&
+            resource.data.customerId == request.auth.uid &&
+            get(/databases/$(database)/documents/orders/$(orderId)).data.customerId == request.auth.uid
+          )
+        );
+        allow list: if isSignedIn() && (
+          resource.data.customerId == request.auth.uid ||
+          isBootstrappedAdmin()
+        );
+        allow create: if isVerifiedUser() &&
+          isValidId(orderId) &&
+          isValidId(historyId) &&
+          isValidOrderStatusEvent(incoming(), orderId, historyId) &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/orders/$(orderId)) &&
+          (
+            (isAdmin() && incoming().actorRole == 'admin') ||
+            (
+              incoming().customerId == request.auth.uid &&
+              incoming().actorRole == 'customer' &&
+              get(/databases/$(database)/documents/orders/$(orderId)).data.customerId == request.auth.uid
+            )
+          );
+        allow update, delete: if false;
+      }
+    }
+
+    // 8. Customer Contact Messages (Write-only for visitors/customers, Read/Manage strictly by Admins)
+    match /contact_messages/{messageId} {
+      allow get: if isValidId(messageId) && isAdmin();
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(messageId) &&
+        isValidContactMessage(incoming(), messageId) &&
+        incoming().status == 'New' &&
+        incoming().createdAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(messageId) &&
+        isValidContactMessage(incoming(), messageId) &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if isAdmin() && isValidId(messageId);
+    }
+  }
+}

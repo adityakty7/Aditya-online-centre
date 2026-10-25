@@ -286,8 +286,36 @@ export default function App() {
   const [authError, setAuthError] = React.useState<string | null>(null);
 
   // Application Data State
-  const [services, setServices] =
-    React.useState<DigitalService[]>(INITIAL_SERVICES);
+  const [services, setServices] = React.useState<DigitalService[]>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = window.localStorage.getItem('aoc_services_catalog_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const byId = new Map(parsed.map((s: DigitalService) => [s.id, s]));
+            const merged: DigitalService[] = [];
+            for (const initSrv of INITIAL_SERVICES) {
+              const over = byId.get(initSrv.id);
+              if (over) {
+                merged.push({ ...initSrv, ...over });
+                byId.delete(initSrv.id);
+              } else {
+                merged.push(initSrv);
+              }
+            }
+            for (const customSrv of byId.values()) {
+              merged.push(customSrv);
+            }
+            return merged;
+          }
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return INITIAL_SERVICES;
+  });
   const [categories, setCategories] =
     React.useState<CategoryMeta[]>(SERVICE_CATEGORIES);
   const [documentLibrary, setDocumentLibrary] =
@@ -592,6 +620,11 @@ export default function App() {
                   : fallback?.documentRequirementsJson,
               customFieldsJson:
                 d.customFieldsJson || fallback?.customFieldsJson || '[]',
+              appearanceConfigJson:
+                typeof d.appearanceConfigJson === 'string' &&
+                d.appearanceConfigJson.trim().length > 2
+                  ? d.appearanceConfigJson
+                  : fallback?.appearanceConfigJson,
               isActive: Boolean(d.isActive),
               featured: Boolean(d.featured),
               updatedAt: formatTimestampField(d.updatedAt),
@@ -1579,20 +1612,34 @@ export default function App() {
   const handleAdminSaveService = async (service: DigitalService) => {
     if (fbUser && isLiveAdmin) {
       try {
-        await setDoc(doc(db, 'services', service.id), {
+        const firestorePayload: Record<string, any> = {
           ...service,
           updatedAt: serverTimestamp(),
-        });
+        };
+        if (firestorePayload.appearanceConfigJson === undefined) {
+          delete firestorePayload.appearanceConfigJson;
+        }
+        await setDoc(doc(db, 'services', service.id), firestorePayload);
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `services/${service.id}`);
       }
     }
     setServices((prev) => {
       const exists = prev.some((s) => s.id === service.id);
-      if (exists) {
-        return prev.map((s) => (s.id === service.id ? service : s));
+      const next = exists
+        ? prev.map((s) => (s.id === service.id ? service : s))
+        : [...prev, service];
+      if (typeof window !== 'undefined') {
+        try {
+          window.localStorage.setItem(
+            'aoc_services_catalog_v1',
+            JSON.stringify(next)
+          );
+        } catch {
+          // Ignore storage quota errors
+        }
       }
-      return [...prev, service];
+      return next;
     });
     setSelectedService((prev) => (prev?.id === service.id ? service : prev));
   };
@@ -1864,6 +1911,14 @@ export default function App() {
           : 'bg-[#F7F3EA] text-[#101014]'
       }`}
     >
+      <a
+        href="#main-content"
+        data-testid="skip-to-main-link"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:px-4 focus:py-2.5 focus:rounded-xl focus:bg-[#FF5C35] focus:text-white focus:font-bold focus:text-xs focus:shadow-[0_12px_28px_rgba(255,92,53,0.45)] focus:outline-2 focus:outline-offset-2 focus:outline-[#FFB547]"
+      >
+        {lang === 'en' ? 'Skip to main content' : 'मुख्य सामग्री पर जाएं'}
+      </a>
+
       <Navbar
         currentView={currentView}
         onNavigate={(view) => {
@@ -1887,7 +1942,7 @@ export default function App() {
         onOpenBackupModal={() => setBackupModalOpen(true)}
       />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         {(currentView === 'home' ||
           currentView === 'services' ||
           currentView === 'service-detail') && (

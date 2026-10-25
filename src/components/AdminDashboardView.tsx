@@ -53,6 +53,7 @@ import {
   SERVICE_CATEGORIES,
 } from '../data/initialCatalog';
 import { BrandLogo } from './BrandLogo';
+import { ServiceAppearanceManager } from './ServiceAppearanceManager';
 import {
   ShieldCheck,
   Lock,
@@ -80,6 +81,7 @@ import {
   ArrowDown,
   X,
   Star,
+  Sparkles,
   AlertCircle,
   Check,
   ChevronLeft,
@@ -175,6 +177,9 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 }) => {
   const [activeSection, setActiveSection] =
     React.useState<AdminSection>('dashboard');
+  const [appearanceServiceId, setAppearanceServiceId] = React.useState<string>(
+    services[0]?.id || ''
+  );
   const [statusMessage, setStatusMessage] = React.useState<{
     type: 'success' | 'error';
     text: string;
@@ -802,6 +807,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       return;
     }
 
+    const existingService = services.find((s) => s.id === resolvedId);
     const serviceRecord: DigitalService = {
       id: resolvedId,
       category: formCategory,
@@ -822,6 +828,7 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       requiredDocs: sanitizeString(resolvedRequiredDocs, 500),
       documentRequirementsJson,
       customFieldsJson,
+      appearanceConfigJson: existingService?.appearanceConfigJson,
       isActive: formIsActive,
       featured: formFeatured,
       updatedAt: new Date().toISOString(),
@@ -1348,6 +1355,13 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
       icon: <Layers className="w-4 h-4 shrink-0" />,
     },
     {
+      id: 'appearance',
+      labelEn: 'Service Appearance & 3D Images',
+      labelHi: 'सेवा दिखावट व 3D इमेज',
+      count: services.length,
+      icon: <Sparkles className="w-4 h-4 shrink-0" />,
+    },
+    {
       id: 'categories',
       labelEn: 'Categories',
       labelHi: 'श्रेणियां',
@@ -1567,6 +1581,19 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                       <span>{lang === 'en' ? 'Project ZIP & Drive' : 'प्रोजेक्ट ZIP व ड्राइव'}</span>
                     </button>
                   )}
+                  <button
+                    type="button"
+                    data-testid="dashboard-open-appearance-btn"
+                    onClick={() => setActiveSection('appearance')}
+                    className="min-h-[42px] px-4 py-2 bg-[#FFB547]/15 hover:bg-[#FFB547]/30 border border-[#FFB547]/50 text-[#FFB547] text-xs font-mono-tabular font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>
+                      {lang === 'en'
+                        ? 'Service Appearance & 3D Images'
+                        : 'सेवा दिखावट व 3D इमेज'}
+                    </span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setActiveSection('services')}
@@ -2163,6 +2190,22 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
 
                                   <button
                                     type="button"
+                                    aria-label={`Customize 3D image for ${srv.titleEn}`}
+                                    data-testid={`service-row-appearance-${srv.id}`}
+                                    onClick={() => {
+                                      setAppearanceServiceId(srv.id);
+                                      setActiveSection('appearance');
+                                    }}
+                                    className="min-h-[36px] px-2.5 py-1.5 bg-[#101014] hover:bg-[#272732] text-[#FFB547] border border-[#FF5C35]/40 text-xs font-semibold rounded-lg flex items-center gap-1"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5 text-[#FF5C35]" />
+                                    <span>
+                                      {lang === 'en' ? '3D Image' : '3D इमेज'}
+                                    </span>
+                                  </button>
+
+                                  <button
+                                    type="button"
                                     aria-label={`Edit ${srv.titleEn}`}
                                     onClick={() => openEditServiceModal(srv)}
                                     className="min-h-[36px] px-2.5 py-1.5 bg-[#FFF2ED] hover:bg-[#FFE3D8] text-[#C83E1B] border border-[#FF5C35]/30 text-xs font-semibold rounded-lg flex items-center gap-1"
@@ -2266,6 +2309,21 @@ export const AdminDashboardView: React.FC<AdminDashboardViewProps> = ({
                 )}
               </div>
             </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* SECTION: SERVICE APPEARANCE & 3D IMAGES STUDIO                    */}
+          {/* ================================================================= */}
+          {activeSection === 'appearance' && (
+            <ServiceAppearanceManager
+              lang={lang}
+              services={services}
+              categories={categoriesList}
+              isLiveAdmin={isLiveAdmin}
+              initialSelectedServiceId={appearanceServiceId}
+              onSaveService={onAdminSaveService}
+              onNotify={(msg) => setStatusMessage(msg)}
+            />
           )}
 
           {/* ================================================================= */}
