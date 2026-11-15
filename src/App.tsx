@@ -222,6 +222,30 @@ export default function App() {
     }
     return 'home';
   });
+
+  // Android Hardware Back-Button (popstate) navigation integration
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.history.pushState({ view: currentView }, '', window.location.href);
+    } catch {
+      // Ignore history errors in sandboxed iframes
+    }
+  }, [currentView]);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && e.state.view) {
+        setCurrentView(e.state.view as AppView);
+      } else if (currentView !== 'home') {
+        setCurrentView('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentView]);
+
   const [selectedCategory, setSelectedCategory] = React.useState<
     ServiceCategoryKey | 'all'
   >('all');
@@ -578,8 +602,9 @@ export default function App() {
     const servicesQuery = isLiveAdmin
       ? collection(db, 'services')
       : query(collection(db, 'services'), where('isActive', '==', true));
-    getDocs(servicesQuery)
-      .then((snap) => {
+    const unsubServices = onSnapshot(
+      servicesQuery,
+      (snap) => {
         if (!snap.empty) {
           const initialById = new Map(INITIAL_SERVICES.map((s) => [s.id, s]));
           const loaded: DigitalService[] = snap.docs.map((docSnap) => {
@@ -588,11 +613,11 @@ export default function App() {
             const fallback = initialById.get(srvId);
             return {
               id: srvId,
-              category: d.category,
-              titleEn: d.titleEn,
-              titleHi: d.titleHi,
-              descEn: d.descEn,
-              descHi: d.descHi,
+              category: d.category || fallback?.category || 'other_online_forms',
+              titleEn: d.titleEn || fallback?.titleEn || srvId,
+              titleHi: d.titleHi || fallback?.titleHi || d.titleEn || srvId,
+              descEn: d.descEn || fallback?.descEn || '',
+              descHi: d.descHi || fallback?.descHi || d.descEn || '',
               priceInr: Number(d.priceInr) || 50,
               minPriceInr:
                 typeof d.minPriceInr === 'number'
@@ -610,8 +635,8 @@ export default function App() {
                 typeof d.instructionsHi === 'string'
                   ? d.instructionsHi
                   : fallback?.instructionsHi,
-              estimatedTimeEn: d.estimatedTimeEn,
-              estimatedTimeHi: d.estimatedTimeHi,
+              estimatedTimeEn: d.estimatedTimeEn || fallback?.estimatedTimeEn || 'Same Day',
+              estimatedTimeHi: d.estimatedTimeHi || fallback?.estimatedTimeHi || 'उसी दिन',
               requiredDocs: d.requiredDocs || fallback?.requiredDocs || '',
               documentRequirementsJson:
                 typeof d.documentRequirementsJson === 'string' &&
@@ -645,11 +670,24 @@ export default function App() {
             merged.push(customSrv);
           }
           setServices(merged);
+        } else if (isLiveAdmin) {
+          // Auto-seed all initial services to Firestore when verified Admin logs in
+          for (const initSrv of INITIAL_SERVICES) {
+            const payload: Record<string, any> = {
+              ...initSrv,
+              updatedAt: serverTimestamp(),
+            };
+            if (payload.appearanceConfigJson === undefined) {
+              delete payload.appearanceConfigJson;
+            }
+            setDoc(doc(db, 'services', initSrv.id), payload).catch(() => {});
+          }
         }
-      })
-      .catch(() => {
-        // Keep initial built-in catalog when Firestore collection is empty
-      });
+      },
+      () => {
+        // Keep initial built-in catalog when Firestore collection is unavailable
+      }
+    );
 
     // Load Reusable Document Library from Firestore
     getDocs(collection(db, 'document_library'))
@@ -759,6 +797,7 @@ export default function App() {
       .catch(() => {
         // Fallback to SERVICE_CATEGORIES
       });
+    return () => unsubServices();
   }, [authReady, isLiveAdmin]);
 
   // 3. Attach Real-Time Orders Listener for Authenticated Users
@@ -2463,91 +2502,28 @@ export default function App() {
                     </button>
                   </div>
                 ) : (
-                  /* Staff / Admin PIN Login directly inside Account Modal */
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (verifyStaffAdminPin(staffPinInput, DEFAULT_STAFF_PIN)) {
-                        setIsPinAdminUnlocked(true);
-                        setSandboxRole('admin');
-                        try {
-                          if (typeof window !== 'undefined') {
-                            window.sessionStorage.setItem('aoc_pin_admin', '1');
-                          }
-                        } catch {
-                          // Ignore storage errors
-                        }
-                        setAuthModalOpen(false);
-                        setCurrentView('admin');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      } else {
-                        setAuthError(
-                          lang === 'en'
-                            ? 'Invalid Staff PIN. Default demo PIN is 841437.'
-                            : 'गलत स्टाफ पिन। डिफ़ॉल्ट डेमो पिन 841437 है।'
-                        );
-                      }
-                    }}
-                    className="p-4 rounded-xl bg-[#F7F3EA] border border-[#E2D9C8] space-y-3.5"
-                  >
+                  /* Server-Authorized Firebase Admin Sign-In inside Account Modal */
+                  <div className="p-4 rounded-xl bg-[#F7F3EA] border border-[#E2D9C8] space-y-3.5">
                     <div className="text-xs text-[#4A463E] leading-relaxed">
                       {lang === 'en'
-                        ? 'Center Operator / Admin? Enter your 6-digit Kateya Studio PIN (Default: 841437) to open the Admin Control Center on any domain.'
-                        : 'सेंटर ऑपरेटर / एडमिन? किसी भी डोमेन पर एडमिन कंट्रोल पैनल खोलने के लिए 6-अंकीय पिन (डिफ़ॉल्ट: 841437) दर्ज करें।'}
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor="auth-modal-staff-pin"
-                        className="block font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#101014] mb-1"
-                      >
-                        {lang === 'en'
-                          ? '6-Digit Staff Security PIN *'
-                          : '6-अंकीय स्टाफ सुरक्षा पिन *'}
-                      </label>
-                      <input
-                        id="auth-modal-staff-pin"
-                        data-testid="auth-modal-staff-pin-input"
-                        type="password"
-                        inputMode="numeric"
-                        maxLength={12}
-                        value={staffPinInput}
-                        onChange={(e) => setStaffPinInput(e.target.value)}
-                        placeholder="•••••• (Demo: 841437)"
-                        className="w-full min-h-[42px] px-3.5 py-2 rounded-xl bg-white border border-[#DCD4C6] text-base font-mono-tabular tracking-[0.25em] text-[#101014] focus:border-[#FF5C35] focus:outline-none"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-[#787166]">
-                      <span>
-                        {lang === 'en'
-                          ? 'Default Demo PIN: 841437'
-                          : 'डिफ़ॉल्ट डेमो पिन: 841437'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setStaffPinInput(DEFAULT_STAFF_PIN)}
-                        className="text-[#C83713] font-mono-tabular font-bold underline"
-                      >
-                        {lang === 'en'
-                          ? 'Auto-Fill 841437'
-                          : '841437 स्वतः भरें'}
-                      </button>
+                        ? 'Center Operator / Admin? Client-side hardcoded PINs are disabled for security. Sign in with your authorized Firebase Admin Google account to access server-verified admin controls.'
+                        : 'सेंटर ऑपरेटर / एडमिन? सुरक्षा कारणों से क्लाइंट-साइड पिन बंद है। एडमिन कंट्रोल पैनल खोलने के लिए अपने अधिकृत Firebase Admin Google खाते से लॉगिन करें।'}
                     </div>
 
                     <button
-                      type="submit"
+                      type="button"
                       data-testid="auth-modal-staff-pin-submit-btn"
+                      onClick={handleGoogleSignIn}
                       className="w-full min-h-[44px] px-4 py-2.5 bg-[#101014] hover:bg-[#272732] text-white text-xs sm:text-sm font-bold rounded-xl flex items-center justify-center gap-2 transition-colors"
                     >
                       <ShieldCheck className="w-4 h-4 text-[#FFB547]" />
                       <span>
                         {lang === 'en'
-                          ? 'Unlock Admin Control Center →'
-                          : 'एडमिन कंट्रोल पैनल खोलें →'}
+                          ? 'Sign In with Authorized Admin Google Account →'
+                          : 'अधिकृत एडमिन गूगल खाते से लॉगिन करें →'}
                       </span>
                     </button>
-                  </form>
+                  </div>
                 )}
               </div>
             )}
@@ -2555,7 +2531,7 @@ export default function App() {
         </div>
       )}
 
-      {/* PIN-Protected Staff / Admin Login Modal (Default Demo PIN: 841437) */}
+      {/* Server-Authorized Firebase Admin Login Modal */}
       {staffPinModalOpen && (
         <div
           role="dialog"
@@ -2574,19 +2550,19 @@ export default function App() {
                     className="text-base font-extrabold text-white font-display"
                   >
                     {lang === 'en'
-                      ? 'Staff / Admin Portal Access'
-                      : 'स्टाफ / एडमिन पोर्टल लॉगिन'}
+                      ? 'Server-Authorized Admin Access'
+                      : 'सर्वर-अधिकृत एडमिन लॉगिन'}
                   </h2>
                   <p className="text-[11px] text-[#9E988E]">
                     {lang === 'en'
-                      ? 'Aditya Online Center · Kateya Desk PIN Verification'
-                      : 'आदित्य ऑनलाइन सेंटर · कटेया डेस्क पिन सत्यापन'}
+                      ? 'Aditya Online Center · Firebase Auth & Firestore Rules Enforced'
+                      : 'आदित्य ऑनलाइन सेंटर · Firebase Auth सुरक्षा सत्यापन'}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                aria-label="Close staff PIN modal"
+                aria-label="Close staff admin modal"
                 onClick={() => setStaffPinModalOpen(false)}
                 className="min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg text-[#B8B2A6] hover:text-white hover:bg-white/10"
               >
@@ -2594,122 +2570,37 @@ export default function App() {
               </button>
             </div>
 
-            {staffPinError && (
-              <div
-                role="alert"
-                data-testid="staff-pin-error"
-                className="p-3 bg-red-500/15 border border-red-400/40 rounded-xl text-xs font-semibold text-red-200"
-              >
-                {staffPinError}
-              </div>
-            )}
+            <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs text-[#D6D1C7] leading-relaxed">
+              {lang === 'en'
+                ? 'For production security, hardcoded client-side PINs have been removed. Admin operations (payment verification, order status transitions, and catalog edits) require a verified Firebase Admin session enforced by Firestore Security Rules.'
+                : 'सुरक्षा नियमों के तहत हार्डकोडेड पिन हटा दिया गया है। पेमेंट सत्यापन और ऑर्डर अपडेट के लिए अपने अधिकृत Firebase Admin Google खाते से साइन-इन करें।'}
+            </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (verifyStaffAdminPin(staffPinInput, DEFAULT_STAFF_PIN)) {
-                  setIsPinAdminUnlocked(true);
-                  setSandboxRole('admin');
-                  try {
-                    if (typeof window !== 'undefined') {
-                      window.sessionStorage.setItem('aoc_pin_admin', '1');
-                    }
-                  } catch {
-                    // Ignore storage errors
-                  }
-                  if (!fbUser && orders.length === 0) {
-                    setOrders(loadInitialGuestOrders());
-                    setOrderFiles(loadInitialGuestOrderFiles());
-                    setOrderHistory(loadInitialGuestOrderHistory());
-                  }
-                  setStaffPinError(null);
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+              <button
+                type="button"
+                data-testid="staff-pin-submit-btn"
+                onClick={() => {
                   setStaffPinModalOpen(false);
-                  setCurrentView('admin');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                } else {
-                  setStaffPinError(
-                    lang === 'en'
-                      ? 'Invalid Staff PIN. Enter the 6-digit Kateya PIN (841437) to unlock.'
-                      : 'अमान्य स्टाफ पिन। अनलॉक करने के लिए 6 अंकों का कटेया पिन (841437) दर्ज करें।'
-                  );
-                }
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label
-                  htmlFor="staff-pin-input"
-                  className="block text-xs font-bold text-[#EAE6DF] mb-1.5"
-                >
+                  handleGoogleSignIn();
+                }}
+                className="flex-1 min-h-[46px] px-5 py-2.5 bg-[#FF5722] hover:bg-[#E04823] text-white text-xs sm:text-sm font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_20px_-4px_rgba(255,87,34,0.5)] transition-all"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>
                   {lang === 'en'
-                    ? 'Enter 6-Digit Staff Security PIN'
-                    : '6-अंकों का स्टाफ सुरक्षा पिन दर्ज करें'}
-                </label>
-                <div className="relative">
-                  <Lock className="w-4 h-4 text-[#9E988E] absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    id="staff-pin-input"
-                    data-testid="staff-pin-input"
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={10}
-                    value={staffPinInput}
-                    onChange={(e) => {
-                      setStaffPinInput(e.target.value);
-                      if (staffPinError) setStaffPinError(null);
-                    }}
-                    placeholder={
-                      lang === 'en' ? 'Enter PIN (e.g., 841437)' : 'पिन दर्ज करें (841437)'
-                    }
-                    className="w-full min-h-[46px] pl-10 pr-4 py-2.5 bg-[#0A0D12] border border-white/20 rounded-xl text-sm font-mono-tabular tracking-widest text-white focus:outline-none focus:border-[#FF5722]"
-                    autoFocus
-                  />
-                </div>
-                <div className="mt-2 flex items-center justify-between text-[11px] text-[#B8B2A6]">
-                  <span>
-                    {lang === 'en'
-                      ? 'Default Demo PIN: 841437'
-                      : 'डिफ़ॉल्ट डेमो पिन: 841437'}
-                  </span>
-                  <button
-                    type="button"
-                    data-testid="staff-pin-fill-demo-btn"
-                    onClick={() => {
-                      setStaffPinInput(DEFAULT_STAFF_PIN);
-                      setStaffPinError(null);
-                    }}
-                    className="text-[#FF5722] hover:text-[#FFB547] font-mono-tabular font-bold underline underline-offset-2"
-                  >
-                    {lang === 'en' ? 'Fill 841437' : '841437 भरें'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
-                <button
-                  type="submit"
-                  data-testid="staff-pin-submit-btn"
-                  className="flex-1 min-h-[46px] px-5 py-2.5 bg-[#FF5722] hover:bg-[#E04823] text-white text-xs sm:text-sm font-extrabold rounded-xl flex items-center justify-center gap-2 shadow-[0_8px_20px_-4px_rgba(255,87,34,0.5)] transition-all"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>
-                    {lang === 'en'
-                      ? 'Unlock Admin Dashboard'
-                      : 'एडमिन डैशबोर्ड खोलें'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStaffPinModalOpen(false);
-                    setAuthModalOpen(true);
-                  }}
-                  className="min-h-[46px] px-4 py-2.5 bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-[#EAE6DF] text-xs font-bold rounded-xl"
-                >
-                  {lang === 'en' ? 'Google Admin Login' : 'गूगल एडमिन लॉगिन'}
-                </button>
-              </div>
-            </form>
+                    ? 'Sign In with Firebase Admin Account'
+                    : 'Firebase Admin खाते से लॉगिन करें'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStaffPinModalOpen(false)}
+                className="min-h-[46px] px-4 py-2.5 bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-[#EAE6DF] text-xs font-bold rounded-xl"
+              >
+                {lang === 'en' ? 'Cancel' : 'रद्द करें'}
+              </button>
+            </div>
           </div>
         </div>
       )}

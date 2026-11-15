@@ -252,10 +252,8 @@ export async function uploadOrOptimizeServiceImage(
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
-    }
+  } catch {
+    // Client is operating in offline / local cache mode; handled gracefully by App state.
   }
 }
 

@@ -322,14 +322,14 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
               <FileText className="w-4 h-4 text-[#FFB547]" />
               <span>
                 {lang === 'en'
-                  ? '07 // SERVICE TERMS & ANDROID ARCHITECTURE'
-                  : '07 // सेवा की शर्तें और तकनीकी जानकारी'}
+                  ? '07 // SERVICE TERMS & CONDITIONS'
+                  : '07 // सेवा की शर्तें और नियम'}
               </span>
             </div>
             <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#F7F3EA] tracking-tight">
               {lang === 'en'
-                ? 'Terms of Service & Deployment Guide'
-                : 'सेवा की शर्तें और तकनीकी जानकारी'}
+                ? 'Terms of Service'
+                : 'सेवा की शर्तें'}
             </h1>
           </div>
         </section>
@@ -370,53 +370,20 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
             </div>
           </div>
 
-          {/* Stage 7: Deployment & Android Packaging Options */}
+          {/* Web Hosting Information */}
           <div className="bg-[#101014] text-[#F7F3EA] p-6 sm:p-8 space-y-4">
             <div className="flex items-center gap-2 text-base font-bold text-[#FFB547] font-display">
-              <Smartphone className="w-5 h-5 text-[#FF5C35]" />
               <h2>
                 {lang === 'en'
-                  ? 'Deployment & Android App Packaging Options'
-                  : 'डिप्लॉयमेंट और एंड्रॉइड ऐप विकल्प'}
+                  ? 'Platform Security & Hosting'
+                  : 'प्लेटफ़ॉर्म सुरक्षा और होस्टिंग'}
               </h2>
             </div>
-            <ul className="space-y-3 text-xs sm:text-sm text-[#D8D3C8] list-disc pl-5">
-              <li>
-                <strong className="text-white">
-                  Web Hosting (Cloud Run / Firebase Hosting):
-                </strong>{' '}
-                Build with{' '}
-                <code className="font-mono-tabular bg-[#1E1E28] text-[#FFB547] px-1.5 py-0.5">
-                  npm run build
-                </code>{' '}
-                and deploy static assets or container directly. Remember to add
-                your production domain to Firebase Authentication → Settings →
-                Authorized Domains.
-              </li>
-              <li>
-                <strong className="text-white">
-                  Android Packaging Option 1 (PWA / Add to Home Screen - Free):
-                </strong>{' '}
-                Customers in Kateya on Android Chrome can tap &ldquo;Add to Home
-                Screen&rdquo; for full-screen mobile access with zero Play Store
-                fees.
-              </li>
-              <li>
-                <strong className="text-white">
-                  Android Packaging Option 2 (Trusted Web Activity / Bubblewrap
-                  or Capacitor):
-                </strong>{' '}
-                Wrap the deployed HTTPS URL using{' '}
-                <code className="font-mono-tabular bg-[#1E1E28] text-[#FFB547] px-1.5 py-0.5">
-                  @capacitor/android
-                </code>{' '}
-                or Google Bubblewrap TWA to generate a signed{' '}
-                <code className="font-mono-tabular">.aab</code> /{' '}
-                <code className="font-mono-tabular">.apk</code> for Google Play
-                distribution (Google Play Developer registration requires a
-                one-time $25 fee).
-              </li>
-            </ul>
+            <p className="text-xs sm:text-sm text-[#D8D3C8] leading-relaxed">
+              {lang === 'en'
+                ? 'All customer orders, uploaded documents, and payment verification statuses are protected by Firebase Authentication and Firestore Security Rules.'
+                : 'सभी ग्राहक ऑर्डर, अपलोड किए गए दस्तावेज़ और भुगतान सत्यापन स्थिति Firebase Authentication और Firestore सुरक्षा नियमों द्वारा सुरक्षित हैं।'}
+            </p>
           </div>
 
           <button

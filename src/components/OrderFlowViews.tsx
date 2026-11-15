@@ -1219,15 +1219,17 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleAttachSampleDocument(docRequirements[0])}
-                  className="min-h-[38px] px-3.5 py-1.5 text-xs font-mono-tabular font-bold uppercase tracking-wider text-[#101014] bg-[#FFFDF9] hover:bg-[#EFE9DC] border border-[#101014] transition-colors whitespace-nowrap self-start sm:self-auto"
-                >
-                  {lang === 'en'
-                    ? '+ Attach Sample Test Document'
-                    : '+ टेस्ट दस्तावेज़ जोड़ें'}
-                </button>
+                <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleAttachSampleDocument(docRequirements[0])}
+                    className="min-h-[38px] px-3.5 py-1.5 text-xs font-mono-tabular font-bold uppercase tracking-wider text-[#101014] bg-[#FFFDF9] hover:bg-[#EFE9DC] border border-[#101014] transition-colors whitespace-nowrap"
+                  >
+                    {lang === 'en'
+                      ? '+ Attach Sample Test Document'
+                      : '+ टेस्ट दस्तावेज़ जोड़ें'}
+                  </button>
+                </div>
               </div>
 
               {/* Architectural Progress Strip */}

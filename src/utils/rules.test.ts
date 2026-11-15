@@ -995,10 +995,11 @@ test('6 Functional Upgrades: Exam Radar, Student Utility Lab, Live Draft Preview
   });
   assert.match(decodeURIComponent(tokenWaUrl), /#KTY-104/);
 
-  // 6. Staff / Admin PIN Verification
-  assert.equal(DEFAULT_STAFF_PIN, '841437');
-  assert.equal(verifyStaffAdminPin('841437'), true);
+  // 6. Staff / Admin PIN Hardcoded Secret Removal Verification
+  assert.equal(DEFAULT_STAFF_PIN, '');
+  assert.equal(verifyStaffAdminPin('841437'), false);
   assert.equal(verifyStaffAdminPin('000000'), false);
+  assert.equal(verifyStaffAdminPin('992817', '992817'), true);
 });
 
 test('External Domain & Vercel Authentication: auth/unauthorized-domain detection and Instant Mobile Sign-In validation', () => {
@@ -1221,6 +1222,8 @@ test('Service Appearance & 3D Images System: 12 3D presets, per-service visual i
   const firestoreRulesContent = fs.readFileSync(firestoreRulesPath, 'utf8');
   assert.match(firestoreRulesContent, /appearanceConfigJson/);
 });
+
+
 
 
 

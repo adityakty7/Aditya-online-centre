@@ -2534,19 +2534,24 @@ export function buildShopTokenWhatsAppUrl(params: {
 }
 
 // ============================================================================
-// UPGRADE 6: STAFF / ADMIN PIN AUTHENTICATION (DEFAULT DEMO PIN: 841437)
+// UPGRADE 6: SERVER-AUTHORIZED ADMIN VERIFICATION (HARDCODED PIN REMOVED)
 // ============================================================================
 
-export const DEFAULT_STAFF_PIN = '841437';
+export const DEFAULT_STAFF_PIN = '';
 
 export function verifyStaffAdminPin(
   inputPin: string,
   expectedPin: string = DEFAULT_STAFF_PIN
 ): boolean {
   const cleanInput = String(inputPin || '').trim();
-  const cleanExpected = String(expectedPin || DEFAULT_STAFF_PIN).trim();
-  return cleanInput.length > 0 && cleanInput === cleanExpected;
+  const cleanExpected = String(expectedPin || '').trim();
+  // Never authorize when expectedPin is empty or hardcoded; require explicit runtime/server secret
+  if (cleanExpected.length < 6 || cleanInput.length < 6) {
+    return false;
+  }
+  return cleanInput === cleanExpected;
 }
+
 
 // ============================================================================
 // EXTERNAL DOMAIN & VERCEL AUTHENTICATION HELPERS (auth/unauthorized-domain)
