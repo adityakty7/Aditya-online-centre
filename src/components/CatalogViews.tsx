@@ -3063,7 +3063,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       num: '01.',
                       qEn: 'How do I submit documents from my phone in Kateya?',
                       qHi: 'मैं कटेया में अपने मोबाइल से दस्तावेज़ कैसे भेजूं?',
-                      aEn: 'Select any service above and open the Order Form. You will see one dedicated upload button for each required document (PDF, JPG, PNG, or DOCX up to 2 MB).',
+                      aEn: 'Select any service above and open the Order Form. You will see one dedicated upload button for each required document (PDF, JPG, PNG, or DOCX, up to 500 KB per file).',
                       aHi: 'कोई भी सेवा चुनें और "आवेदन शुरू करें" पर क्लिक करें। आपको प्रत्येक आवश्यक दस्तावेज़ के लिए अलग अपलोड बटन मिलेगा जहाँ आप साफ फोटो या PDF जोड़ सकते हैं।',
                     },
                     {
