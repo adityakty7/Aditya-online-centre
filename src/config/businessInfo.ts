@@ -58,7 +58,7 @@ export const BUSINESS_INFO: BusinessInfoConfig = {
   faviconSvgUrl: BRAND_IDENTITY.faviconSvgUrl,
   serviceAreaEn: 'Kateya, Gopalganj, Bihar, India',
   serviceAreaHi: 'कटेया, गोपालगंज, बिहार, भारत',
-  phone: '', // Not provided yet
+  phone: '6206800799',
   whatsappNumber: '6206800799',
   whatsappDisplay: '+91 62068 00799',
   whatsappUrl: 'https://wa.me/916206800799',

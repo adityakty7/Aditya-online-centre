@@ -611,7 +611,9 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                       {lang === 'en' ? 'Phone Number' : 'फ़ोन नंबर'}
                     </dt>
                     <dd className="font-mono-tabular text-[#101014] font-semibold mt-0.5">
-                      {BUSINESS_INFO.phone}
+                      <a href={`tel:+91${BUSINESS_INFO.phone}`} className="hover:underline">
+                        +91 {BUSINESS_INFO.phone}
+                      </a>
                     </dd>
                   </div>
                 </div>
