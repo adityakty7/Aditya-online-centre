@@ -107,12 +107,8 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
   );
 
   // Upgrade 5: In-Shop Priority Visit Token Booker State
-  const [tokenCustomerName, setTokenCustomerName] = React.useState(
-    'Ramesh Kumar'
-  );
-  const [tokenCustomerPhone, setTokenCustomerPhone] = React.useState(
-    '9876543210'
-  );
+  const [tokenCustomerName, setTokenCustomerName] = React.useState('');
+  const [tokenCustomerPhone, setTokenCustomerPhone] = React.useState('');
   const [tokenVisitDate, setTokenVisitDate] = React.useState(() => {
     const d = new Date();
     return d.toISOString().slice(0, 10);
@@ -1199,7 +1195,7 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                           />
                         </div>
                         <div>
-                          <div className="font-mono-tabular text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-400">
+                          <div className="font-mono-tabular text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400">
                             {lang === 'en'
                               ? 'OFFICIAL DIGITAL APPOINTMENT PASS'
                               : 'आधिकारिक डिजिटल अपॉइंटमेंट पास'}
@@ -1209,7 +1205,7 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                           </div>
                         </div>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono-tabular text-[10px] font-bold">
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 font-mono-tabular text-[11px] font-bold">
                         {generatedToken
                           ? lang === 'en'
                             ? 'CONFIRMED PASS'
@@ -1222,7 +1218,7 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
 
                     <div className="p-4 rounded-xl bg-black/40 border border-white/10 flex items-center justify-between">
                       <div>
-                        <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-slate-400">
+                        <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-slate-400">
                           {lang === 'en' ? 'TOKEN NUMBER' : 'टोकन नंबर'}
                         </div>
                         <div

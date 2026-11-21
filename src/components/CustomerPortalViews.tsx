@@ -465,7 +465,7 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                                 ? ord.serviceTitleEn
                                 : ord.serviceTitleHi}
                             </div>
-                            <div className="text-xs text-[#787166] font-mono-tabular">
+                            <div className="text-xs text-[#6B6459] font-mono-tabular">
                               {ord.createdAt.slice(0, 10)}
                             </div>
                           </td>
@@ -706,7 +706,7 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
 
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="text-left sm:text-right">
-                    <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#787166]">
+                    <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#6B6459]">
                       {lang === 'en'
                         ? 'CONFIRMED FEE · PAYMENT STATUS'
                         : 'निर्धारित शुल्क · भुगतान स्थिति'}
@@ -757,7 +757,7 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                       <span className="w-2 h-2 rounded-full bg-[#FF5C35] animate-ping" />
                       {lang === 'en' ? 'Active Stage' : 'वर्तमान चरण'}
                     </span>
-                    <span className="inline-flex items-center gap-1 text-[#787166]">
+                    <span className="inline-flex items-center gap-1 text-[#6B6459]">
                       <span className="w-2 h-2 rounded-full bg-[#D5CEC2]" />
                       {lang === 'en' ? 'Pending' : 'प्रतीक्षित'}
                     </span>
@@ -798,7 +798,7 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                                   ? 'bg-[#FF5C35] text-white'
                                   : isCompleted
                                   ? 'bg-emerald-600/15 text-emerald-800'
-                                  : 'bg-[#E5DEC9]/60 text-[#787166]'
+                                  : 'bg-[#E5DEC9]/60 text-[#6B6459]'
                               }`}
                             >
                               0{idx + 1}
@@ -1183,7 +1183,7 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                         : 'आपके द्वारा अपलोड किए गए दस्तावेज़'}
                     </h4>
                     {customerUploadedDocs.length === 0 ? (
-                      <p className="text-xs text-[#787166]">
+                      <p className="text-xs text-[#6B6459]">
                         {lang === 'en'
                           ? 'No customer files uploaded for this order.'
                           : 'कोई सहायक फ़ाइल अपलोड नहीं की गई है।'}
@@ -1227,7 +1227,7 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                       <li key={ev.historyId} className="py-1.5">
                         <div className="flex items-center justify-between font-bold text-[#101014]">
                           <span>{ev.status}</span>
-                          <span className="font-mono-tabular text-[11px] text-[#787166]">
+                          <span className="font-mono-tabular text-[11px] text-[#6B6459]">
                             {ev.createdAt.slice(0, 16).replace('T', ' ')}
                           </span>
                         </div>

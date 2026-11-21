@@ -163,7 +163,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="block font-display text-[12px] sm:text-sm xl:text-[16px] font-extrabold tracking-tight text-[#F7F3EA] group-hover:text-[#FFB547] transition-colors truncate leading-none">
                 {lang === 'en' ? 'ADITYA ONLINE CENTER' : 'आदित्य ऑनलाइन सेंटर'}
               </span>
-              <span className="hidden sm:block font-mono-tabular text-[9px] tracking-[0.08em] text-[#FFB547] mt-1 truncate">
+              <span className="hidden sm:block font-mono-tabular text-[11px] tracking-[0.08em] text-[#FFB547] mt-1 truncate">
                 {lang === 'en'
                   ? BRAND_IDENTITY.taglineEn
                   : BRAND_IDENTITY.taglineHi}
@@ -196,7 +196,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <span
                     aria-hidden="true"
-                    className={`font-mono-tabular text-[10px] tracking-tight transition-colors ${
+                    className={`font-mono-tabular text-[11px] tracking-tight transition-colors ${
                       isActive
                         ? isRoyal
                           ? 'text-[#38BDF8] font-bold'
@@ -236,7 +236,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   ? 'Accessibility: Toggle Larger Font & Enhanced Readability'
                   : 'पठनीयता: बड़े और स्पष्ट अक्षर चालू/बंद करें'
               }
-              className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-3 py-1 rounded-lg sm:rounded-xl border text-[10px] sm:text-xs font-mono-tabular font-bold flex items-center gap-1 sm:gap-1.5 transition-all whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
+              className={`min-h-[34px] sm:min-h-[38px] px-2 sm:px-3 py-1 rounded-lg sm:rounded-xl border text-[11px] sm:text-xs font-mono-tabular font-bold flex items-center gap-1 sm:gap-1.5 transition-all whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
                 largeTextMode
                   ? 'bg-emerald-500/25 border-emerald-400 text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,0.35)]'
                   : 'bg-white/[0.06] border-white/15 text-[#F7F3EA] hover:bg-white/[0.12] hover:border-[#FFB547]/50'
@@ -267,7 +267,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 onClick={() => onToggleLang('en')}
                 aria-pressed={lang === 'en'}
-                className={`min-h-[30px] min-w-[26px] px-1.5 py-0.5 rounded-md text-[10px] font-mono-tabular font-bold transition-colors focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
+                className={`min-h-[30px] min-w-[26px] px-1.5 py-0.5 rounded-md text-[11px] font-mono-tabular font-bold transition-colors focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
                   lang === 'en'
                     ? isRoyal
                       ? 'bg-[#2563EB] text-white'
@@ -281,7 +281,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 type="button"
                 onClick={() => onToggleLang('hi')}
                 aria-pressed={lang === 'hi'}
-                className={`min-h-[30px] min-w-[26px] px-1.5 py-0.5 rounded-md text-[10px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
+                className={`min-h-[30px] min-w-[26px] px-1.5 py-0.5 rounded-md text-[11px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-[#FF5C35] ${
                   lang === 'hi'
                     ? isRoyal
                       ? 'bg-[#2563EB] text-white'
@@ -431,7 +431,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-1.5 flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5 text-[#D8D3C8] truncate">
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono-tabular text-[10px] uppercase tracking-wider ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-mono-tabular text-[11px] uppercase tracking-wider ${
                 isRoyal
                   ? 'bg-[#2563EB]/20 border border-[#38BDF8]/40 text-[#38BDF8]'
                   : 'bg-[#FF5C35]/15 border border-[#FF5C35]/40 text-[#FFB547]'

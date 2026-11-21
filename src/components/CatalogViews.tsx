@@ -366,7 +366,7 @@ const EditorialEmberSculpture: React.FC<{
         />
 
         {/* Top Translucent Glass Telemetry Bar */}
-        <div className="relative z-20 flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white/[0.06] border border-white/15 backdrop-blur-xl text-[10px] font-mono-tabular uppercase tracking-[0.14em] text-[#F7F3EA]">
+        <div className="relative z-20 flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white/[0.06] border border-white/15 backdrop-blur-xl text-[11px] font-mono-tabular uppercase tracking-[0.14em] text-[#F7F3EA]">
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#FF5C35] shadow-[0_0_10px_#FF5C35]" />
             <span>3D HOLOGRAPHIC CORE · KATEYA</span>
@@ -575,7 +575,7 @@ const EditorialEmberSculpture: React.FC<{
             aria-hidden="true"
             className="hidden sm:flex flex-col gap-1 glass-telemetry-card rounded-2xl px-3.5 py-2.5 absolute top-3 left-2 animate-float-card-3d pointer-events-none"
           >
-            <div className="flex items-center gap-1.5 font-mono-tabular text-[10px] text-[#FFB547] font-bold">
+            <div className="flex items-center gap-1.5 font-mono-tabular text-[11px] text-[#FFB547] font-bold">
               <Sparkles className="w-3 h-3 text-[#FF5C35]" />
               <span>01 · ATS RESUME & BIODATA</span>
             </div>
@@ -588,7 +588,7 @@ const EditorialEmberSculpture: React.FC<{
             aria-hidden="true"
             className="hidden sm:flex flex-col gap-1 glass-telemetry-card rounded-2xl px-3.5 py-2.5 absolute top-8 right-2 animate-float-card-3d-rev pointer-events-none"
           >
-            <div className="flex items-center gap-1.5 font-mono-tabular text-[10px] text-[#FF5C35] font-bold">
+            <div className="flex items-center gap-1.5 font-mono-tabular text-[11px] text-[#FF5C35] font-bold">
               <CheckCircle2 className="w-3 h-3 text-[#FFB547]" />
               <span>02 · MANUAL UPI VERIFIED</span>
             </div>
@@ -601,7 +601,7 @@ const EditorialEmberSculpture: React.FC<{
             aria-hidden="true"
             className="hidden sm:flex flex-col gap-1 glass-telemetry-card rounded-2xl px-3.5 py-2.5 absolute bottom-3 left-3 animate-float-card-3d pointer-events-none"
           >
-            <div className="flex items-center gap-1.5 font-mono-tabular text-[10px] text-[#FFB547] font-bold">
+            <div className="flex items-center gap-1.5 font-mono-tabular text-[11px] text-[#FFB547] font-bold">
               <Lock className="w-3 h-3 text-[#FF5C35]" />
               <span>03 · YOUR FILES ARE 100% SAFE</span>
             </div>
@@ -626,17 +626,17 @@ const EditorialEmberSculpture: React.FC<{
               />
             </div>
             <div className="min-w-0">
-              <div className="font-mono-tabular text-[10px] uppercase tracking-[0.16em] text-[#FFB547] font-bold truncate">
+              <div className="font-mono-tabular text-[11px] uppercase tracking-[0.16em] text-[#FFB547] font-bold truncate">
                 {lang === 'en' ? 'ADITYA ONLINE CENTER · KATEYA' : 'आदित्य ऑनलाइन सेंटर · कटेया'}
               </div>
-              <div className="font-display text-xs sm:text-sm font-bold text-white mt-0.5 truncate">
+              <div className="font-display text-xs sm:text-sm font-bold text-white mt-0.5">
                 {lang === 'en'
                   ? 'Interactive 3D Document & Form Studio'
                   : 'सटीक दस्तावेज़ और ऑनलाइन फॉर्म सेवा'}
               </div>
             </div>
           </div>
-          <div className="text-right font-mono-tabular text-[10px] sm:text-[11px] text-[#F7F3EA] shrink-0">
+          <div className="text-right font-mono-tabular text-[11px] sm:text-[11px] text-[#F7F3EA] shrink-0">
             <div className="text-[#FF5C35] font-bold">LIVE TRACKING</div>
             <div className="text-[#FFB547]">8 ORDER STEPS</div>
           </div>
@@ -700,7 +700,7 @@ const EditorialEmberSculpture: React.FC<{
           >
             <Sparkles className="w-3 h-3 text-[#FF5C35]" />
             <span>AOC-20261018-D101</span>
-            <span className="text-[10px] text-emerald-300 font-normal">
+            <span className="text-[11px] text-emerald-300 font-normal">
               ({lang === 'en' ? 'Try Demo →' : 'डेमो देखें →'})
             </span>
           </button>
@@ -828,7 +828,7 @@ const BeforeAfterTransformationStudio: React.FC<{
               <div className="absolute inset-0 bg-[#FFFDF9] text-[#101014] p-4 sm:p-7 flex flex-col justify-between">
                 <div className="flex items-start justify-between gap-2 border-b-2 border-[#101014] pb-3">
                   <div className="min-w-0">
-                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#101014] text-[#FFB547] font-mono-tabular text-[10px] font-bold uppercase">
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#101014] text-[#FFB547] font-mono-tabular text-[11px] font-bold uppercase">
                       {lang === 'en'
                         ? 'AFTER · STUDIO DELIVERABLE PDF'
                         : 'बाद में · तैयार स्टूडियो PDF'}
@@ -848,7 +848,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                           : 'जन्म तिथि: 14/08/1999 · कद: 5 फुट 9 इंच · गोत्र: कश्यप · ग्राम/पोस्ट: कटेया, जिला: गोपालगंज'}
                     </p>
                   </div>
-                  <div className="w-11 h-13 sm:w-12 sm:h-14 rounded-lg bg-[#F7F3EA] border-2 border-[#FF5C35] flex flex-col items-center justify-center text-[9px] font-mono-tabular font-bold text-[#C83713] shrink-0">
+                  <div className="w-11 h-13 sm:w-12 sm:h-14 rounded-lg bg-[#F7F3EA] border-2 border-[#FF5C35] flex flex-col items-center justify-center text-[11px] font-mono-tabular font-bold text-[#C83713] shrink-0">
                     <span>PHOTO</span>
                     <span>300 DPI</span>
                   </div>
@@ -857,7 +857,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                 {activeTab === 'resume' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 my-2.5 text-xs">
                     <div className="p-2.5 sm:p-3 rounded-xl bg-[#F7F3EA] border border-[#DCD4C6] space-y-1">
-                      <div className="font-mono-tabular text-[10px] font-bold uppercase text-[#C83713]">
+                      <div className="font-mono-tabular text-[11px] font-bold uppercase text-[#C83713]">
                         01. ACADEMIC QUALIFICATION
                       </div>
                       <div className="font-bold text-[#101014]">
@@ -868,7 +868,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                       </div>
                     </div>
                     <div className="p-2.5 sm:p-3 rounded-xl bg-[#F7F3EA] border border-[#DCD4C6] space-y-1">
-                      <div className="font-mono-tabular text-[10px] font-bold uppercase text-[#C83713]">
+                      <div className="font-mono-tabular text-[11px] font-bold uppercase text-[#C83713]">
                         02. TECHNICAL SKILLS (ATS KEYWORDS)
                       </div>
                       <div className="font-bold text-[#101014]">
@@ -882,7 +882,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 my-2.5 text-xs">
                     <div className="p-2.5 sm:p-3 rounded-xl bg-[#F7F3EA] border border-[#DCD4C6] space-y-1">
-                      <div className="font-mono-tabular text-[10px] font-bold uppercase text-[#C83713]">
+                      <div className="font-mono-tabular text-[11px] font-bold uppercase text-[#C83713]">
                         {lang === 'en'
                           ? '01. EDUCATION & PROFESSION'
                           : '01. शैक्षणिक और व्यावसायिक विवरण'}
@@ -899,7 +899,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                       </div>
                     </div>
                     <div className="p-2.5 sm:p-3 rounded-xl bg-[#F7F3EA] border border-[#DCD4C6] space-y-1">
-                      <div className="font-mono-tabular text-[10px] font-bold uppercase text-[#C83713]">
+                      <div className="font-mono-tabular text-[11px] font-bold uppercase text-[#C83713]">
                         {lang === 'en'
                           ? '02. FAMILY BACKGROUND (KATEYA, GOPALGANJ)'
                           : '02. पारिवारिक विवरण (कटेया, गोपालगंज)'}
@@ -918,7 +918,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#DCD4C6] pt-2 text-[10px] sm:text-[11px] font-mono-tabular text-[#4A463E]">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[#DCD4C6] pt-2 text-[11px] sm:text-[11px] font-mono-tabular text-[#4A463E]">
                   <span className="font-bold text-[#16A34A]">
                     ✓ A4 PRINT-READY + WHATSAPP PDF
                   </span>
@@ -936,7 +936,7 @@ const BeforeAfterTransformationStudio: React.FC<{
               >
                 <div className="w-full h-full p-4 sm:p-7 flex flex-col justify-between bg-[radial-gradient(#35322B_1px,transparent_1px)] [background-size:16px_16px]">
                   <div className="space-y-2">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FF5C35]/20 border border-[#FF5C35]/50 text-[#FFB547] font-mono-tabular text-[10px] font-bold uppercase">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FF5C35]/20 border border-[#FF5C35]/50 text-[#FFB547] font-mono-tabular text-[11px] font-bold uppercase">
                       {lang === 'en'
                         ? 'BEFORE · RAW PHONE PHOTO / NOTES'
                         : 'पहले · सादे कागज़ पर लिखे नोट्स'}
@@ -993,7 +993,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                     </div>
                   </div>
 
-                  <div className="text-[10px] sm:text-[11px] font-mono-tabular text-[#FFB547] border-t border-white/10 pt-2">
+                  <div className="text-[11px] sm:text-[11px] font-mono-tabular text-[#FFB547] border-t border-white/10 pt-2">
                     {lang === 'en'
                       ? '← DRAG SLIDER TO TRANSFORM INTO STUDIO PDF →'
                       : '← स्लाइडर खिसकाकर तैयार PDF देखें →'}
@@ -1071,7 +1071,7 @@ const BeforeAfterTransformationStudio: React.FC<{
 
               <div className="p-4 rounded-2xl bg-white/[0.06] border border-white/15 flex items-center justify-between">
                 <div>
-                  <div className="font-mono-tabular text-[10px] uppercase text-[#D8D3C8]">
+                  <div className="font-mono-tabular text-[11px] uppercase text-[#D8D3C8]">
                     {lang === 'en' ? 'STANDARD STUDIO FEE' : 'निर्धारित शुल्क'}
                   </div>
                   <div className="font-mono-tabular text-3xl font-extrabold text-[#FFB547]">
@@ -1079,7 +1079,7 @@ const BeforeAfterTransformationStudio: React.FC<{
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono-tabular text-[10px] uppercase text-[#D8D3C8]">
+                  <div className="font-mono-tabular text-[11px] uppercase text-[#D8D3C8]">
                     {lang === 'en' ? 'DELIVERY' : 'वितरण समय'}
                   </div>
                   <div className="font-mono-tabular text-xs font-bold text-white mt-1">
@@ -1211,7 +1211,7 @@ const InteractiveBundleEstimator: React.FC<{
                       ₹{srv.priceInr}
                     </div>
                     <span
-                      className={`inline-block font-mono-tabular text-[10px] uppercase px-2 py-0.5 rounded mt-1 ${
+                      className={`inline-block font-mono-tabular text-[11px] uppercase px-2 py-0.5 rounded mt-1 ${
                         isChecked
                           ? 'bg-[#FF5C35] text-white font-bold'
                           : 'bg-[#EFE9DC] text-[#5C5852]'
@@ -1235,7 +1235,7 @@ const InteractiveBundleEstimator: React.FC<{
           <div className="lg:col-span-5 rounded-2xl bg-[#101014] text-[#F7F3EA] p-6 space-y-4">
             <div className="flex items-baseline justify-between border-b border-white/15 pb-3">
               <div>
-                <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8]">
+                <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8]">
                   {lang === 'en'
                     ? `ESTIMATED TOTAL (${estimate.serviceCount} SERVICE${
                         estimate.serviceCount === 1 ? '' : 'S'
@@ -1247,7 +1247,7 @@ const InteractiveBundleEstimator: React.FC<{
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8]">
+                <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8]">
                   {lang === 'en' ? 'TIME NEEDED' : 'अनुमानित समय'}
                 </div>
                 <div className="font-mono-tabular text-xs font-bold text-white mt-1">
@@ -1724,7 +1724,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                               .map((f) => f.toUpperCase())
                               .join(' / ')}
                           </div>
-                          <div className="text-[11px] text-[#787166]">
+                          <div className="text-[11px] text-[#6B6459]">
                             MAX {docItem.maxSizeKb} KB
                           </div>
                         </div>
@@ -1757,7 +1757,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         className="py-3.5 flex items-center justify-between gap-4 text-sm"
                       >
                         <div className="flex items-center gap-3">
-                          <span className="font-mono-tabular text-xs text-[#787166]">
+                          <span className="font-mono-tabular text-xs text-[#6B6459]">
                             0{idx + 1}.
                           </span>
                           <span className="font-semibold text-[#101014]">
@@ -1890,7 +1890,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     <BrandLogo variant="hero" lang={lang} />
                     <div className="inline-flex flex-wrap items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.07] border border-white/20 backdrop-blur-xl">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34D399]" />
-                      <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-[0.16em] text-[#FFB547]">
+                      <span className="font-mono-tabular text-[11px] font-bold uppercase tracking-[0.16em] text-[#FFB547]">
                         00. KATEYA 3D STUDIO
                       </span>
                     </div>
@@ -2018,7 +2018,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-white whitespace-nowrap">
                         {heroStats.countText}
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
+                      <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
                         {lang === 'en' ? 'Active Services' : 'सक्रिय सेवाएं'}
                       </div>
                     </div>
@@ -2038,7 +2038,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-[#FFB547] whitespace-nowrap">
                         {heroStats.tariffText}
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
+                      <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
                         {lang === 'en' ? 'Service Price' : 'स्पष्ट शुल्क'}
                       </div>
                     </div>
@@ -2058,7 +2058,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-white whitespace-nowrap">
                         {heroStats.turnaroundText}
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
+                      <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
                         {lang === 'en' ? 'Time Needed' : 'वितरण समय'}
                       </div>
                     </div>
@@ -2078,8 +2078,8 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <div className="font-mono-tabular text-base sm:text-lg xl:text-xl font-extrabold text-emerald-400 whitespace-nowrap">
                         100%
                       </div>
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
-                        {lang === 'en' ? 'Private Vault' : 'निजी दस्तावेज़'}
+                      <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8] mt-0.5">
+                        {lang === 'en' ? 'Files Safe' : 'दस्तावेज़ सुरक्षित'}
                       </div>
                     </div>
                   </div>
@@ -2163,7 +2163,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       ? 'Search resume, scholarship, PAN, PDF...'
                       : 'रिज्यूमे, छात्रवृत्ति, पैन, PDF खोजें...'
                   }
-                  className="w-full min-h-[46px] pl-10 pr-20 py-2 bg-transparent text-sm text-[#101014] placeholder:text-[#787166] focus:outline-none"
+                  className="w-full min-h-[46px] pl-10 pr-20 py-2 bg-transparent text-sm text-[#101014] placeholder:text-[#6B6459] focus:outline-none"
                 />
                 {searchQuery && (
                   <button
@@ -2208,7 +2208,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     }`}
                   >
                     <span
-                      className={`font-mono-tabular text-[10px] ${
+                      className={`font-mono-tabular text-[11px] ${
                         isSelected ? 'text-[#FFB547] font-bold' : 'text-[#C83713]'
                       }`}
                     >
@@ -2216,7 +2216,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     </span>
                     <span>{lang === 'en' ? cat.labelEn : cat.labelHi}</span>
                     <span
-                      className={`px-2 py-0.5 rounded-full font-mono-tabular text-[10px] font-extrabold ${
+                      className={`px-2 py-0.5 rounded-full font-mono-tabular text-[11px] font-extrabold ${
                         isSelected
                           ? 'bg-black/25 text-white border border-white/25'
                           : 'bg-[#101014]/8 text-[#101014]'
@@ -2306,12 +2306,12 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     <div className="flex items-center justify-between gap-2 -mb-1 relative z-10">
                       <span
                         data-testid={`service-ribbon-${srv.id}`}
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono-tabular text-[10px] font-extrabold uppercase tracking-wider ${visuals.ribbonStyle}`}
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono-tabular text-[11px] font-extrabold uppercase tracking-wider ${visuals.ribbonStyle}`}
                       >
                         <Zap className="w-3 h-3" />
                         <span>{visuals.ribbonText}</span>
                       </span>
-                      <span className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#FFB547]">
+                      <span className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#FFB547]">
                         #{indexLabel}
                       </span>
                     </div>
@@ -2337,7 +2337,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         </div>
                         <div>
                           <div
-                            className={`font-mono-tabular text-[10px] font-bold uppercase tracking-wider ${
+                            className={`font-mono-tabular text-[11px] font-bold uppercase tracking-wider ${
                               isDarkTile ? 'text-[#FFB547]' : 'text-[#C83713]'
                             }`}
                           >
@@ -2372,7 +2372,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                             : 'bg-[#101014] border-[#101014] text-white'
                         }`}
                       >
-                        <span className="block font-mono-tabular text-[9px] uppercase tracking-wider text-[#FFB547]">
+                        <span className="block font-mono-tabular text-[11px] uppercase tracking-wider text-[#FFB547]">
                           {lang === 'en' ? 'PRICE' : 'शुल्क'}
                         </span>
                         <span className="font-mono-tabular text-lg sm:text-xl font-extrabold leading-none">
@@ -2405,7 +2405,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         isDarkTile ? 'border-white/15' : 'border-[#DCD4C6]'
                       }`}
                     >
-                      <div className="flex items-center justify-between font-mono-tabular text-[10px] uppercase tracking-wider">
+                      <div className="flex items-center justify-between font-mono-tabular text-[11px] uppercase tracking-wider">
                         <span
                           className={
                             isDarkTile
@@ -2447,7 +2447,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         })}
                         {docs.length > 3 && (
                           <span
-                            className={`px-2 py-0.5 rounded-lg font-mono-tabular text-[10px] ${
+                            className={`px-2 py-0.5 rounded-lg font-mono-tabular text-[11px] ${
                               isDarkTile
                                 ? 'bg-white/[0.06] text-[#FFB547]'
                                 : 'bg-[#EFE9DC] text-[#5C5852]'
@@ -2717,7 +2717,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF5C35] to-[#C83713] border border-[#FFB547]/60 shadow-[0_0_22px_rgba(255,92,53,0.55)] flex items-center justify-center font-mono-tabular text-base font-extrabold text-white">
                         01
                       </div>
-                      <span className="px-2.5 py-1 rounded-full bg-[#FF5C35]/15 border border-[#FF5C35]/40 font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#FFB547]">
+                      <span className="px-2.5 py-1 rounded-full bg-[#FF5C35]/15 border border-[#FF5C35]/40 font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#FFB547]">
                         {lang === 'en' ? 'STEP 01 · UPLOAD' : 'चरण 01 · अपलोड'}
                       </span>
                     </div>
@@ -2739,7 +2739,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FFB547] to-[#FF5C35] border border-white/50 shadow-[0_0_22px_rgba(255,181,71,0.5)] flex items-center justify-center font-mono-tabular text-base font-extrabold text-[#101014]">
                         02
                       </div>
-                      <span className="px-2.5 py-1 rounded-full bg-[#FFB547]/15 border border-[#FFB547]/40 font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#FFB547]">
+                      <span className="px-2.5 py-1 rounded-full bg-[#FFB547]/15 border border-[#FFB547]/40 font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#FFB547]">
                         {lang === 'en' ? 'STEP 02 · PAYMENT CHECK' : 'चरण 02 · भुगतान'}
                       </span>
                     </div>
@@ -2761,7 +2761,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 border border-white/50 shadow-[0_0_22px_rgba(52,211,153,0.5)] flex items-center justify-center font-mono-tabular text-base font-extrabold text-[#07110E]">
                         03
                       </div>
-                      <span className="px-2.5 py-1 rounded-full bg-emerald-400/15 border border-emerald-400/40 font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-400/15 border border-emerald-400/40 font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-emerald-300">
                         {lang === 'en' ? 'STEP 03 · GET YOUR PDF' : 'चरण 03 · डिलीवरी'}
                       </span>
                     </div>
