@@ -1150,8 +1150,8 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
               {(() => {
                 const activeTok: ShopVisitToken = generatedToken || {
                   tokenNumber: '#KTY-104',
-                  customerName: tokenCustomerName || 'Ramesh Kumar',
-                  customerPhone: tokenCustomerPhone || '9876543210',
+                  customerName: tokenCustomerName || (lang === 'en' ? 'Your Name' : 'आपका नाम'),
+                  customerPhone: tokenCustomerPhone || 'XXXXXXXXXX',
                   visitDate: tokenVisitDate,
                   timeSlot: tokenTimeSlot,
                   timeSlotLabelEn:
