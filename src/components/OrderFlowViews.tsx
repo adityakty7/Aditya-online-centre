@@ -902,7 +902,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   {step === 'details' ? '01' : <Check className="w-4 h-4" />}
                 </span>
                 <div className="min-w-0">
-                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider opacity-80">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider opacity-80">
                     {lang === 'en' ? 'STEP 01' : 'चरण 01'}
                   </div>
                   <div className="text-xs sm:text-sm font-bold truncate">
@@ -930,7 +930,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   02
                 </span>
                 <div className="min-w-0">
-                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider opacity-80">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider opacity-80">
                     {lang === 'en' ? 'STEP 02' : 'चरण 02'}
                   </div>
                   <div className="text-xs sm:text-sm font-bold truncate">
@@ -966,7 +966,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
             </div>
 
             <div className="shrink-0 bg-[#14141C] border border-[#272732] px-5 py-3.5 sm:text-right">
-              <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#A09D96]">
+              <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#A09D96]">
                 {lang === 'en' ? 'SERVICE FEE' : 'सेवा शुल्क'}
               </div>
               <div className="font-mono-tabular text-2xl sm:text-3xl font-extrabold text-[#FFB547]">
@@ -1320,16 +1320,16 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                               {cleanTitle}
                             </h3>
                             {req.required ? (
-                              <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#C83713] bg-[#FFECE8] border border-[#FF5C35]/40 px-2.5 py-0.5 rounded-full">
+                              <span className="font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#C83713] bg-[#FFECE8] border border-[#FF5C35]/40 px-2.5 py-0.5 rounded-full">
                                 {lang === 'en' ? 'Required' : 'अनिवार्य'}
                               </span>
                             ) : (
-                              <span className="font-mono-tabular text-[10px] font-semibold uppercase tracking-wider text-[#5C5852] bg-[#EFE9DC] border border-[#DCD4C6] px-2.5 py-0.5 rounded-full">
+                              <span className="font-mono-tabular text-[11px] font-semibold uppercase tracking-wider text-[#5C5852] bg-[#EFE9DC] border border-[#DCD4C6] px-2.5 py-0.5 rounded-full">
                                 {lang === 'en' ? 'Optional' : 'वैकल्पिक'}
                               </span>
                             )}
                             {isUploaded && (
-                              <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-emerald-950 bg-emerald-200/80 border border-emerald-500/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-emerald-950 bg-emerald-200/80 border border-emerald-500/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
                                 {lang === 'en'
                                   ? 'Verified & Attached ✓'
@@ -1824,7 +1824,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                           {up.fileName}
                         </span>
                       </span>
-                      <span className="text-[#787166] font-mono-tabular">
+                      <span className="text-[#6B6459] font-mono-tabular">
                         {Math.round(up.sizeBytes / 1024)} KB
                       </span>
                     </div>
@@ -1861,7 +1861,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   </h3>
                 </div>
                 <div className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF5C35]/20 to-[#FFB547]/20 border border-[#FFB547]/40 sm:text-right">
-                  <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#FFB547]">
+                  <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#FFB547]">
                     {lang === 'en' ? 'PAYABLE TARIFF' : 'देय शुल्क'}
                   </div>
                   <div className="font-mono-tabular text-2xl font-extrabold text-white">
@@ -1944,7 +1944,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10">
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
+                      <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#9E988E]">
                         {lang === 'en' ? 'VERIFIED PAYEE' : 'प्राप्तकर्ता का नाम'}
                       </div>
                       <div className="font-bold text-sm text-white mt-0.5">
@@ -1952,7 +1952,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                       </div>
                     </div>
                     <div className="p-3 rounded-xl bg-white/[0.04] border border-white/10">
-                      <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#9E988E]">
+                      <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#9E988E]">
                         {lang === 'en' ? 'ESTIMATED DELIVERY' : 'अनुमानित समय'}
                       </div>
                       <div className="font-mono-tabular text-sm font-bold text-emerald-400 mt-0.5">

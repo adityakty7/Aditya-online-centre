@@ -2141,7 +2141,7 @@ export default function App() {
                       ? 'Account & Authentication'
                       : 'खाता और प्रमाणीकरण'}
                   </h2>
-                  <p className="text-[11px] text-[#787166]">
+                  <p className="text-[11px] text-[#6B6459]">
                     {lang === 'en'
                       ? `${BRAND_IDENTITY.displayNameEn} · ${BRAND_IDENTITY.taglineEn}`
                       : 'आदित्य ऑनलाइन सेंटर · सुरक्षित ग्राहक एवं स्टाफ लॉगिन'}
@@ -2165,7 +2165,7 @@ export default function App() {
                   className="p-4 bg-[#F7F3EA] border border-[#E6DFD3] rounded-xl text-xs space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[#787166] font-mono-tabular uppercase text-[10px]">
+                    <span className="text-[#6B6459] font-mono-tabular uppercase text-[11px]">
                       {fbUser
                         ? lang === 'en'
                           ? 'VERIFIED GOOGLE ACCOUNT'
@@ -2174,7 +2174,7 @@ export default function App() {
                         ? 'VERIFIED MOBILE SESSION'
                         : 'सत्यापित मोबाइल खाता'}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
                       {lang === 'en' ? 'ACTIVE' : 'सक्रिय'}
                     </span>
                   </div>
@@ -2384,12 +2384,12 @@ export default function App() {
                       className="p-4 rounded-xl bg-[#F7F3EA] border border-[#E2D9C8] space-y-3"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#C83713]">
+                        <span className="font-mono-tabular text-[11px] font-bold uppercase tracking-wider text-[#C83713]">
                           {lang === 'en'
                             ? 'INSTANT MOBILE SIGN-IN (ALL DOMAINS)'
                             : 'मोबाइल नंबर से तुरंत लॉगिन (सभी डोमेन पर)'}
                         </span>
-                        <span className="font-mono-tabular text-[10px] font-bold text-emerald-700">
+                        <span className="font-mono-tabular text-[11px] font-bold text-emerald-700">
                           {lang === 'en' ? 'NO POPUP NEEDED' : 'बिना पॉपअप'}
                         </span>
                       </div>
@@ -2479,7 +2479,7 @@ export default function App() {
 
                     <div className="relative flex py-0.5 items-center">
                       <div className="flex-grow border-t border-[#E6DFD3]" />
-                      <span className="flex-shrink mx-3 font-mono-tabular text-[10px] uppercase tracking-wider text-[#787166]">
+                      <span className="flex-shrink mx-3 font-mono-tabular text-[11px] uppercase tracking-wider text-[#6B6459]">
                         {lang === 'en'
                           ? 'OR GOOGLE ACCOUNT'
                           : 'या गूगल (GOOGLE) खाता'}
@@ -2966,7 +2966,7 @@ export default function App() {
                 ? '100% Private & Safe Document Vault · Complete Data Privacy Guarantee.'
                 : '100% सुरक्षित एवं गोपनीय दस्तावेज़ वॉल्ट · पूर्ण डेटा गोपनीयता गारंटी।'}
             </div>
-            <div className="text-[#787166]">
+            <div className="text-[#6B6459]">
               {lang === 'en'
                 ? 'Independent citizen assistance center · Not affiliated with any government portal'
                 : 'स्वतंत्र नागरिक डिजिटल सेवा केंद्र'}
@@ -2994,7 +2994,7 @@ export default function App() {
         </span>
         <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0 transition-transform group-hover:scale-110" />
         <div className="text-left leading-tight">
-          <div className="font-mono-tabular text-[9px] uppercase tracking-wider text-emerald-400 font-bold">
+          <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-emerald-400 font-bold">
             {lang === 'en' ? 'WHATSAPP HELP' : 'व्हाट्सएप सहायता'}
           </div>
           <div className="font-mono-tabular text-xs font-extrabold text-white">
