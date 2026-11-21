@@ -711,6 +711,162 @@ const EditorialEmberSculpture: React.FC<{
 };
 
 /**
+ * 01.A — OWNER INTRO / TRUST SECTION
+ * A real name and face behind the center: owner photo (initials placeholder
+ * until a real photo is provided via BUSINESS_INFO.ownerPhotoUrl), a one-line
+ * intro, three trust points, area/hours chips and direct call / WhatsApp CTAs.
+ */
+const OwnerIntroSection: React.FC<{ lang: Language }> = ({ lang }) => {
+  const ownerName =
+    lang === 'en' ? BUSINESS_INFO.ownerNameEn : BUSINESS_INFO.ownerNameHi;
+  const trustPoints = [
+    {
+      icon: ShieldCheck,
+      titleEn: 'Documents Stay Private',
+      titleHi: 'दस्तावेज़ पूरी तरह सुरक्षित',
+      descEn:
+        'Your files are used only for your own work — never shared with anyone else.',
+      descHi:
+        'आपकी फ़ाइलें सिर्फ़ आपके काम में इस्तेमाल होती हैं — किसी और के साथ साझा नहीं होतीं।',
+    },
+    {
+      icon: IndianRupee,
+      titleEn: 'Fixed Price, Upfront',
+      titleHi: 'पक्का दाम, पहले से तय',
+      descEn:
+        'The price you see before ordering is the price you pay — no hidden charges later.',
+      descHi: 'जो दाम ऑर्डर से पहले दिखा, वही देना है — बाद में कोई छुपा चार्ज नहीं।',
+    },
+    {
+      icon: MessageCircle,
+      titleEn: 'Talk to Me Directly',
+      titleHi: 'सीधे मुझसे बात करें',
+      descEn: 'Call or WhatsApp — I reply myself, in Hindi or English.',
+      descHi: 'कॉल या WhatsApp करें — जवाब मैं खुद देता हूँ, हिंदी या अंग्रेज़ी में।',
+    },
+  ];
+
+  return (
+    <section
+      data-testid="owner-intro-section"
+      className="border-t border-[#DCD4C6] bg-[#EFE9DC]/65 py-12 sm:py-20"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Owner photo card (real photo via BUSINESS_INFO.ownerPhotoUrl, else initials) */}
+          <div className="lg:col-span-4">
+            <div className="glass-cream-panel rounded-3xl p-5 sm:p-6 text-center space-y-4">
+              {BUSINESS_INFO.ownerPhotoUrl ? (
+                <img
+                  src={BUSINESS_INFO.ownerPhotoUrl}
+                  alt={ownerName}
+                  className="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-full object-cover border-4 border-[#FF5C35]/60 shadow-lg"
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="w-40 h-40 sm:w-48 sm:h-48 mx-auto rounded-full bg-gradient-to-br from-[#FF5C35] to-[#C83713] text-[#F7F3EA] flex items-center justify-center font-display text-6xl sm:text-7xl font-extrabold shadow-lg select-none"
+                >
+                  AK
+                </div>
+              )}
+              <div className="space-y-1">
+                <div className="font-display text-xl sm:text-2xl font-extrabold text-[#101014] tracking-tight">
+                  {ownerName}
+                </div>
+                <div className="text-xs sm:text-sm text-[#4A463E]">
+                  {lang === 'en'
+                    ? 'Founder & Owner, Aditya Online Center'
+                    : 'संस्थापक और संचालक, आदित्य ऑनलाइन सेंटर'}
+                </div>
+                {!BUSINESS_INFO.ownerPhotoUrl && (
+                  <div className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-[#101014]/8 text-[#5C5852] text-[11px] font-bold">
+                    {lang === 'en' ? 'REAL PHOTO COMING SOON' : 'असली फोटो जल्द आ रही है'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Intro, trust points and direct contact actions */}
+          <div className="lg:col-span-8 space-y-6">
+            <div className="space-y-2">
+              <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#C83713]">
+                {lang === 'en' ? '01.A — MEET THE OWNER' : '01.A — संचालक से मिलिए'}
+              </div>
+              <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#101014] tracking-tight">
+                {lang === 'en'
+                  ? 'A real person behind every order — right here in Kateya.'
+                  : 'हर ऑर्डर के पीछे एक असली इंसान — यहीं कटेया में।'}
+              </h2>
+              <p className="text-sm sm:text-base text-[#4A463E] leading-relaxed max-w-2xl">
+                {lang === 'en'
+                  ? 'I personally look after every order — from the documents you send to the final PDF you receive. No middlemen, no call centre — you always talk directly to me.'
+                  : 'हर ऑर्डर मैं खुद देखता हूँ — आपके भेजे दस्तावेज़ से लेकर तैयार PDF तक। कोई बिचौलिया नहीं, कोई कॉल सेंटर नहीं — बात हमेशा सीधे मुझसे होती है।'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {trustPoints.map((point) => (
+                <div
+                  key={point.titleEn}
+                  className="glass-cream-panel rounded-2xl p-4 sm:p-5 space-y-2"
+                >
+                  <point.icon className="w-6 h-6 text-[#C83713]" />
+                  <div className="font-display text-sm sm:text-base font-extrabold text-[#101014]">
+                    {lang === 'en' ? point.titleEn : point.titleHi}
+                  </div>
+                  <p className="text-xs sm:text-sm text-[#4A463E] leading-relaxed">
+                    {lang === 'en' ? point.descEn : point.descHi}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-[#4A463E]">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#101014]/8 font-bold">
+                <MapPin className="w-3.5 h-3.5 text-[#C83713]" />
+                {lang === 'en' ? BUSINESS_INFO.serviceAreaEn : BUSINESS_INFO.serviceAreaHi}
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#101014]/8 font-bold">
+                <Clock className="w-3.5 h-3.5 text-[#C83713]" />
+                {lang === 'en' ? BUSINESS_INFO.workingDaysEn : BUSINESS_INFO.workingDaysHi}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={`tel:+91${BUSINESS_INFO.phone}`}
+                className="inline-flex items-center gap-2 min-h-[46px] px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#FF5C35] to-[#E54922] text-white font-bold text-sm sm:text-base shadow-[0_6px_20px_rgba(255,92,53,0.4)]"
+              >
+                <PhoneCall className="w-4 h-4" />
+                {lang === 'en' ? 'Call Now' : 'कॉल करें'}
+              </a>
+              <a
+                href={BUSINESS_INFO.whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 min-h-[46px] px-5 py-2.5 rounded-2xl bg-[#101014] text-[#F7F3EA] font-bold text-sm sm:text-base"
+              >
+                <MessageCircle className="w-4 h-4 text-[#FFB547]" />
+                {lang === 'en' ? 'Chat on WhatsApp' : 'WhatsApp पर बात करें'}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Honest pointer to the demo samples in the Before & After Studio below */}
+        <p className="text-xs sm:text-sm text-[#4A463E] border border-dashed border-[#101014]/25 rounded-2xl px-4 py-3 leading-relaxed">
+          {lang === 'en'
+            ? 'Want to see the work first? Scroll down to the Before & After Studio — demo samples that show rough handwritten notes turned into clean, print-ready PDFs.'
+            : 'पहले काम देखना चाहते हैं? नीचे Before & After Studio देखें — वहाँ नमूना (डेमो) सैंपल में दिखाया गया है कि सादे हाथ के नोट्स कैसे साफ़, प्रिंट-तैयार PDF में बदलते हैं।'}
+        </p>
+      </div>
+    </section>
+  );
+};
+
+/**
  * 01.C — INTERACTIVE BEFORE & AFTER DOCUMENT TRANSFORMATION STUDIO
  * Showcases both Job Resume (ATS-Ready) and Marriage Biodata tabs with an interactive
  * comparison slider (0% to 100%) and direct 1-click Order action.
@@ -2545,6 +2701,9 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
       {/* ===================================================================== */}
       {mode === 'home' && (
         <>
+          {/* 01.A — OWNER INTRO / TRUST SECTION */}
+          <OwnerIntroSection lang={lang} />
+
           {/* 01.B — LIVE BIHAR EXAM, SCHOLARSHIP & JOB FORM RADAR */}
           <ExamRadarSection
             lang={lang}

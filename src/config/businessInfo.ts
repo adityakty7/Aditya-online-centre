@@ -46,6 +46,9 @@ export interface BusinessInfoConfig {
   workingHoursHi: string;
   googleMapsUrl: string;
   socialLinks: SocialLinkItem[];
+  ownerNameEn: string;
+  ownerNameHi: string;
+  ownerPhotoUrl: string; // Empty string until the owner provides a real photo
 }
 
 export const BUSINESS_INFO: BusinessInfoConfig = {
@@ -74,6 +77,9 @@ export const BUSINESS_INFO: BusinessInfoConfig = {
   workingHoursHi: 'सुबह 8:00 बजे – रात 8:00 बजे',
   googleMapsUrl:
     'https://www.google.com/maps/dir/?api=1&destination=G.A.+High+School+Ward+No+08+Kateya+Gopalganj+Bihar+841437',
+  ownerNameEn: 'Aditya Kumar',
+  ownerNameHi: 'आदित्य कुमार',
+  ownerPhotoUrl: '',
   socialLinks: [
     {
       key: 'facebook',
