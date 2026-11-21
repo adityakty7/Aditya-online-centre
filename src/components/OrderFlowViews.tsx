@@ -466,7 +466,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               </h2>
               <p className="text-xs sm:text-sm text-[#D8D3C8] leading-relaxed">
                 {lang === 'en'
-                  ? 'Click the WhatsApp button below to send your pre-filled Order ID, selected service, total tariff, and payment mode directly to Aditya Online Center (6206800799).'
+                  ? 'Click the WhatsApp button below to send your pre-filled Order ID, selected service, total price, and payment mode directly to Aditya Online Center (6206800799).'
                   : 'नीचे दिए गए व्हाट्सएप बटन पर क्लिक करके अपना ऑर्डर आईडी, चयनित सेवा, कुल शुल्क और भुगतान माध्यम सीधे आदित्य ऑनलाइन सेंटर (6206800799) को भेजें।'}
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -520,7 +520,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
             <div className="py-4 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
               <div className="font-mono-tabular text-xs uppercase tracking-wider text-[#5C5852]">
-                {lang === 'en' ? '03. Attached Dossier' : '03. संलग्न दस्तावेज़'}
+                {lang === 'en' ? '03. Attached Documents' : '03. संलग्न दस्तावेज़'}
               </div>
               <div className="sm:col-span-2 font-mono-tabular font-semibold text-[#101014]">
                 {confirmedOrder.uploadedFileCount}{' '}
@@ -871,7 +871,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
             <div className="font-mono-tabular text-xs text-[#FFB547] uppercase tracking-wider">
               {step === 'details'
                 ? lang === 'en'
-                  ? 'STEP 01 / 02 · DETAILS & DOCUMENT DOSSIER'
+                  ? 'STEP 01 / 02 · YOUR DETAILS & DOCUMENTS'
                   : 'चरण 01 / 02 · विवरण और दस्तावेज़'
                 : lang === 'en'
                 ? 'STEP 02 / 02 · FINAL VERIFICATION & UPI SUMMARY'
@@ -907,7 +907,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   </div>
                   <div className="text-xs sm:text-sm font-bold truncate">
                     {lang === 'en'
-                      ? 'Applicant & Document Dossier'
+                      ? 'Your Details & Documents'
                       : 'आवेदक विवरण और दस्तावेज़ अपलोड'}
                   </div>
                 </div>
@@ -935,7 +935,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                   </div>
                   <div className="text-xs sm:text-sm font-bold truncate">
                     {lang === 'en'
-                      ? 'Verify Dossier & UPI Summary'
+                      ? 'Check Details & Payment'
                       : 'दस्तावेज़ जांच और UPI सारांश'}
                   </div>
                 </div>
@@ -1266,7 +1266,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
 
                 <div className="font-mono-tabular text-xs text-[#D8D3C8]">
                   {totalAttachedFilesCount}{' '}
-                  {lang === 'en' ? 'TOTAL FILE(S) IN DOSSIER' : 'कुल फ़ाइलें'}
+                  {lang === 'en' ? 'TOTAL FILES ATTACHED' : 'कुल फ़ाइलें'}
                 </div>
               </div>
 
@@ -1752,7 +1752,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
               <div className="py-4 flex items-center justify-between">
                 <h2 className="font-display text-xl font-extrabold text-[#101014]">
                   {lang === 'en'
-                    ? 'Review Your Order Dossier Before Dispatch'
+                    ? 'Check Your Order Before Sending'
                     : 'सबमिट करने से पहले अपने ऑर्डर की जांच करें'}
                 </h2>
                 <span className="font-mono-tabular text-xs text-[#C83713] font-bold">
@@ -1787,7 +1787,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                 </div>
                 <div>
                   <div className="font-mono-tabular text-xs uppercase text-[#5C5852]">
-                    {lang === 'en' ? 'Attached Dossier' : 'संलग्न दस्तावेज़'}
+                    {lang === 'en' ? 'Attached Documents' : 'संलग्न दस्तावेज़'}
                   </div>
                   <div className="font-bold text-[#101014] font-mono-tabular mt-0.5">
                     {allFlattenedUploads.length}{' '}
