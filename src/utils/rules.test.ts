@@ -106,7 +106,7 @@ test('BUSINESS_INFO centralized configuration matches verified owner details and
     BUSINESS_INFO.addressEn,
     'Ward No. 08, Near G.A. High School / Nagar Panchayat, Kateya, Gopalganj (PIN 841437)'
   );
-  assert.equal(BUSINESS_INFO.phone, '');
+  assert.equal(BUSINESS_INFO.phone, '6206800799');
   assert.equal(BUSINESS_INFO.whatsappNumber, '6206800799');
   assert.equal(BUSINESS_INFO.whatsappUrl, 'https://wa.me/916206800799');
   assert.equal(BUSINESS_INFO.email, 'Adityakty77@gmail.com');

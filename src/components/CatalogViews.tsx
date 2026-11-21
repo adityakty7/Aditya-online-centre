@@ -581,7 +581,7 @@ const EditorialEmberSculpture: React.FC<{
               <span>01 · ATS RESUME & BIODATA</span>
             </div>
             <div className="text-xs font-display font-bold text-white">
-              {lang === 'en' ? '₹49–₹99 · Same-Day PDF' : '₹49–₹99 · त्वरित PDF डिलीवरी'}
+              {lang === 'en' ? '₹70–₹80 · Same-Day PDF' : '₹70–₹80 · त्वरित PDF डिलीवरी'}
             </div>
           </div>
 
@@ -667,7 +667,7 @@ const EditorialEmberSculpture: React.FC<{
                 type="text"
                 value={heroTrackId}
                 onChange={(e) => onChangeHeroTrackId(e.target.value)}
-                placeholder="AOC-20261018-D101"
+                placeholder="e.g. AOC-20261018-D101"
                 className="w-full min-h-[44px] pl-9 pr-3.5 py-1.5 rounded-xl bg-black/55 border border-white/20 text-xs font-mono-tabular text-white placeholder:text-[#A09D96] focus:border-[#FFB547] focus:ring-2 focus:ring-[#FF5C35]/50 focus:outline-none transition-all"
               />
             </div>
@@ -1418,7 +1418,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
   documentLibrary = [],
   examRadarItems = INITIAL_EXAM_RADAR_ITEMS,
 }) => {
-  const [heroTrackId, setHeroTrackId] = React.useState('AOC-20261018-D101');
+  const [heroTrackId, setHeroTrackId] = React.useState('');
   const [isPageHidden, setIsPageHidden] = React.useState(false);
   const [openFaqIndex, setOpenFaqIndex] = React.useState<number | null>(0);
   const [activeTestimonialIdx, setActiveTestimonialIdx] = React.useState(0);
