@@ -488,7 +488,7 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
               <div className="flex items-baseline justify-between border-b-2 border-[#101014] pb-3">
                 <h2 className="font-display text-lg font-extrabold text-[#101014]">
                   {lang === 'en'
-                    ? '01 // Direct Dispatch Channels'
+                    ? '01 // Contact Details'
                     : '01 // सीधा संपर्क माध्यम'}
                 </h2>
               </div>

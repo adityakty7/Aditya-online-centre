@@ -15,7 +15,6 @@ import { BRAND_IDENTITY, BUSINESS_INFO } from '../config/businessInfo';
 import { BrandLogo } from './BrandLogo';
 import {
   BEFORE_AFTER_SHOWCASE_TABS,
-  CUSTOMER_TESTIMONIALS,
   ExamRadarItemConfig,
   HERO_CINEMATIC_MEDIA,
   INITIAL_EXAM_RADAR_ITEMS,
@@ -604,7 +603,7 @@ const EditorialEmberSculpture: React.FC<{
           >
             <div className="flex items-center gap-1.5 font-mono-tabular text-[10px] text-[#FFB547] font-bold">
               <Lock className="w-3 h-3 text-[#FF5C35]" />
-              <span>03 · 100% PRIVATE & SAFE VAULT</span>
+              <span>03 · YOUR FILES ARE 100% SAFE</span>
             </div>
             <div className="text-xs font-display font-bold text-white">
               {lang === 'en' ? 'Complete Data Privacy Guarantee' : '100% सुरक्षित निजी फ़ाइलें'}
@@ -639,7 +638,7 @@ const EditorialEmberSculpture: React.FC<{
           </div>
           <div className="text-right font-mono-tabular text-[10px] sm:text-[11px] text-[#F7F3EA] shrink-0">
             <div className="text-[#FF5C35] font-bold">LIVE TRACKING</div>
-            <div className="text-[#FFB547]">8 WORKFLOW STAGES</div>
+            <div className="text-[#FFB547]">8 ORDER STEPS</div>
           </div>
         </div>
       </div>
@@ -1249,7 +1248,7 @@ const InteractiveBundleEstimator: React.FC<{
               </div>
               <div className="text-right">
                 <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8]">
-                  {lang === 'en' ? 'TURNAROUND' : 'अनुमानित समय'}
+                  {lang === 'en' ? 'TIME NEEDED' : 'अनुमानित समय'}
                 </div>
                 <div className="font-mono-tabular text-xs font-bold text-white mt-1">
                   {lang === 'en'
@@ -1421,7 +1420,6 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
   const [heroTrackId, setHeroTrackId] = React.useState('');
   const [isPageHidden, setIsPageHidden] = React.useState(false);
   const [openFaqIndex, setOpenFaqIndex] = React.useState<number | null>(0);
-  const [activeTestimonialIdx, setActiveTestimonialIdx] = React.useState(0);
   const [livePreviewOpen, setLivePreviewOpen] = React.useState(false);
   const [livePreviewTemplateId, setLivePreviewTemplateId] =
     React.useState<LiveDraftTemplateId>('bank-unfreeze');
@@ -1602,7 +1600,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                   </div>
                   <div className="text-right">
                     <div className="font-mono-tabular text-[11px] uppercase tracking-wider text-[#D8D3C8]">
-                      {lang === 'en' ? 'TURNAROUND' : 'अनुमानित समय'}
+                      {lang === 'en' ? 'TIME NEEDED' : 'अनुमानित समय'}
                     </div>
                     <div className="font-mono-tabular text-xs sm:text-sm font-bold text-white mt-1 flex items-center justify-end gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-[#FF5C35]" />
@@ -2041,7 +2039,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         {heroStats.tariffText}
                       </div>
                       <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
-                        {lang === 'en' ? 'Standard Tariff' : 'स्पष्ट शुल्क'}
+                        {lang === 'en' ? 'Service Price' : 'स्पष्ट शुल्क'}
                       </div>
                     </div>
                   </div>
@@ -2375,7 +2373,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         }`}
                       >
                         <span className="block font-mono-tabular text-[9px] uppercase tracking-wider text-[#FFB547]">
-                          {lang === 'en' ? 'TARIFF' : 'शुल्क'}
+                          {lang === 'en' ? 'PRICE' : 'शुल्क'}
                         </span>
                         <span className="font-mono-tabular text-lg sm:text-xl font-extrabold leading-none">
                           ₹{srv.priceInr}
@@ -2720,7 +2718,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         01
                       </div>
                       <span className="px-2.5 py-1 rounded-full bg-[#FF5C35]/15 border border-[#FF5C35]/40 font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#FFB547]">
-                        {lang === 'en' ? 'STAGE 01 · DOSSIER' : 'चरण 01 · अपलोड'}
+                        {lang === 'en' ? 'STEP 01 · UPLOAD' : 'चरण 01 · अपलोड'}
                       </span>
                     </div>
                     <h3 className="font-display text-xl font-bold text-white">
@@ -2742,7 +2740,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         02
                       </div>
                       <span className="px-2.5 py-1 rounded-full bg-[#FFB547]/15 border border-[#FFB547]/40 font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-[#FFB547]">
-                        {lang === 'en' ? 'STAGE 02 · UTR AUDIT' : 'चरण 02 · भुगतान'}
+                        {lang === 'en' ? 'STEP 02 · PAYMENT CHECK' : 'चरण 02 · भुगतान'}
                       </span>
                     </div>
                     <h3 className="font-display text-xl font-bold text-white">
@@ -2764,12 +2762,12 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         03
                       </div>
                       <span className="px-2.5 py-1 rounded-full bg-emerald-400/15 border border-emerald-400/40 font-mono-tabular text-[10px] font-bold uppercase tracking-wider text-emerald-300">
-                        {lang === 'en' ? 'STAGE 03 · VAULT PDF' : 'चरण 03 · डिलीवरी'}
+                        {lang === 'en' ? 'STEP 03 · GET YOUR PDF' : 'चरण 03 · डिलीवरी'}
                       </span>
                     </div>
                     <h3 className="font-display text-xl font-bold text-white">
                       {lang === 'en'
-                        ? 'Encrypted Portal Delivery'
+                        ? 'Get Your PDF Safely'
                         : 'तैयार PDF सुरक्षित डाउनलोड करें'}
                     </h3>
                     <p className="text-xs sm:text-sm text-[#D8D3C8] leading-relaxed">
@@ -2783,169 +2781,13 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
             </div>
           </section>
 
-          {/* 03.B — CUSTOMER TESTIMONIALS & LOCAL TRUST CAROUSEL (3-CARD REVIEW CAROUSEL) */}
-          <section
-            data-testid="customer-testimonials-section"
-            aria-label={
-              lang === 'en'
-                ? 'Customer Testimonials from Kateya and Gopalganj'
-                : 'कटेया और गोपालगंज के ग्राहकों की प्रतिक्रिया'
-            }
-            className="border-b border-[#DCD4C6] bg-[#FFFDF9] py-14 sm:py-20"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[#DCD4C6] pb-6">
-                <div className="space-y-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-600/30 font-mono-tabular text-xs font-bold uppercase tracking-[0.16em] text-emerald-900">
-                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                    <span>
-                      {lang === 'en'
-                        ? 'VERIFIED LOCAL CITIZEN & STUDENT REVIEWS'
-                        : 'स्थानीय छात्र एवं नागरिक समीक्षाएं'}
-                    </span>
-                  </div>
-                  <h2 className="font-display text-2xl sm:text-4xl font-extrabold text-[#101014] tracking-tight">
-                    {lang === 'en'
-                      ? 'Trusted Across Kateya & Gopalganj'
-                      : 'कटेया और गोपालगंज के नागरिकों का भरोसा'}
-                  </h2>
-                </div>
-
-                {/* Carousel Controls (Prev / Next / Dots) */}
-                <div className="flex items-center gap-2.5 self-start md:self-auto">
-                  <button
-                    type="button"
-                    data-testid="testimonial-prev-btn"
-                    onClick={() =>
-                      setActiveTestimonialIdx((prev) =>
-                        prev === 0 ? CUSTOMER_TESTIMONIALS.length - 1 : prev - 1
-                      )
-                    }
-                    aria-label={lang === 'en' ? 'Previous review' : 'पिछली समीक्षा'}
-                    className="min-h-[42px] min-w-[42px] rounded-xl border border-[#101014]/20 bg-[#F7F3EA] hover:bg-[#101014] text-[#101014] hover:text-white flex items-center justify-center transition-colors"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                  <div className="flex items-center gap-1.5 px-2">
-                    {CUSTOMER_TESTIMONIALS.map((item, idx) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setActiveTestimonialIdx(idx)}
-                        aria-label={`Review ${idx + 1}`}
-                        className={`h-2.5 rounded-full transition-all ${
-                          activeTestimonialIdx === idx
-                            ? 'w-7 bg-[#FF5C35]'
-                            : 'w-2.5 bg-[#101014]/25 hover:bg-[#101014]/50'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    data-testid="testimonial-next-btn"
-                    onClick={() =>
-                      setActiveTestimonialIdx(
-                        (prev) => (prev + 1) % CUSTOMER_TESTIMONIALS.length
-                      )
-                    }
-                    aria-label={lang === 'en' ? 'Next review' : 'अगली समीक्षा'}
-                    className="min-h-[42px] min-w-[42px] rounded-xl border border-[#101014]/20 bg-[#F7F3EA] hover:bg-[#101014] text-[#101014] hover:text-white flex items-center justify-center transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* 3-Card Review Carousel Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {CUSTOMER_TESTIMONIALS.map((review, idx) => {
-                  const isActiveSpotlight = activeTestimonialIdx === idx;
-                  return (
-                    <article
-                      key={review.id}
-                      data-testid={`testimonial-card-${review.id}`}
-                      onClick={() => setActiveTestimonialIdx(idx)}
-                      className={`rounded-3xl p-6 sm:p-7 flex flex-col justify-between gap-5 transition-all cursor-pointer border ${
-                        isActiveSpotlight
-                          ? 'glass-bento-flagship text-[#F7F3EA] border-[#FF5C35] shadow-[0_18px_40px_-14px_rgba(255,92,53,0.3)] -translate-y-1'
-                          : 'glass-cream-panel text-[#101014] border-[#DCD4C6] hover:border-[#FF5C35]/50'
-                      }`}
-                    >
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <div
-                            className="flex items-center gap-1 text-amber-400"
-                            aria-label={`${review.rating} out of 5 stars`}
-                          >
-                            {Array.from({ length: review.rating }).map((_, i) => (
-                              <Star
-                                key={i}
-                                className="w-4 h-4 fill-amber-400 text-amber-400"
-                              />
-                            ))}
-                          </div>
-                          <span
-                            className={`px-2.5 py-1 rounded-full font-mono-tabular text-[10px] font-bold uppercase tracking-wider ${
-                              isActiveSpotlight
-                                ? 'bg-white/10 text-[#FFB547] border border-white/15'
-                                : 'bg-[#EFE9DC] text-[#C83713] border border-[#DCD4C6]'
-                            }`}
-                          >
-                            {lang === 'en' ? review.serviceTagEn : review.serviceTagHi}
-                          </span>
-                        </div>
-
-                        <blockquote
-                          className={`text-sm sm:text-base leading-relaxed font-medium ${
-                            isActiveSpotlight ? 'text-white' : 'text-[#101014]'
-                          }`}
-                        >
-                          “{lang === 'en' ? review.quoteEn : review.quoteHi}”
-                        </blockquote>
-                      </div>
-
-                      <div
-                        className={`pt-4 border-t flex items-center justify-between gap-3 ${
-                          isActiveSpotlight ? 'border-white/15' : 'border-[#DCD4C6]'
-                        }`}
-                      >
-                        <div>
-                          <div
-                            className={`font-display text-sm sm:text-base font-bold ${
-                              isActiveSpotlight ? 'text-[#FFB547]' : 'text-[#101014]'
-                            }`}
-                          >
-                            {lang === 'en' ? review.nameEn : review.nameHi}
-                          </div>
-                          <div
-                            className={`text-xs ${
-                              isActiveSpotlight ? 'text-[#D8D3C8]' : 'text-[#4A463E]'
-                            }`}
-                          >
-                            {lang === 'en' ? review.locationEn : review.locationHi}
-                          </div>
-                        </div>
-                        <CheckCircle2
-                          className={`w-5 h-5 shrink-0 ${
-                            isActiveSpotlight ? 'text-emerald-400' : 'text-emerald-600'
-                          }`}
-                        />
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-
           {/* 04 & 05. ASYMMETRIC PRIVACY ARCHITECTURE & INTERACTIVE FAQ ACCORDION */}
           <section className="max-w-7xl mx-auto px-4 sm:px-6 py-14 sm:py-24">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
               {/* Left 5 Columns: Privacy & Security Manifesto */}
               <div className="lg:col-span-5 rounded-3xl glass-cream-panel p-6 sm:p-8 space-y-6">
                 <div className="font-mono-tabular text-xs font-bold uppercase tracking-[0.2em] text-[#C83713]">
-                  04. 100% PRIVATE & SAFE DOCUMENT VAULT
+                  04. YOUR DOCUMENTS ARE 100% SAFE
                 </div>
                 <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-[#101014] tracking-tight leading-[1.08]">
                   {lang === 'en'
