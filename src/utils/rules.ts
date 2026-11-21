@@ -2210,7 +2210,7 @@ export function generateLiveDraftPreviewContent(
           : '॥ श्री गणेशाय नमः ॥',
       documentTitle:
         lang === 'en'
-          ? 'MATRIMONIAL BIODATA DOSSIER'
+          ? 'MATRIMONIAL BIODATA'
           : 'विवाह हेतु बायोडाटा (परिचय-पत्र)',
       dateLine: lang === 'en' ? `Prepared at Kateya Studio` : `आदित्य ऑनलाइन सेंटर, कटेया`,
       recipientBlock: [],
@@ -2382,7 +2382,7 @@ export function buildOrderWhatsAppDispatchUrl(params: {
     `• Order ID: ${params.orderNumber || 'PENDING-ID'}`,
     `• Customer Name: ${params.customerName || 'Customer'}${params.customerPhone ? ` (${params.customerPhone})` : ''}`,
     `• Selected Service: ${params.serviceTitle || 'Digital Service'}`,
-    `• Total Tariff: ₹${tariff}`,
+    `• Total Price: ₹${tariff}`,
     `• Payment Mode: ${params.paymentMode || 'UPI QR / Manual Verification'}`,
     ...(params.hasVoiceNote ? [`• Voice Instructions: Attached in Portal`] : []),
     `Please verify my dossier and confirm processing.`,

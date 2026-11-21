@@ -1168,7 +1168,7 @@ const InteractiveBundleEstimator: React.FC<{
           </div>
           <p className="text-xs sm:text-sm text-[#4A463E] max-w-md">
             {lang === 'en'
-              ? 'Select one or more services below to see the combined studio tariff and merged document checklist.'
+              ? 'Select one or more services below to see the total price and the full document checklist.'
               : 'नीचे दी गई सेवाओं को चुनें और कुल शुल्क व आवश्यक दस्तावेज़ों की संयुक्त सूची देखें।'}
           </p>
         </div>
@@ -2059,7 +2059,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                         {heroStats.turnaroundText}
                       </div>
                       <div className="font-mono-tabular text-[10px] uppercase tracking-wider text-[#D8D3C8] mt-0.5 truncate">
-                        {lang === 'en' ? 'Turnaround' : 'वितरण समय'}
+                        {lang === 'en' ? 'Time Needed' : 'वितरण समय'}
                       </div>
                     </div>
                   </div>
@@ -2686,13 +2686,13 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                   </div>
                   <h2 className="font-display text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-[1.06]">
                     {lang === 'en'
-                      ? 'Three Stages from Upload to Delivery.'
+                      ? 'Three Simple Steps from Upload to Delivery.'
                       : 'अपलोड से डिलीवरी तक 3 स्पष्ट चरण।'}
                   </h2>
                 </div>
                 <p className="text-xs sm:text-sm text-[#D8D3C8] max-w-md leading-relaxed">
                   {lang === 'en'
-                    ? 'No queues, no unverified payment screenshots, and no shared public folders. Every order follows an auditable 3-stage workflow.'
+                    ? 'No queues and no confusion. Every order moves through 3 simple steps, and you can track each one.'
                     : 'बिना कतार में लगे घर बैठे अपने दस्तावेज़ सुरक्षित रूप से अपलोड करें और तैयार पीडीएफ डाउनलोड करें।'}
                 </p>
               </div>
@@ -2723,7 +2723,7 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     </div>
                     <h3 className="font-display text-xl font-bold text-white">
                       {lang === 'en'
-                        ? 'Select & Attach Dossier'
+                        ? 'Choose & Upload Documents'
                         : 'सेवा चुनें और दस्तावेज़ जोड़ें'}
                     </h3>
                     <p className="text-xs sm:text-sm text-[#D8D3C8] leading-relaxed">
