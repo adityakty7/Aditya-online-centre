@@ -374,7 +374,7 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                 <CheckCircle2 className="w-4 h-4 text-[#FF5C35]" />
                 <span>
                   {lang === 'en'
-                    ? 'DISPATCH CONFIRMED · DOSSIER QUEUED'
+                    ? 'ORDER CONFIRMED · WORK STARTED'
                     : 'ऑर्डर सफलतापूर्वक दर्ज हो गया है'}
                 </span>
               </div>
@@ -1851,12 +1851,12 @@ export const OrderFlowViews: React.FC<OrderFlowViewsProps> = ({
                 <div className="space-y-1">
                   <div className="font-mono-tabular text-[11px] font-bold uppercase tracking-[0.2em] text-[#FF5C35]">
                     {lang === 'en'
-                      ? 'DYNAMIC UPI QR & WHATSAPP ORDER DISPATCH'
-                      : 'डायनामिक UPI QR और व्हाट्सएप ऑर्डर डिस्पैच'}
+                      ? 'PAY BY UPI QR OR ORDER ON WHATSAPP'
+                      : 'UPI QR से भुगतान करें या व्हाट्सएप पर ऑर्डर करें'}
                   </div>
                   <h3 className="font-display text-lg sm:text-xl font-extrabold text-white">
                     {lang === 'en'
-                      ? 'Scan Exact Tariff QR or Dispatch via WhatsApp'
+                      ? 'Scan the QR to Pay, or Order on WhatsApp'
                       : 'सटीक शुल्क QR स्कैन करें या व्हाट्सएप पर भेजें'}
                   </h3>
                 </div>
