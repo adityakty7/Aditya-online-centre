@@ -844,7 +844,6 @@ const OwnerIntroSection: React.FC<{ lang: Language }> = ({ lang }) => {
               </a>
               <a
                 href={BUSINESS_INFO.whatsappUrl}
-                target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 min-h-[46px] px-5 py-2.5 rounded-2xl bg-[#101014] text-[#F7F3EA] font-bold text-sm sm:text-base"
               >
@@ -1784,7 +1783,6 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                   </button>
                   <a
                     href={buildServiceWhatsAppUrl(selectedService.titleEn)}
-                    target="_blank"
                     rel="noopener noreferrer"
                     data-testid={`detail-whatsapp-order-${selectedService.id}`}
                     className="w-full min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-400/50 text-emerald-200 hover:text-white font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2"
@@ -2631,7 +2629,6 @@ export const CatalogViews: React.FC<CatalogViewsProps> = ({
                     </button>
                     <a
                       href={buildServiceWhatsAppUrl(srv.titleEn)}
-                      target="_blank"
                       rel="noopener noreferrer"
                       data-testid={`whatsapp-order-${srv.id}`}
                       className={`w-full min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${

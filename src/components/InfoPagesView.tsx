@@ -362,7 +362,6 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <a
                   href={BUSINESS_INFO.whatsappUrl}
-                  target="_blank"
                   rel="noopener noreferrer"
                   aria-label={
                     lang === 'en'
@@ -459,7 +458,6 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                   <dd className="font-mono-tabular mt-0.5">
                     <a
                       href={BUSINESS_INFO.whatsappUrl}
-                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-[#C83713] hover:underline font-bold"
                     >
@@ -607,7 +605,6 @@ export const InfoPagesView: React.FC<InfoPagesViewProps> = ({
                   </button>
                   <a
                     href={BUSINESS_INFO.whatsappUrl}
-                    target="_blank"
                     rel="noopener noreferrer"
                     className="min-h-[42px] px-4 py-2 bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800 flex items-center gap-1.5 transition-colors"
                   >

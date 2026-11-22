@@ -2628,7 +2628,6 @@ export default function App() {
                 <a
                   key={item.id}
                   href={BUSINESS_INFO.whatsappUrl}
-                  target="_blank"
                   rel="noopener noreferrer"
                   data-testid="dock-shortcut-whatsapp"
                   className="min-h-[46px] px-0.5 py-1.5 rounded-xl flex flex-col items-center justify-center gap-0.5 text-[9.5px] sm:text-[11px] tracking-tight font-bold text-[#4ADE80] hover:bg-white/[0.08] transition-colors"
@@ -2870,7 +2869,6 @@ export default function App() {
               <div className="space-y-2.5 text-xs sm:text-sm">
                 <a
                   href={BUSINESS_INFO.whatsappUrl}
-                  target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FF5C35] hover:bg-[#E04823] text-white font-bold transition-colors"
                 >
@@ -2978,7 +2976,6 @@ export default function App() {
       {/* Floating WhatsApp Quick-Support Widget (6206800799) */}
       <a
         href={BUSINESS_INFO.whatsappUrl}
-        target="_blank"
         rel="noopener noreferrer"
         data-testid="floating-whatsapp-widget"
         aria-label={

@@ -968,7 +968,6 @@ export const CustomerPortalViews: React.FC<CustomerPortalViewsProps> = ({
                             <div className="pt-1 flex flex-wrap gap-2">
                               <a
                                 href={trackWhatsAppUrl}
-                                target="_blank"
                                 rel="noopener noreferrer"
                                 data-testid="track-whatsapp-dispatch-btn"
                                 className="min-h-[38px] px-3.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs inline-flex items-center gap-1.5 transition-all"

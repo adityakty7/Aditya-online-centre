@@ -414,7 +414,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </span>
               <a
                 href={BUSINESS_INFO.whatsappUrl}
-                target="_blank"
                 rel="noopener noreferrer"
                 className="min-h-[38px] px-3 py-1.5 rounded-lg bg-white/[0.08] border border-white/15 text-[#FFB547] font-mono-tabular font-semibold inline-flex items-center gap-1.5 shrink-0"
               >
@@ -491,7 +490,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-4 shrink-0">
             <a
               href={BUSINESS_INFO.whatsappUrl}
-              target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-[#F7F3EA] hover:text-[#FFB547] font-mono-tabular transition-colors"
             >
