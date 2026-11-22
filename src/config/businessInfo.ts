@@ -79,7 +79,7 @@ export const BUSINESS_INFO: BusinessInfoConfig = {
     'https://www.google.com/maps/dir/?api=1&destination=G.A.+High+School+Ward+No+08+Kateya+Gopalganj+Bihar+841437',
   ownerNameEn: 'Aditya Kumar',
   ownerNameHi: 'आदित्य कुमार',
-  ownerPhotoUrl: '',
+  ownerPhotoUrl: '/assets/owner/aditya-kumar.svg',
   socialLinks: [
     {
       key: 'facebook',
