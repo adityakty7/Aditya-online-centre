@@ -23,7 +23,12 @@ let dbInstance = null;
 function db() {
   if (!dbInstance) {
     if (!getApps().length) {
-      const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+      // Prefer the base64 form: it survives dashboard copy/paste intact, while
+      // raw JSON can lose its \n escapes and fail to parse.
+      const raw = process.env.FIREBASE_SERVICE_ACCOUNT_B64
+        ? Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_B64, 'base64').toString('utf8')
+        : process.env.FIREBASE_SERVICE_ACCOUNT || '{}';
+      const sa = JSON.parse(raw);
       initializeApp({ credential: cert(sa) });
     }
     dbInstance = getFirestore(getApps()[0], DATABASE_ID);
