@@ -93,14 +93,23 @@ function makeStore(database) {
       const idx = await database.doc(`whatsappOrders/${ref}`).get();
       return { ...snap.data(), customerWa: idx.exists ? idx.data().customerWa : null };
     },
-    async createOrder(ref, { service, customerWa, customerName, docsReceived, docsRequired }) {
+    async saveProfile(wa, profile) {
+      const ref = database.doc(`whatsappCustomers/${wa}`);
+      const snap = await ref.get();
+      await ref.set({
+        name: profile.name, address: profile.address, mobile: profile.mobile, wa,
+        updatedAt: FieldValue.serverTimestamp(),
+        ...(snap.exists ? {} : { createdAt: FieldValue.serverTimestamp() }),
+      }, { merge: true });
+    },
+    async createOrder(ref, { service, customerWa, customerName, customerPhone, customerLocation, docsReceived, docsRequired }) {
       const orderFields = {
         orderNumber: ref,
         customerId: `whatsapp-${customerWa}`,
         customerName: String(customerName || 'WhatsApp Customer').slice(0, 100),
-        customerPhone: customerWa,
+        customerPhone: customerPhone || customerWa,
         customerEmail: '',
-        customerLocation: '',
+        customerLocation: customerLocation || '',
         serviceId: service.id,
         serviceTitleEn: service.titleEn,
         serviceTitleHi: service.titleHi,
@@ -217,7 +226,21 @@ export default async function handler(req, res) {
           const snap = await sessionRef.get();
           const session = snap.exists
             ? snap.data()
-            : { stage: 'menu', serviceId: null, docsReceived: 0, ref: null, name: '' };
+            : { stage: 'register_start', serviceId: null, docsReceived: 0, ref: null, name: '' };
+          // First-time customers register (name, address, mobile) before the
+          // menu. A saved profile skips registration on later visits.
+          if (!session.registered) {
+            const profSnap = await database.doc(`whatsappCustomers/${from}`).get();
+            if (profSnap.exists) {
+              const p = profSnap.data();
+              session.registered = true;
+              session.profile = { name: p.name, address: p.address, mobile: p.mobile };
+              session.name = p.name;
+              if (session.stage === 'register_start') session.stage = 'menu';
+            } else if (!session.stage || session.stage === 'menu') {
+              session.stage = 'register_start';
+            }
+          }
           const { replies, operatorNotices } = await handleCustomer(store, session, input, from, profileName);
           await sessionRef.set({ ...session, updatedAt: FieldValue.serverTimestamp() });
           for (const text of replies) await sendWhatsApp(from, text);
