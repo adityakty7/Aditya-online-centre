@@ -379,6 +379,15 @@ async function handleCustomer(store, session, input, customerWa, profileName) {
   const text = (input.text || '').trim();
   if (profileName) session.name = profileName;
 
+  if (session.stage === 'register_start') {
+    session.stage = 'register_name';
+    replies.push({ kind: 'text', text: '🙏 Welcome to *Aditya Online Center*!\n\nYou are messaging us for the first time, so let us note your details first.\n\nPlease tell me your *full name*.' });
+    return { replies, operatorNotices };
+  }
+  if (session.stage === 'register_name' || session.stage === 'register_address' || session.stage === 'register_mobile') {
+    return handleRegistration(store, session, input, customerWa, replies, operatorNotices);
+  }
+
   if (input.buttonId === 'status' || /^status$/i.test(text) || /AOC-\d{8}-[A-Z0-9]{4}/i.test(text)) {
     const m = text.match(/AOC-\d{8}-[A-Z0-9]{4}/i);
     const ref = (m ? m[0] : session.ref || '').toUpperCase();
@@ -423,7 +432,10 @@ async function handleCustomer(store, session, input, customerWa, profileName) {
       session.ref = ref;
       session.stage = 'ordered';
       await store.createOrder(ref, {
-        service, customerWa, customerName: session.name || 'WhatsApp Customer',
+        service, customerWa,
+        customerName: (session.profile && session.profile.name) || session.name || 'WhatsApp Customer',
+        customerPhone: session.profile ? session.profile.mobile : null,
+        customerLocation: session.profile ? session.profile.address : null,
         docsReceived: session.docsReceived, docsRequired: need,
       });
       replies.push({ kind: 'text', text: `🎉 *Application confirmed!*\n\nRef #${ref}\nService: ${service.titleEn}\n💰 Price: ₹${service.priceInr}\nStatus: Submitted ✅\n\nWe will message you here when the status changes. Thank you! 🙏` });
@@ -452,6 +464,52 @@ async function handleCustomer(store, session, input, customerWa, profileName) {
 
   replies.push(menuListMessage());
   if (session.stage !== 'ordered') session.stage = 'menu';
+  return { replies, operatorNotices };
+}
+
+async function handleRegistration(store, session, input, customerWa, replies, operatorNotices) {
+  const text = (input.text || '').trim();
+  if (input.document || input.selectId || input.buttonId) {
+    replies.push({ kind: 'text', text: 'Please type the answer here first 🙏' });
+    return { replies, operatorNotices };
+  }
+  if (session.stage === 'register_name') {
+    if (text.length < 2) {
+      replies.push({ kind: 'text', text: 'Please tell me your *full name*.' });
+      return { replies, operatorNotices };
+    }
+    session.regName = text;
+    session.stage = 'register_address';
+    replies.push({ kind: 'text', text: 'Thanks, ' + text + '! 🙏\n\nNow please send your *village / address* (for example: Kateya, Gopalganj).' });
+    return { replies, operatorNotices };
+  }
+  if (session.stage === 'register_address') {
+    if (text.length < 3) {
+      replies.push({ kind: 'text', text: 'Please send your *village / address*.' });
+      return { replies, operatorNotices };
+    }
+    session.regAddress = text;
+    session.stage = 'register_mobile';
+    replies.push({ kind: 'text', text: 'Got it 👍\n\nNow please send your *mobile number* (10 digits) — we will contact you on this number about your order.' });
+    return { replies, operatorNotices };
+  }
+  // register_mobile
+  const digits = text.replace(/\D/g, '');
+  if (digits.length < 10) {
+    replies.push({ kind: 'text', text: 'That does not look right. Please send a valid *10-digit mobile number*.' });
+    return { replies, operatorNotices };
+  }
+  const profile = { name: session.regName || 'Customer', address: session.regAddress || '', mobile: digits.slice(-10) };
+  session.profile = profile;
+  session.name = profile.name;
+  session.registered = true;
+  session.stage = 'menu';
+  delete session.regName;
+  delete session.regAddress;
+  await store.saveProfile(customerWa, profile);
+  operatorNotices.push('🆕 *New customer registered*\nName: ' + profile.name + '\nAddress: ' + profile.address + '\nMobile: ' + profile.mobile + '\nWhatsApp: ' + customerWa);
+  replies.push({ kind: 'text', text: '✅ Thank you, ' + profile.name + '! Your details are saved.\n\nNow please choose your service 👇' });
+  replies.push(menuListMessage());
   return { replies, operatorNotices };
 }
 
