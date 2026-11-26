@@ -36,19 +36,48 @@ function db() {
   return dbInstance;
 }
 
-async function sendWhatsApp(to, text) {
+// Sends one bot message. Accepts a plain string (text) or a descriptor from
+// the bot core: { kind: 'text' | 'list' | 'buttons', ... }.
+async function sendWhatsApp(to, message) {
+  let payload;
+  if (typeof message === 'string' || message.kind === 'text') {
+    payload = {
+      messaging_product: 'whatsapp', to, type: 'text',
+      text: { body: typeof message === 'string' ? message : message.text },
+    };
+  } else if (message.kind === 'list') {
+    payload = {
+      messaging_product: 'whatsapp', to, type: 'interactive',
+      interactive: {
+        type: 'list',
+        body: { text: message.body },
+        action: {
+          button: message.buttonText,
+          sections: [{ title: message.sectionTitle, rows: message.rows }],
+        },
+      },
+    };
+  } else if (message.kind === 'buttons') {
+    payload = {
+      messaging_product: 'whatsapp', to, type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: { text: message.text },
+        action: {
+          buttons: message.buttons.map(b => ({ type: 'reply', reply: { id: b.id, title: b.title } })),
+        },
+      },
+    };
+  } else {
+    return;
+  }
   const res = await fetch(`${GRAPH}/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to,
-      type: 'text',
-      text: { body: text },
-    }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     console.error('WhatsApp send failed', res.status, await res.text().catch(() => ''));
@@ -159,11 +188,18 @@ export default async function handler(req, res) {
           const from = msg.from;
           if (!from) continue;
           const profileName = (contacts.find(c => c.wa_id === from) || {}).profile?.name || '';
-          const input = msg.type === 'text'
-            ? { text: msg.text?.body || '' }
-            : ['image', 'document', 'video', 'audio'].includes(msg.type)
-              ? { document: true }
-              : { text: '' };
+          let input;
+          if (msg.type === 'text') {
+            input = { text: msg.text?.body || '' };
+          } else if (msg.type === 'interactive' && msg.interactive?.list_reply) {
+            input = { selectId: msg.interactive.list_reply.id };
+          } else if (msg.type === 'interactive' && msg.interactive?.button_reply) {
+            input = { buttonId: msg.interactive.button_reply.id };
+          } else if (['image', 'document', 'video', 'audio'].includes(msg.type)) {
+            input = { document: true };
+          } else {
+            input = { text: '' };
+          }
 
           // Operator commands only when the message matches the exact command
           // format; anything else from the operator number is treated as a
