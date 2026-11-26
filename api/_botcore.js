@@ -1,8 +1,9 @@
 // Aditya Online Center — WhatsApp bot core for the Vercel webhook function.
-// Ported from the unit-tested n8n bot brain; storage is injected by the caller.
-// Order refs use the website format AOC-YYYYMMDD-XXXX and orders are written to
-// the same Firestore 'orders' collection the website dashboard reads.
-
+// Customer-facing language: English. The menu is a WhatsApp interactive list
+// (tap "Select Service" and choose); numbers/keywords still work as fallback.
+// Orders are written to the website's Firestore 'orders' collection by the
+// caller via the injected store. Refs use the website format AOC-YYYYMMDD-XXXX.
+'use strict';
 
 const CATALOG = {
  "services": [
@@ -291,21 +292,47 @@ const CATALOG = {
 
 const OPERATOR_WA = '916206800799';
 
-function menuText() {
-  const lines = CATALOG.services.map((s, i) => `${i + 1}. ${s.titleHi} — ₹${s.priceInr}`);
-  return `🙏 नमस्ते! *Aditya Online Center* में आपका स्वागत है।\n\nकौन-सी सेवा चाहिए? नंबर लिखकर भेजें:\n\n${lines.join('\n')}\n\nअपने ऑर्डर का हाल जानने के लिए *STATUS* लिखें।`;
+// Short names for WhatsApp list rows (row titles are limited to 24 characters).
+const SHORT_NAMES = {
+  'srv-modern-resume': 'Job Resume / CV',
+  'srv-marriage-biodata': 'Marriage Biodata',
+  'srv-hindi-english-typing': 'Typing & Letters',
+  'srv-pdf-resize-merge': 'PDF Tools',
+  'srv-govt-job-form': 'Govt Job Exam Form',
+  'srv-scholarship-admission': 'Scholarship & Admission',
+  'srv-citizen-form-support': 'Citizen Certificates',
+  'srv-aadhaar-pan-update': 'Aadhaar & PAN Update',
+};
+
+function menuListMessage() {
+  return {
+    kind: 'list',
+    body: '🙏 Welcome to *Aditya Online Center*!\n\nPlease select the service you need.\n\nTo check your order, type *STATUS*.',
+    buttonText: 'Select Service',
+    sectionTitle: 'Our Services',
+    rows: CATALOG.services.map(s => ({
+      id: s.id,
+      title: SHORT_NAMES[s.id] || s.titleEn.slice(0, 24),
+      description: `₹${s.priceInr} • ${s.estimatedTimeEn}`,
+    })),
+  };
 }
 
-function checklistText(service) {
+function menuTextFallback() {
+  const lines = CATALOG.services.map((s, i) => `${i + 1}. ${s.titleEn} — ₹${s.priceInr}`);
+  return `🙏 Welcome to *Aditya Online Center*!\n\nWhich service do you need? Send the number:\n\n${lines.join('\n')}\n\nTo check your order, type *STATUS*.`;
+}
+
+function checklistMessage(service) {
   const req = service.docs.filter(d => d.required);
   const opt = service.docs.filter(d => !d.required);
-  let t = `✅ *${service.titleHi}*\n💰 कीमत: ₹${service.priceInr} | ⏱ समय: ${service.estimatedTimeHi}\n\n📋 *ज़रूरी documents (photo/PDF यहीं भेजें):*\n`;
-  t += req.map((d, i) => `${i + 1}. ${d.labelHi}`).join('\n');
+  let t = `✅ *${service.titleEn}*\n💰 Price: ₹${service.priceInr} | ⏱ Time: ${service.estimatedTimeEn}\n\n📋 *Documents needed — please send photos/PDFs here:*\n`;
+  t += req.map((d, i) => `${i + 1}. ${d.labelEn}`).join('\n');
   if (opt.length) {
-    t += `\n\n📎 *हों तो ये भी भेजें (optional):*` + opt.map(d => `• ${d.labelHi}`).join('\n');
+    t += `\n\n📎 *If you have them, also send (optional):*` + opt.map(d => `• ${d.labelEn}`).join('\n');
   }
-  t += `\n\nसारे documents भेजने के बाद *DONE* लिखें।`;
-  return t;
+  t += `\n\nWhen you have sent everything, tap *Done* below (or type DONE).`;
+  return { kind: 'buttons', text: t, buttons: [{ id: 'done', title: '✅ Done' }, { id: 'status', title: '📦 My Status' }] };
 }
 
 function requiredCount(service) {
@@ -321,57 +348,75 @@ function newRef(now = new Date()) {
 }
 
 const STATUS_FRIENDLY = {
-  'Submitted': 'Submitted ✅ (मिल गया है)',
-  'In Progress': 'In Process ⏳ (काम चल रहा है)',
-  'Completed': 'Ready 🎉 (तैयार है)',
-  'Delivered': 'Done ✅ (पूरा हो गया)',
+  'Submitted': 'Submitted ✅ (received)',
+  'In Progress': 'In Process ⏳ (work is going on)',
+  'Completed': 'Ready 🎉 (your document is ready)',
+  'Delivered': 'Done ✅ (completed)',
   'Under Review': 'Under Review 👀',
   'Cancelled': 'Cancelled ❌',
 };
 
 function statusText(ref, order) {
   const st = STATUS_FRIENDLY[order.status] || order.status;
-  return `📦 *Ref #${ref}*\nसेवा: ${order.serviceTitleHi}\nStatus: ${st}`;
+  return `📦 *Ref #${ref}*\nService: ${order.serviceTitleEn}\nStatus: ${st}`;
 }
 
-// store: { getOrder(ref), createOrder(ref, orderFields, index), setOrderStatus(ref, status) }
+function pickService(session, service) {
+  session.stage = 'collecting';
+  session.serviceId = service.id;
+  session.docsReceived = 0;
+  session.ref = null;
+  return checklistMessage(service);
+}
+
+// store: { getOrder(ref), createOrder(ref, data), setOrderStatus(ref, status) }
 // session (mutated): { stage, serviceId, docsReceived, ref, name }
-// input: { text } or { document: true }
-// returns { replies: [text], operatorNotices: [text] }
+// input: { text } | { document: true } | { selectId } | { buttonId }
+// returns { replies: [messageDescriptor], operatorNotices: [text] }
 async function handleCustomer(store, session, input, customerWa, profileName) {
   const replies = [];
   const operatorNotices = [];
   const text = (input.text || '').trim();
   if (profileName) session.name = profileName;
 
-  const refMatch = text.match(/AOC-\d{8}-[A-Z0-9]{4}/i);
-  if (/^status$/i.test(text) || refMatch) {
-    const ref = (refMatch ? refMatch[0] : session.ref || '').toUpperCase();
+  if (input.buttonId === 'status' || /^status$/i.test(text) || /AOC-\d{8}-[A-Z0-9]{4}/i.test(text)) {
+    const m = text.match(/AOC-\d{8}-[A-Z0-9]{4}/i);
+    const ref = (m ? m[0] : session.ref || '').toUpperCase();
     if (ref) {
       const o = await store.getOrder(ref);
-      if (o) { replies.push(statusText(ref, o)); return { replies, operatorNotices }; }
+      if (o) { replies.push({ kind: 'text', text: statusText(ref, o) }); return { replies, operatorNotices }; }
     }
-    replies.push('कोई order नहीं मिला। पहले सेवा चुनकर order करें, या सही Ref # भेजें।\n\n' + menuText());
+    if (session.stage === 'collecting') {
+      replies.push({ kind: 'text', text: 'Your order is not confirmed yet — please send your documents and tap Done first.' });
+    } else {
+      replies.push({ kind: 'text', text: 'No order found yet. Please select a service first, or send the correct Ref number.' });
+      replies.push(menuListMessage());
+    }
     return { replies, operatorNotices };
+  }
+
+  if (input.selectId) {
+    const service = CATALOG.services.find(s => s.id === input.selectId);
+    if (service) { replies.push(pickService(session, service)); return { replies, operatorNotices }; }
   }
 
   if (session.stage === 'collecting') {
     const service = CATALOG.services.find(s => s.id === session.serviceId);
-    if (!service) { session.stage = 'menu'; replies.push(menuText()); return { replies, operatorNotices }; }
+    if (!service) { session.stage = 'menu'; replies.push(menuListMessage()); return { replies, operatorNotices }; }
     if (input.document) {
       session.docsReceived += 1;
       const need = requiredCount(service);
       if (session.docsReceived < need) {
-        replies.push(`✅ Document मिल गया (${session.docsReceived}/${need})। बाकी documents भेजते रहें, हो जाए तो *DONE* लिखें।`);
+        replies.push({ kind: 'text', text: `✅ Document received (${session.docsReceived}/${need}). Please keep sending the rest — tap Done when finished.` });
       } else {
-        replies.push(`✅ ${session.docsReceived} documents मिल गए। सारे हो गए हों तो *DONE* लिखें।`);
+        replies.push({ kind: 'text', text: `✅ ${session.docsReceived} documents received. If that is all, tap Done or type *DONE*.` });
       }
       return { replies, operatorNotices };
     }
-    if (/^done$/i.test(text)) {
+    if (input.buttonId === 'done' || /^done$/i.test(text)) {
       const need = requiredCount(service);
       if (session.docsReceived === 0) {
-        replies.push('अभी तक कोई document नहीं मिला है। पहले documents की photo/PDF यहीं भेजें, फिर *DONE* लिखें।');
+        replies.push({ kind: 'text', text: 'No document received yet. Please send the document photos/PDFs here first, then tap Done.' });
         return { replies, operatorNotices };
       }
       const ref = newRef();
@@ -381,11 +426,11 @@ async function handleCustomer(store, session, input, customerWa, profileName) {
         service, customerWa, customerName: session.name || 'WhatsApp Customer',
         docsReceived: session.docsReceived, docsRequired: need,
       });
-      replies.push(`🎉 *Application confirmed!*\n\nRef #${ref}\nसेवा: ${service.titleHi}\n💰 कीमत: ₹${service.priceInr}\nStatus: Submitted ✅\n\nStatus बदलते ही हम यहीं बता देंगे। धन्यवाद! 🙏`);
-      operatorNotices.push(`🔔 *Naya WhatsApp order*\nRef: ${ref}\nसेवा: ${service.titleHi} (₹${service.priceInr})\nCustomer: ${session.name || ''} (${customerWa})\nDocuments: ${session.docsReceived}/${need}${session.docsReceived >= need ? '' : ' ⚠️ अधूरे'}`);
+      replies.push({ kind: 'text', text: `🎉 *Application confirmed!*\n\nRef #${ref}\nService: ${service.titleEn}\n💰 Price: ₹${service.priceInr}\nStatus: Submitted ✅\n\nWe will message you here when the status changes. Thank you! 🙏` });
+      operatorNotices.push(`🔔 *New WhatsApp order*\nRef: ${ref}\nService: ${service.titleEn} (₹${service.priceInr})\nCustomer: ${session.name || ''} (${customerWa})\nDocuments: ${session.docsReceived}/${need}${session.docsReceived >= need ? '' : ' ⚠️ incomplete'}`);
       return { replies, operatorNotices };
     }
-    replies.push('Documents भेजते रहें 📎 हो जाए तो *DONE* लिखें।');
+    replies.push({ kind: 'text', text: 'Please keep sending your documents 📎 Tap Done when finished.' });
     return { replies, operatorNotices };
   }
 
@@ -401,16 +446,11 @@ async function handleCustomer(store, session, input, customerWa, profileName) {
     }
   }
   if (idx >= 0 && idx < CATALOG.services.length) {
-    const service = CATALOG.services[idx];
-    session.stage = 'collecting';
-    session.serviceId = service.id;
-    session.docsReceived = 0;
-    session.ref = null;
-    replies.push(checklistText(service));
+    replies.push(pickService(session, CATALOG.services[idx]));
     return { replies, operatorNotices };
   }
 
-  replies.push(menuText());
+  replies.push(menuListMessage());
   if (session.stage !== 'ordered') session.stage = 'menu';
   return { replies, operatorNotices };
 }
@@ -421,16 +461,16 @@ async function handleOperator(store, text) {
   if (!m) return { matched: false, ack: null, notify: null };
   const ref = m[1].toUpperCase();
   const o = await store.getOrder(ref);
-  if (!o) return { matched: true, ack: `Ref ${ref} नहीं मिला।`, notify: null };
+  if (!o) return { matched: true, ack: `Ref ${ref} not found.`, notify: null };
   const cmd = m[2].toUpperCase();
   const newStatus = cmd === 'PROCESS' ? 'In Progress' : cmd === 'READY' ? 'Completed' : 'Delivered';
   await store.setOrderStatus(ref, newStatus);
   const msg = cmd === 'PROCESS'
-    ? `⏳ *Ref #${ref}* — आपका काम चल रहा है (In Process)।`
+    ? `⏳ *Ref #${ref}* — your work is now in process.`
     : cmd === 'READY'
-      ? `🎉 *Ref #${ref}* — आपका document तैयार है! जल्द ही आपको मिल जाएगा।`
-      : `✅ *Ref #${ref}* — काम पूरा हो गया। धन्यवाद! 🙏`;
+      ? `🎉 *Ref #${ref}* — your document is ready! It will reach you shortly.`
+      : `✅ *Ref #${ref}* — your work is complete. Thank you! 🙏`;
   return { matched: true, ack: `✅ ${ref} → ${newStatus}`, notify: o.customerWa ? { to: o.customerWa, text: msg } : null };
 }
 
-export { CATALOG, OPERATOR_WA, menuText, checklistText, handleCustomer, handleOperator, newRef };
+export { CATALOG, OPERATOR_WA, menuListMessage, menuTextFallback, checklistMessage, handleCustomer, handleOperator, newRef };
