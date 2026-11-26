@@ -1,0 +1,436 @@
+// Aditya Online Center — WhatsApp bot core for the Vercel webhook function.
+// Ported from the unit-tested n8n bot brain; storage is injected by the caller.
+// Order refs use the website format AOC-YYYYMMDD-XXXX and orders are written to
+// the same Firestore 'orders' collection the website dashboard reads.
+
+
+const CATALOG = {
+ "services": [
+  {
+   "id": "srv-modern-resume",
+   "category": "resume_biodata",
+   "titleEn": "Professional Job Resume / CV (ATS-Ready)",
+   "titleHi": "प्रोफेशनल जॉब रिज्यूमे / सीवी (ATS-रेडी)",
+   "priceInr": 80,
+   "estimatedTimeEn": "2 to 4 Hours",
+   "estimatedTimeHi": "2 से 4 घंटे",
+   "docs": [
+    {
+     "labelEn": "10th Marksheet / Matric Certificate",
+     "labelHi": "10वीं (मैट्रिक) मार्कशीट",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "12th / Graduation / Technical Marksheet",
+     "labelHi": "12वीं / स्नातक / कंप्यूटर डिप्लोमा मार्कशीट",
+     "required": false,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Passport-size Photo",
+     "labelHi": "पासपोर्ट साइज फोटो",
+     "required": false,
+     "maxSizeKb": 300
+    }
+   ]
+  },
+  {
+   "id": "srv-marriage-biodata",
+   "category": "resume_biodata",
+   "titleEn": "Traditional & Modern Marriage Biodata",
+   "titleHi": "पारंपरिक और आधुनिक विवाह बायोडाटा",
+   "priceInr": 70,
+   "estimatedTimeEn": "2 to 3 Hours",
+   "estimatedTimeHi": "2 से 3 घंटे",
+   "docs": [
+    {
+     "labelEn": "Handwritten Family & Personal Details Sheet",
+     "labelHi": "हस्तलिखित पारिवारिक और व्यक्तिगत विवरण पेज",
+     "required": false,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Passport-size Photo",
+     "labelHi": "पासपोर्ट साइज फोटो",
+     "required": false,
+     "maxSizeKb": 300
+    }
+   ]
+  },
+  {
+   "id": "srv-hindi-english-typing",
+   "category": "letters_formatting",
+   "titleEn": "Official Application Letter & Bilingual Typing",
+   "titleHi": "आधिकारिक आवेदन पत्र और हिंदी/अंग्रेजी टाइपिंग",
+   "priceInr": 50,
+   "estimatedTimeEn": "1 to 3 Hours",
+   "estimatedTimeHi": "1 से 3 घंटे",
+   "docs": [
+    {
+     "labelEn": "Handwritten Draft / Supporting Notes",
+     "labelHi": "हस्तलिखित आवेदन ड्राफ्ट / मैटर पेज",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Aadhaar Card / ID Reference",
+     "labelHi": "आधार कार्ड / पहचान संदर्भ",
+     "required": false,
+     "maxSizeKb": 500
+    }
+   ]
+  },
+  {
+   "id": "srv-pdf-resize-merge",
+   "category": "pdf_tools",
+   "titleEn": "PDF Merge, Compression & Photo/Signature Resize Pack",
+   "titleHi": "PDF मर्ज, साइज कम करना और फोटो/हस्ताक्षर रीसाइज पैक",
+   "priceInr": 40,
+   "estimatedTimeEn": "1 to 2 Hours",
+   "estimatedTimeHi": "1 से 2 घंटे",
+   "docs": [
+    {
+     "labelEn": "Document / Marksheet Scan to Resize or Merge",
+     "labelHi": "रीसाइज या मर्ज करने के लिए मुख्य दस्तावेज़",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Passport-size Photo (For Dimension Resize)",
+     "labelHi": "पासपोर्ट साइज फोटो (माप सेट करने हेतु)",
+     "required": false,
+     "maxSizeKb": 300
+    },
+    {
+     "labelEn": "Signature (Hindi / English)",
+     "labelHi": "हस्ताक्षर (हिंदी / अंग्रेजी)",
+     "required": false,
+     "maxSizeKb": 200
+    }
+   ]
+  },
+  {
+   "id": "srv-govt-job-form",
+   "category": "govt_job_assistance",
+   "titleEn": "Recruitment & Competitive Exam Online Form Assistance",
+   "titleHi": "सरकारी नौकरी और प्रतियोगी परीक्षा ऑनलाइन फॉर्म सहायता",
+   "priceInr": 100,
+   "estimatedTimeEn": "3 to 6 Hours",
+   "estimatedTimeHi": "3 से 6 घंटे",
+   "docs": [
+    {
+     "labelEn": "Aadhaar Card",
+     "labelHi": "आधार कार्ड",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "10th Marksheet / Matric Certificate",
+     "labelHi": "10वीं (मैट्रिक) मार्कशीट",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Passport-size Photo",
+     "labelHi": "पासपोर्ट साइज फोटो",
+     "required": true,
+     "maxSizeKb": 300
+    },
+    {
+     "labelEn": "Signature (Hindi / English)",
+     "labelHi": "हस्ताक्षर (हिंदी और अंग्रेजी)",
+     "required": true,
+     "maxSizeKb": 200
+    },
+    {
+     "labelEn": "12th / Intermediate Marksheet",
+     "labelHi": "12वीं (इंटरमीडिएट) मार्कशीट",
+     "required": false,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Caste / EWS / OBC Certificate",
+     "labelHi": "जाति / EWS / OBC प्रमाणपत्र",
+     "required": false,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Residence / Domicile Certificate",
+     "labelHi": "निवास प्रमाणपत्र (Domicile)",
+     "required": false,
+     "maxSizeKb": 500
+    }
+   ]
+  },
+  {
+   "id": "srv-scholarship-admission",
+   "category": "scholarship_admission",
+   "titleEn": "Bihar Post-Matric Scholarship & College Admission Assistance",
+   "titleHi": "बिहार पोस्ट-मैट्रिक छात्रवृत्ति और कॉलेज नामांकन सहायता",
+   "priceInr": 90,
+   "estimatedTimeEn": "4 to 8 Hours",
+   "estimatedTimeHi": "4 से 8 घंटे",
+   "docs": [
+    {
+     "labelEn": "Bonafide Certificate",
+     "labelHi": "बोनाफाइड प्रमाणपत्र",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Admission / College Fee Receipt",
+     "labelHi": "नामांकन / कॉलेज शुल्क रसीद",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Income Certificate",
+     "labelHi": "आय प्रमाणपत्र",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Residence Certificate",
+     "labelHi": "निवास प्रमाणपत्र",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Caste Certificate",
+     "labelHi": "जाति प्रमाणपत्र",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Aadhaar Card",
+     "labelHi": "आधार कार्ड",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Previous Exam Marksheet (10th / 12th)",
+     "labelHi": "पिछली कक्षा की मार्कशीट (10वीं / 12वीं)",
+     "required": false,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Bank Passbook",
+     "labelHi": "बैंक पासबुक",
+     "required": false,
+     "maxSizeKb": 500
+    }
+   ]
+  },
+  {
+   "id": "srv-citizen-form-support",
+   "category": "other_online_forms",
+   "titleEn": "Citizen Portal Form & Certificate Application Assistance",
+   "titleHi": "आरटीपीएस (जाति/आय/निवास) व अन्य ऑनलाइन फॉर्म सहायता",
+   "priceInr": 60,
+   "estimatedTimeEn": "3 to 6 Hours",
+   "estimatedTimeHi": "3 से 6 घंटे",
+   "docs": [
+    {
+     "labelEn": "Aadhaar Card",
+     "labelHi": "आधार कार्ड",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Self-Declaration Form (Shapath Patra)",
+     "labelHi": "स्व-घोषणा पत्र (शपथ पत्र)",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Passport-size Photo",
+     "labelHi": "पासपोर्ट साइज फोटो",
+     "required": true,
+     "maxSizeKb": 300
+    },
+    {
+     "labelEn": "Supporting Family / Land / Address Proof",
+     "labelHi": "सहायक पता / खतियान / राशन कार्ड प्रमाण",
+     "required": false,
+     "maxSizeKb": 500
+    }
+   ]
+  },
+  {
+   "id": "srv-aadhaar-pan-update",
+   "category": "other_online_forms",
+   "titleEn": "Aadhaar Demographic & PAN Correction Form Assistance",
+   "titleHi": "आधार पता एवं पैन कार्ड सुधार फॉर्म सहायता",
+   "priceInr": 70,
+   "estimatedTimeEn": "2 to 4 Hours",
+   "estimatedTimeHi": "2 से 4 घंटे",
+   "docs": [
+    {
+     "labelEn": "Aadhaar Card (Front & Back)",
+     "labelHi": "आधार कार्ड (आगे और पीछे)",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Valid Address / DOB Proof (Residence Cert / Marksheet)",
+     "labelHi": "वैध पता या जन्मतिथि प्रमाण (निवास प्रमाणपत्र / मार्कशीट)",
+     "required": true,
+     "maxSizeKb": 500
+    },
+    {
+     "labelEn": "Existing PAN Card Copy",
+     "labelHi": "मौजूदा पैन कार्ड की प्रति",
+     "required": false,
+     "maxSizeKb": 500
+    }
+   ]
+  }
+ ]
+};
+
+const OPERATOR_WA = '916206800799';
+
+function menuText() {
+  const lines = CATALOG.services.map((s, i) => `${i + 1}. ${s.titleHi} — ₹${s.priceInr}`);
+  return `🙏 नमस्ते! *Aditya Online Center* में आपका स्वागत है।\n\nकौन-सी सेवा चाहिए? नंबर लिखकर भेजें:\n\n${lines.join('\n')}\n\nअपने ऑर्डर का हाल जानने के लिए *STATUS* लिखें।`;
+}
+
+function checklistText(service) {
+  const req = service.docs.filter(d => d.required);
+  const opt = service.docs.filter(d => !d.required);
+  let t = `✅ *${service.titleHi}*\n💰 कीमत: ₹${service.priceInr} | ⏱ समय: ${service.estimatedTimeHi}\n\n📋 *ज़रूरी documents (photo/PDF यहीं भेजें):*\n`;
+  t += req.map((d, i) => `${i + 1}. ${d.labelHi}`).join('\n');
+  if (opt.length) {
+    t += `\n\n📎 *हों तो ये भी भेजें (optional):*` + opt.map(d => `• ${d.labelHi}`).join('\n');
+  }
+  t += `\n\nसारे documents भेजने के बाद *DONE* लिखें।`;
+  return t;
+}
+
+function requiredCount(service) {
+  return service.docs.filter(d => d.required).length;
+}
+
+function newRef(now = new Date()) {
+  const y = now.getUTCFullYear();
+  const m = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(now.getUTCDate()).padStart(2, '0');
+  const suffix = Math.random().toString(36).substring(2, 6).toUpperCase().replace(/[^A-Z0-9]/g, '7');
+  return `AOC-${y}${m}${d}-${suffix}`;
+}
+
+const STATUS_FRIENDLY = {
+  'Submitted': 'Submitted ✅ (मिल गया है)',
+  'In Progress': 'In Process ⏳ (काम चल रहा है)',
+  'Completed': 'Ready 🎉 (तैयार है)',
+  'Delivered': 'Done ✅ (पूरा हो गया)',
+  'Under Review': 'Under Review 👀',
+  'Cancelled': 'Cancelled ❌',
+};
+
+function statusText(ref, order) {
+  const st = STATUS_FRIENDLY[order.status] || order.status;
+  return `📦 *Ref #${ref}*\nसेवा: ${order.serviceTitleHi}\nStatus: ${st}`;
+}
+
+// store: { getOrder(ref), createOrder(ref, orderFields, index), setOrderStatus(ref, status) }
+// session (mutated): { stage, serviceId, docsReceived, ref, name }
+// input: { text } or { document: true }
+// returns { replies: [text], operatorNotices: [text] }
+async function handleCustomer(store, session, input, customerWa, profileName) {
+  const replies = [];
+  const operatorNotices = [];
+  const text = (input.text || '').trim();
+  if (profileName) session.name = profileName;
+
+  const refMatch = text.match(/AOC-\d{8}-[A-Z0-9]{4}/i);
+  if (/^status$/i.test(text) || refMatch) {
+    const ref = (refMatch ? refMatch[0] : session.ref || '').toUpperCase();
+    if (ref) {
+      const o = await store.getOrder(ref);
+      if (o) { replies.push(statusText(ref, o)); return { replies, operatorNotices }; }
+    }
+    replies.push('कोई order नहीं मिला। पहले सेवा चुनकर order करें, या सही Ref # भेजें।\n\n' + menuText());
+    return { replies, operatorNotices };
+  }
+
+  if (session.stage === 'collecting') {
+    const service = CATALOG.services.find(s => s.id === session.serviceId);
+    if (!service) { session.stage = 'menu'; replies.push(menuText()); return { replies, operatorNotices }; }
+    if (input.document) {
+      session.docsReceived += 1;
+      const need = requiredCount(service);
+      if (session.docsReceived < need) {
+        replies.push(`✅ Document मिल गया (${session.docsReceived}/${need})। बाकी documents भेजते रहें, हो जाए तो *DONE* लिखें।`);
+      } else {
+        replies.push(`✅ ${session.docsReceived} documents मिल गए। सारे हो गए हों तो *DONE* लिखें।`);
+      }
+      return { replies, operatorNotices };
+    }
+    if (/^done$/i.test(text)) {
+      const need = requiredCount(service);
+      if (session.docsReceived === 0) {
+        replies.push('अभी तक कोई document नहीं मिला है। पहले documents की photo/PDF यहीं भेजें, फिर *DONE* लिखें।');
+        return { replies, operatorNotices };
+      }
+      const ref = newRef();
+      session.ref = ref;
+      session.stage = 'ordered';
+      await store.createOrder(ref, {
+        service, customerWa, customerName: session.name || 'WhatsApp Customer',
+        docsReceived: session.docsReceived, docsRequired: need,
+      });
+      replies.push(`🎉 *Application confirmed!*\n\nRef #${ref}\nसेवा: ${service.titleHi}\n💰 कीमत: ₹${service.priceInr}\nStatus: Submitted ✅\n\nStatus बदलते ही हम यहीं बता देंगे। धन्यवाद! 🙏`);
+      operatorNotices.push(`🔔 *Naya WhatsApp order*\nRef: ${ref}\nसेवा: ${service.titleHi} (₹${service.priceInr})\nCustomer: ${session.name || ''} (${customerWa})\nDocuments: ${session.docsReceived}/${need}${session.docsReceived >= need ? '' : ' ⚠️ अधूरे'}`);
+      return { replies, operatorNotices };
+    }
+    replies.push('Documents भेजते रहें 📎 हो जाए तो *DONE* लिखें।');
+    return { replies, operatorNotices };
+  }
+
+  let idx = -1;
+  if (/^\d+$/.test(text)) idx = parseInt(text, 10) - 1;
+  if (idx < 0 || idx >= CATALOG.services.length) {
+    const low = text.toLowerCase();
+    if (low.length >= 4) {
+      idx = CATALOG.services.findIndex(s => {
+        const words = (s.titleEn.toLowerCase() + ' ' + s.id.replace(/^srv-/, '').replace(/-/g, ' ')).split(/[^a-z]+/);
+        return words.some(w => w.length >= 4 && (w === low || w.startsWith(low) || low.startsWith(w)));
+      });
+    }
+  }
+  if (idx >= 0 && idx < CATALOG.services.length) {
+    const service = CATALOG.services[idx];
+    session.stage = 'collecting';
+    session.serviceId = service.id;
+    session.docsReceived = 0;
+    session.ref = null;
+    replies.push(checklistText(service));
+    return { replies, operatorNotices };
+  }
+
+  replies.push(menuText());
+  if (session.stage !== 'ordered') session.stage = 'menu';
+  return { replies, operatorNotices };
+}
+
+// Operator commands: "<REF> PROCESS" / "<REF> READY" / "<REF> DONE"
+async function handleOperator(store, text) {
+  const m = (text || '').trim().match(/^(AOC-\d{8}-[A-Z0-9]{4})\s+(PROCESS|READY|DONE)$/i);
+  if (!m) return { matched: false, ack: null, notify: null };
+  const ref = m[1].toUpperCase();
+  const o = await store.getOrder(ref);
+  if (!o) return { matched: true, ack: `Ref ${ref} नहीं मिला।`, notify: null };
+  const cmd = m[2].toUpperCase();
+  const newStatus = cmd === 'PROCESS' ? 'In Progress' : cmd === 'READY' ? 'Completed' : 'Delivered';
+  await store.setOrderStatus(ref, newStatus);
+  const msg = cmd === 'PROCESS'
+    ? `⏳ *Ref #${ref}* — आपका काम चल रहा है (In Process)।`
+    : cmd === 'READY'
+      ? `🎉 *Ref #${ref}* — आपका document तैयार है! जल्द ही आपको मिल जाएगा।`
+      : `✅ *Ref #${ref}* — काम पूरा हो गया। धन्यवाद! 🙏`;
+  return { matched: true, ack: `✅ ${ref} → ${newStatus}`, notify: o.customerWa ? { to: o.customerWa, text: msg } : null };
+}
+
+export { CATALOG, OPERATOR_WA, menuText, checklistText, handleCustomer, handleOperator, newRef };
